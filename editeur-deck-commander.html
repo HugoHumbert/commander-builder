@@ -336,12 +336,23 @@
         padding: 6px;
         border-bottom: 1px solid var(--line);
         position: sticky;
-        top: 110px;
+        top: var(--gheadTop, 110px);
         background: linear-gradient(#0c0a0bf2, #0c0a0bcc);
         backdrop-filter: blur(4px);
         z-index: 5;
         cursor: pointer;
         user-select: none;
+      }
+      #customBar {
+        position: sticky;
+        top: var(--headerH, 100px);
+        z-index: 8;
+        background: linear-gradient(#0c0a0bf5, #0c0a0be2);
+        backdrop-filter: blur(6px);
+        border-bottom: 1px solid var(--line);
+        align-items: center;
+        gap: 12px;
+        padding: 8px 8px;
       }
       .ghead:hover {
         background: linear-gradient(#150f10f2, #0c0a0bcc);
@@ -544,6 +555,18 @@
       }
       .stbox:hover {
         outline: 1px solid var(--line2);
+      }
+      .row[draggable="true"] {
+        cursor: grab;
+      }
+      .row.dragging {
+        opacity: 0.4;
+      }
+      .group.dropok {
+        outline: 2px dashed var(--gold);
+        outline-offset: -3px;
+        border-radius: 8px;
+        background: #17101299;
       }
 
       #prev {
@@ -754,9 +777,6 @@
         .vwrap {
           grid-area: v;
         }
-        .ghead {
-          top: 154px;
-        }
       }
     </style>
   </head>
@@ -811,7 +831,8 @@
         <div class="seg" id="groupseg">
           <button data-g="type" class="on" id="gbType"></button
           ><button data-g="cmc" id="gbCost"></button>
-          <button data-g="color" id="gbColor"></button>
+          <button data-g="color" id="gbColor"></button
+          ><button data-g="custom" id="gbCustom"></button>
         </div>
         <button class="icob" id="collapseAll" title="">⊟</button>
         <div class="search">
@@ -828,6 +849,12 @@
 
     <main>
       <div class="status" id="status" style="display: none"></div>
+      <div id="customBar" style="display: none">
+        <button class="btn" id="groupsBtn">
+          ☷ <span id="groupsBtnLbl"></span>
+        </button>
+        <span class="hint" id="customHint"></span>
+      </div>
       <div id="list"></div>
     </main>
 
@@ -873,6 +900,17 @@
         ><button class="btn" id="exDlJson"></button
         ><button class="btn" id="exportClose"></button>
       </div>
+    </dialog>
+
+    <dialog id="groupsDlg">
+      <div class="dh" id="groupsTitle"></div>
+      <div class="db">
+        <div class="glist" id="glist"></div>
+        <div class="grow">
+          <input id="newGroupInp" /><button id="addGroupBtn">＋</button>
+        </div>
+      </div>
+      <div class="df"><button class="btn" id="groupsClose"></button></div>
     </dialog>
 
     <dialog id="legDlg">
@@ -922,12 +960,14 @@
           ttImp: "Importer un deck",
           ttExp: "Exporter le deck",
           ttGroups: "Gérer les groupes",
+          dragHint:
+            "Glisse-dépose les cartes entre les groupes, ou utilise le menu par carte.",
           ttCollapse: "Tout replier / déplier",
           grp: "Grouper :",
           gType: "Type",
           gCost: "Coût",
           gColor: "Couleur",
-          gCustom: "Perso",
+          gCustom: "Custom",
           addPh: "Ajouter une carte — nom (fr ou en)…",
           filterPh: "Filtrer le deck…",
           emptyBig: "Deck vide",
@@ -1021,6 +1061,8 @@
           ttImp: "Import a deck",
           ttExp: "Export deck",
           ttGroups: "Manage groups",
+          dragHint:
+            "Drag & drop cards between groups, or use the per-card menu.",
           ttCollapse: "Collapse / expand all",
           grp: "Group by:",
           gType: "Type",
@@ -1120,6 +1162,7 @@
         filterQ = "";
       const collapsed = new Set();
       let lastKeys = [];
+      let dragItem = null;
       const cache = {}; // normName -> EN card
       const frData = {}; // normName -> {img, name} (lazy FR)
       async function saveAll() {
@@ -1345,7 +1388,14 @@
         for (const it of cards) {
           const c = cardOf(it.name);
           let key;
-          if (it.cmd) key = "Commander";
+          const hasGrp = it.group && it.group.trim();
+          if (groupBy === "custom")
+            key = hasGrp
+              ? "g:" + it.group.trim()
+              : it.cmd
+                ? "Commander"
+                : "__none";
+          else if (it.cmd) key = "Commander";
           else if (!c) key = "__load";
           else if (groupBy === "type") key = primType(c);
           else if (groupBy === "cmc")
@@ -1436,6 +1486,8 @@
       function render() {
         renderDeckSel();
         applyStaticI18n();
+        $("#customBar").style.display = groupBy === "custom" ? "flex" : "none";
+        layout();
         const d = active();
         const list = $("#list");
         list.innerHTML = "";
@@ -1460,6 +1512,31 @@
             else collapsed.add(key);
             render();
           };
+          if (
+            groupBy === "custom" &&
+            (key.startsWith("g:") || key === "__none")
+          ) {
+            const gname = key === "__none" ? "" : key.slice(2);
+            sec.addEventListener("dragover", (e) => {
+              if (dragItem) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                sec.classList.add("dropok");
+              }
+            });
+            sec.addEventListener("dragleave", (e) => {
+              if (!sec.contains(e.relatedTarget))
+                sec.classList.remove("dropok");
+            });
+            sec.addEventListener("drop", (e) => {
+              if (!dragItem) return;
+              e.preventDefault();
+              dragItem.group = gname;
+              dragItem = null;
+              render();
+              saveAll();
+            });
+          }
           if (!isCol) for (const it of items) sec.appendChild(rowEl(it));
           list.appendChild(sec);
         }
@@ -1479,10 +1556,22 @@
           c &&
           active().cards.some((x) => x.cmd) &&
           (c.color_identity || []).some((x) => !ident.has(x));
+        let groupSel = "";
+        if (groupBy === "custom") {
+          const opts = [`<option value="">${esc(t("noneOpt"))}</option>`]
+            .concat(
+              (active().groups || []).map(
+                (g) =>
+                  `<option ${it.group === g ? "selected" : ""} value="${escAttr(g)}">${esc(g)}</option>`,
+              ),
+            )
+            .join("");
+          groupSel = `<select class="grpsel" title="${esc(t("gCustom"))}">${opts}</select>`;
+        }
         r.innerHTML = `<span class="qty"><button>−</button><span class="n">${it.qty}</span><button>+</button></span>
     <span class="mana">${c ? renderMana(manaOf(c)) : ""}</span>
     <span class="cname"><button class="crown ${it.cmd ? "on" : ""}" title="${esc(t("markCmd"))}">♛</button><span class="nm ${off ? "bad" : ""}" data-has="${image ? 1 : 0}">${esc(displayName(it))}${dfc}</span></span>
-    <span class="vwrap"><input value="${escAttr(it.variant || "")}" placeholder="${esc(t("variantPh"))}"></span>
+    <span class="vwrap"><input value="${escAttr(it.variant || "")}" placeholder="${esc(t("variantPh"))}">${groupSel}</span>
     <button class="rm">✕</button>
     <button class="stbox ${it.status || "todo"}" title="${esc(statusTip(it.status || "todo"))}"></button>`;
         const [minus, plus] = r.querySelectorAll(".qty button");
@@ -1521,6 +1610,37 @@
           it.variant = inp.value;
           saveAll();
         };
+        const gs = r.querySelector(".grpsel");
+        if (gs) {
+          gs.onclick = (e) => e.stopPropagation();
+          gs.onchange = () => {
+            it.group = gs.value;
+            saveAll();
+            render();
+          };
+        }
+        if (groupBy === "custom") {
+          r.draggable = true;
+          r.addEventListener("dragstart", (e) => {
+            if (e.target.closest("input,select,button")) {
+              e.preventDefault();
+              return;
+            }
+            dragItem = it;
+            r.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+            try {
+              e.dataTransfer.setData("text/plain", it.name);
+            } catch (_) {}
+          });
+          r.addEventListener("dragend", () => {
+            dragItem = null;
+            r.classList.remove("dragging");
+            document
+              .querySelectorAll(".group.dropok")
+              .forEach((s) => s.classList.remove("dropok"));
+          });
+        }
         const stb = r.querySelector(".stbox");
         stb.onclick = () => {
           const ord = ["todo", "wip", "done"];
@@ -1796,6 +1916,17 @@
       }
 
       /* ================= filtre ================= */
+      function layout() {
+        const h = $("header").offsetHeight;
+        document.documentElement.style.setProperty("--headerH", h + "px");
+        const cbH =
+          groupBy === "custom" ? $("#customBar").offsetHeight || 0 : 0;
+        document.documentElement.style.setProperty(
+          "--gheadTop",
+          h + cbH + "px",
+        );
+      }
+      addEventListener("resize", layout);
       $("#filter").addEventListener("input", (e) => {
         filterQ = e.target.value.trim();
         render();
@@ -1877,6 +2008,82 @@
           toast(t("tDeckDel"));
         });
       };
+
+      /* ================= groupes perso ================= */
+      const groupsDlg = $("#groupsDlg");
+      $("#groupsBtn").onclick = () => {
+        renderGroups();
+        groupsDlg.showModal();
+      };
+      $("#groupsClose").onclick = () => groupsDlg.close();
+      $("#addGroupBtn").onclick = () => {
+        const v = $("#newGroupInp").value.trim();
+        if (!v) return;
+        const d = active();
+        d.groups = d.groups || [];
+        if (!d.groups.includes(v)) d.groups.push(v);
+        $("#newGroupInp").value = "";
+        renderGroups();
+        render();
+        saveAll();
+      };
+      $("#newGroupInp").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          $("#addGroupBtn").click();
+        }
+      });
+      function renderGroups() {
+        const d = active();
+        d.groups = d.groups || [];
+        const box = $("#glist");
+        box.innerHTML = "";
+        d.groups.forEach((g, i) => {
+          const row = document.createElement("div");
+          row.className = "grow";
+          row.innerHTML = `<input value="${escAttr(g)}"><button title="↑">↑</button><button title="↓">↓</button><button title="✕">✕</button>`;
+          const [inp, up, down, del] = [
+            row.querySelector("input"),
+            ...row.querySelectorAll("button"),
+          ];
+          inp.onchange = () => {
+            const old = d.groups[i],
+              nw = inp.value.trim() || old;
+            d.groups[i] = nw;
+            d.cards.forEach((c) => {
+              if (c.group === old) c.group = nw;
+            });
+            saveAll();
+            render();
+          };
+          up.onclick = () => {
+            if (i > 0) {
+              [d.groups[i - 1], d.groups[i]] = [d.groups[i], d.groups[i - 1]];
+              renderGroups();
+              render();
+              saveAll();
+            }
+          };
+          down.onclick = () => {
+            if (i < d.groups.length - 1) {
+              [d.groups[i + 1], d.groups[i]] = [d.groups[i], d.groups[i + 1]];
+              renderGroups();
+              render();
+              saveAll();
+            }
+          };
+          del.onclick = () => {
+            const gone = d.groups.splice(i, 1)[0];
+            d.cards.forEach((c) => {
+              if (c.group === gone) c.group = "";
+            });
+            renderGroups();
+            render();
+            saveAll();
+          };
+          box.appendChild(row);
+        });
+      }
 
       /* ================= légalité ================= */
       const legDlg = $("#legDlg");
@@ -2184,10 +2391,13 @@
         tip("importBtn", t("ttImp"));
         tip("exportBtn", t("ttExp"));
         tip("collapseAll", t("ttCollapse"));
+        set("groupsBtnLbl", t("ttGroups"));
+        set("customHint", t("dragHint"));
         set("lblGroup", t("grp"));
         set("gbType", t("gType"));
         set("gbCost", t("gCost"));
         set("gbColor", t("gColor"));
+        set("gbCustom", t("gCustom"));
         $("#add").placeholder = t("addPh");
         $("#filter").placeholder = t("filterPh");
         set("importTitle", t("importTitle"));
@@ -2204,6 +2414,9 @@
         set("exDlTxt", t("dlTxt"));
         set("exDlJson", t("dlJson"));
         set("exportClose", t("close"));
+        set("groupsTitle", t("groupsTitle"));
+        if ($("#newGroupInp")) $("#newGroupInp").placeholder = t("newGroupPh");
+        set("groupsClose", t("close"));
         set("legDlgTitle", t("legTitle"));
         set("legClose", t("close"));
         set("pCancel", t("cancel"));
