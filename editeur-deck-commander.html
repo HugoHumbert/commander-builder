@@ -1,584 +1,2267 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Éditeur de decks Commander</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#0c0a0b;--panel:#141011;--panel2:#1b1517;--line:#2c2325;--line2:#3a2e30;
-    --ink:#ece6da;--muted:#938a82;--faint:#655d5a;
-    --red:#d21f30;--red-deep:#7d1420;--red-dim:#4a1218;--gold:#c9a24b;--green:#5e9d5e;
-    --W:#f4efe0;--U:#4a90c4;--B:#b9a6b0;--R:#d76a4a;--G:#68a06a;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px}
-  body{background:radial-gradient(1100px 700px at 50% -12%,rgba(210,31,48,.14),transparent 60%),
-     radial-gradient(900px 600px at 90% 120%,rgba(125,20,32,.10),transparent 55%),var(--bg)}
-  ::selection{background:var(--red-deep);color:#fff}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Éditeur de decks Commander</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0c0a0b;
+        --panel: #141011;
+        --panel2: #1b1517;
+        --line: #2c2325;
+        --line2: #3a2e30;
+        --ink: #ece6da;
+        --muted: #938a82;
+        --faint: #655d5a;
+        --red: #d21f30;
+        --red-deep: #7d1420;
+        --red-dim: #4a1218;
+        --gold: #c9a24b;
+        --green: #5e9d5e;
+        --W: #f4efe0;
+        --U: #4a90c4;
+        --B: #b9a6b0;
+        --R: #d76a4a;
+        --G: #68a06a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 15px;
+      }
+      body {
+        background:
+          radial-gradient(
+            1100px 700px at 50% -12%,
+            rgba(210, 31, 48, 0.14),
+            transparent 60%
+          ),
+          radial-gradient(
+            900px 600px at 90% 120%,
+            rgba(125, 20, 32, 0.1),
+            transparent 55%
+          ),
+          var(--bg);
+      }
+      ::selection {
+        background: var(--red-deep);
+        color: #fff;
+      }
 
-  header{position:sticky;top:0;z-index:40;backdrop-filter:blur(8px);background:linear-gradient(#0c0a0bee,#0c0a0bcc);border-bottom:1px solid var(--line)}
-  .bar{display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
-  .mark{width:30px;height:30px;flex:0 0 auto;filter:drop-shadow(0 0 10px rgba(210,31,48,.35))}
-  .deckpick{display:flex;align-items:center;gap:6px;margin-right:auto;flex-wrap:wrap}
-  select#deckSel{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;
-    font:inherit;font-size:14px;font-family:"Shippori Mincho",serif;max-width:44vw}
-  select#deckSel:focus{outline:none;border-color:var(--red-deep)}
-  .icob{width:34px;height:34px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;
-    cursor:pointer;display:grid;place-items:center;font-size:15px}
-  .icob:hover{border-color:var(--line2);background:#221a1c}
-  .btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
-  .btn:hover{border-color:var(--line2);background:#221a1c}
-  .btn.red{border-color:var(--red-deep);color:#f4d7da}.btn.red:hover{background:var(--red-dim)}
-  .count{font-family:"Shippori Mincho",serif;font-size:19px;font-weight:700}.count.bad{color:var(--red)}
-  .legchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;
-    font-size:12px;cursor:pointer;background:var(--panel2)}
-  .legchip .ld{width:8px;height:8px;border-radius:50%}
-  .legchip:hover{border-color:var(--line2)}
-  .pips{display:flex;gap:9px;align-items:center;font-size:12px;color:var(--muted)}
-  .pips b{color:var(--ink);font-weight:600}.pip{display:inline-flex;align-items:center;gap:4px}.dot{width:9px;height:9px;border-radius:50%}
-  .lang{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-  .lang button{background:transparent;color:var(--muted);border:0;padding:6px 9px;font-size:12px;cursor:pointer}
-  .lang button.on{background:var(--red-dim);color:var(--ink)}.lang button+button{border-left:1px solid var(--line)}
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        backdrop-filter: blur(8px);
+        background: linear-gradient(#0c0a0bee, #0c0a0bcc);
+        border-bottom: 1px solid var(--line);
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        flex-wrap: wrap;
+      }
+      .mark {
+        width: 30px;
+        height: 30px;
+        flex: 0 0 auto;
+        filter: drop-shadow(0 0 10px rgba(210, 31, 48, 0.35));
+      }
+      .deckpick {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-right: auto;
+        flex-wrap: wrap;
+      }
+      select#deckSel {
+        background: var(--panel);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font: inherit;
+        font-size: 14px;
+        font-family: "Shippori Mincho", serif;
+        max-width: 44vw;
+      }
+      select#deckSel:focus {
+        outline: none;
+        border-color: var(--red-deep);
+      }
+      .icob {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        color: var(--ink);
+        border-radius: 8px;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+      }
+      .icob:hover {
+        border-color: var(--line2);
+        background: #221a1c;
+      }
+      .btn {
+        background: var(--panel2);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .btn:hover {
+        border-color: var(--line2);
+        background: #221a1c;
+      }
+      .btn.red {
+        border-color: var(--red-deep);
+        color: #f4d7da;
+      }
+      .btn.red:hover {
+        background: var(--red-dim);
+      }
+      .count {
+        font-family: "Shippori Mincho", serif;
+        font-size: 19px;
+        font-weight: 700;
+      }
+      .count.bad {
+        color: var(--red);
+      }
+      .legchip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        background: var(--panel2);
+      }
+      .legchip .ld {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .legchip:hover {
+        border-color: var(--line2);
+      }
+      .pips {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .pips b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .pip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+      }
+      .lang {
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .lang button {
+        background: transparent;
+        color: var(--muted);
+        border: 0;
+        padding: 6px 9px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .lang button.on {
+        background: var(--red-dim);
+        color: var(--ink);
+      }
+      .lang button + button {
+        border-left: 1px solid var(--line);
+      }
 
-  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 16px 10px}
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-  .seg button{background:transparent;color:var(--muted);border:0;padding:7px 11px;font-size:13px;cursor:pointer}
-  .seg button.on{background:var(--red-dim);color:var(--ink)}.seg button+button{border-left:1px solid var(--line)}
-  .hint{color:var(--faint);font-size:12px}
-  .search{position:relative;flex:1;min-width:200px}
-  .search input,.filter input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px 9px 34px;font-size:14px}
-  .search input:focus,.filter input:focus{outline:none;border-color:var(--red-deep)}
-  .search .mag,.filter .mag{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--faint)}
-  .filter{position:relative;min-width:150px;flex:0 1 220px}
-  .ac{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#171213;border:1px solid var(--line2);border-radius:10px;
-    box-shadow:0 14px 40px rgba(0,0,0,.6);z-index:50;overflow:hidden;display:none;max-height:340px;overflow-y:auto}
-  .ac.show{display:block}
-  .ac .it{padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #201819}
-  .ac .it:last-child{border-bottom:0}.ac .it.on,.ac .it:hover{background:var(--red-dim)}
-  .ac .it .alt{color:var(--muted);font-size:12px;font-style:italic}.ac .empty{padding:12px;color:var(--muted);font-size:13px}
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 0 16px 10px;
+      }
+      .seg {
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .seg button {
+        background: transparent;
+        color: var(--muted);
+        border: 0;
+        padding: 7px 11px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .seg button.on {
+        background: var(--red-dim);
+        color: var(--ink);
+      }
+      .seg button + button {
+        border-left: 1px solid var(--line);
+      }
+      .hint {
+        color: var(--faint);
+        font-size: 12px;
+      }
+      .search {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+      }
+      .search input,
+      .filter input {
+        width: 100%;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        padding: 9px 12px 9px 34px;
+        font-size: 14px;
+      }
+      .search input:focus,
+      .filter input:focus {
+        outline: none;
+        border-color: var(--red-deep);
+      }
+      .search .mag,
+      .filter .mag {
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--faint);
+      }
+      .filter {
+        position: relative;
+        min-width: 150px;
+        flex: 0 1 220px;
+      }
+      .ac {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 4px);
+        background: #171213;
+        border: 1px solid var(--line2);
+        border-radius: 10px;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+        z-index: 50;
+        overflow: hidden;
+        display: none;
+        max-height: 340px;
+        overflow-y: auto;
+      }
+      .ac.show {
+        display: block;
+      }
+      .ac .it {
+        padding: 9px 12px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        border-bottom: 1px solid #201819;
+      }
+      .ac .it:last-child {
+        border-bottom: 0;
+      }
+      .ac .it.on,
+      .ac .it:hover {
+        background: var(--red-dim);
+      }
+      .ac .it .alt {
+        color: var(--muted);
+        font-size: 12px;
+        font-style: italic;
+      }
+      .ac .empty {
+        padding: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
 
-  main{max-width:1000px;margin:0 auto;padding:12px 12px 130px}
-  .group{margin:16px 0 6px}
-  .ghead{display:flex;align-items:baseline;gap:10px;padding:6px;border-bottom:1px solid var(--line);position:sticky;top:110px;
-    background:linear-gradient(#0c0a0bf2,#0c0a0bcc);backdrop-filter:blur(4px);z-index:5;cursor:pointer;user-select:none}
-  .ghead:hover{background:linear-gradient(#150f10f2,#0c0a0bcc)}
-  .chev{color:var(--muted);font-size:10px;width:12px;flex:0 0 auto;transition:transform .12s}
-  .ghead.cmd{border-bottom-color:var(--gold)}
-  .gname{font-family:"Shippori Mincho",serif;font-weight:700;font-size:15px}.gname.cmd{color:var(--gold)}.gcount{color:var(--muted);font-size:12px}
-  .empty-state{padding:48px 16px;text-align:center;color:var(--muted)}
-  .empty-state .big{font-family:"Shippori Mincho",serif;font-size:19px;color:var(--ink);margin-bottom:6px}
+      main {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 12px 12px 130px;
+      }
+      .group {
+        margin: 16px 0 6px;
+      }
+      .ghead {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding: 6px;
+        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 110px;
+        background: linear-gradient(#0c0a0bf2, #0c0a0bcc);
+        backdrop-filter: blur(4px);
+        z-index: 5;
+        cursor: pointer;
+        user-select: none;
+      }
+      .ghead:hover {
+        background: linear-gradient(#150f10f2, #0c0a0bcc);
+      }
+      .chev {
+        color: var(--muted);
+        font-size: 10px;
+        width: 12px;
+        flex: 0 0 auto;
+        transition: transform 0.12s;
+      }
+      .ghead.cmd {
+        border-bottom-color: var(--gold);
+      }
+      .gname {
+        font-family: "Shippori Mincho", serif;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .gname.cmd {
+        color: var(--gold);
+      }
+      .gcount {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .empty-state {
+        padding: 48px 16px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .empty-state .big {
+        font-family: "Shippori Mincho", serif;
+        font-size: 19px;
+        color: var(--ink);
+        margin-bottom: 6px;
+      }
 
-  .row{display:grid;grid-template-columns:76px 112px 1fr 1.15fr 30px 26px;align-items:center;gap:10px;padding:7px 6px;border-bottom:1px solid #1c1618}
-  .row:hover{background:#130f10}
-  .qty{display:inline-flex;align-items:center;gap:2px}
-  .qty button{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-size:14px;line-height:1;display:grid;place-items:center;padding:0}
-  .qty button:hover{border-color:var(--line2)}
-  .qty .n{min-width:20px;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
-  .mana{display:inline-flex;gap:2px;align-items:center;min-height:20px;flex-wrap:wrap;justify-content:flex-end}
-  .mana img{width:17px;height:17px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}.mana .none{color:var(--faint);font-size:12px}
-  .cname{display:flex;align-items:center;gap:6px;min-width:0}
-  .crown{flex:0 0 auto;background:transparent;border:0;color:var(--faint);cursor:pointer;font-size:14px;padding:0;line-height:1}
-  .crown.on{color:var(--gold);text-shadow:0 0 8px rgba(201,162,75,.5)}
-  .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .nm[data-has="1"]{cursor:help;text-decoration:underline dotted rgba(150,140,135,.35);text-underline-offset:3px}
-  .nm.bad{color:#e98}
-  .nm .dfc{color:var(--faint);font-size:11px}
-  .vwrap{display:flex;gap:6px;align-items:center;min-width:0}
-  .vwrap input{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid #2a2224;color:#f0dfd6;padding:6px 0;font-size:13.5px;font-family:"Shippori Mincho",serif;text-align:left}
-  .vwrap input::placeholder{color:var(--faint);font-family:Inter,sans-serif;font-style:italic}
-  .vwrap input:focus{outline:none;border-color:var(--red)}
-  .vwrap select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;max-width:130px}
-  .rm{background:transparent;border:0;color:var(--faint);cursor:pointer;font-size:16px;border-radius:6px;height:26px}
-  .rm:hover{color:var(--red);background:#1c1416}
-  .stbox{width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.55);cursor:pointer;padding:0;justify-self:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
-  .stbox.todo{background:#6b6360}.stbox.wip{background:#d8b13a}.stbox.done{background:#4e9d54}
-  .stbox:hover{outline:1px solid var(--line2)}
+      .row {
+        display: grid;
+        grid-template-columns: 76px 112px 1fr 1.15fr 30px 26px;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 6px;
+        border-bottom: 1px solid #1c1618;
+      }
+      .row:hover {
+        background: #130f10;
+      }
+      .qty {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .qty button {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        display: grid;
+        place-items: center;
+        padding: 0;
+      }
+      .qty button:hover {
+        border-color: var(--line2);
+      }
+      .qty .n {
+        min-width: 20px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+      }
+      .mana {
+        display: inline-flex;
+        gap: 2px;
+        align-items: center;
+        min-height: 20px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .mana img {
+        width: 17px;
+        height: 17px;
+        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+      }
+      .mana .none {
+        color: var(--faint);
+        font-size: 12px;
+      }
+      .cname {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+      .crown {
+        flex: 0 0 auto;
+        background: transparent;
+        border: 0;
+        color: var(--faint);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0;
+        line-height: 1;
+      }
+      .crown.on {
+        color: var(--gold);
+        text-shadow: 0 0 8px rgba(201, 162, 75, 0.5);
+      }
+      .nm {
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .nm[data-has="1"] {
+        cursor: help;
+        text-decoration: underline dotted rgba(150, 140, 135, 0.35);
+        text-underline-offset: 3px;
+      }
+      .nm.bad {
+        color: #e98;
+      }
+      .nm .dfc {
+        color: var(--faint);
+        font-size: 11px;
+      }
+      .vwrap {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        min-width: 0;
+      }
+      .vwrap input {
+        flex: 1;
+        min-width: 0;
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid #2a2224;
+        color: #f0dfd6;
+        padding: 6px 0;
+        font-size: 13.5px;
+        font-family: "Shippori Mincho", serif;
+        text-align: left;
+      }
+      .vwrap input::placeholder {
+        color: var(--faint);
+        font-family: Inter, sans-serif;
+        font-style: italic;
+      }
+      .vwrap input:focus {
+        outline: none;
+        border-color: var(--red);
+      }
+      .vwrap select {
+        background: var(--panel2);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 4px 6px;
+        font-size: 12px;
+        max-width: 130px;
+      }
+      .rm {
+        background: transparent;
+        border: 0;
+        color: var(--faint);
+        cursor: pointer;
+        font-size: 16px;
+        border-radius: 6px;
+        height: 26px;
+      }
+      .rm:hover {
+        color: var(--red);
+        background: #1c1416;
+      }
+      .stbox {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.55);
+        cursor: pointer;
+        padding: 0;
+        justify-self: center;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+      }
+      .stbox.todo {
+        background: #6b6360;
+      }
+      .stbox.wip {
+        background: #d8b13a;
+      }
+      .stbox.done {
+        background: #4e9d54;
+      }
+      .stbox:hover {
+        outline: 1px solid var(--line2);
+      }
 
-  #prev{position:fixed;z-index:60;pointer-events:none;opacity:0;transition:opacity .1s;width:236px;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px #000}
-  #prev.show{opacity:1}
-  #modal{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.82);display:none;place-items:center;padding:24px}
-  #modal.show{display:grid}#modal img{max-width:min(88vw,360px);max-height:86vh;border-radius:16px;box-shadow:0 20px 60px #000}
+      #prev {
+        position: fixed;
+        z-index: 60;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.1s;
+        width: 236px;
+        border-radius: 14px;
+        box-shadow:
+          0 12px 40px rgba(0, 0, 0, 0.7),
+          0 0 0 1px #000;
+      }
+      #prev.show {
+        opacity: 1;
+      }
+      #modal {
+        position: fixed;
+        inset: 0;
+        z-index: 70;
+        background: rgba(0, 0, 0, 0.82);
+        display: none;
+        place-items: center;
+        padding: 24px;
+      }
+      #modal.show {
+        display: grid;
+      }
+      #modal img {
+        max-width: min(88vw, 360px);
+        max-height: 86vh;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px #000;
+      }
 
-  .status{color:var(--muted);font-size:13px;padding:10px 8px;display:flex;align-items:center;gap:10px}
-  .spin{width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--red);border-radius:50%;animation:s 1s linear infinite}
-  @keyframes s{to{transform:rotate(360deg)}}
-  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1c1517;border:1px solid var(--line2);color:var(--ink);padding:10px 16px;border-radius:10px;z-index:80;opacity:0;transition:opacity .2s;pointer-events:none;font-size:13px}
-  .toast.show{opacity:1}
+      .status {
+        color: var(--muted);
+        font-size: 13px;
+        padding: 10px 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .spin {
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--line2);
+        border-top-color: var(--red);
+        border-radius: 50%;
+        animation: s 1s linear infinite;
+      }
+      @keyframes s {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        transform: translateX(-50%);
+        background: #1c1517;
+        border: 1px solid var(--line2);
+        color: var(--ink);
+        padding: 10px 16px;
+        border-radius: 10px;
+        z-index: 80;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        font-size: 13px;
+      }
+      .toast.show {
+        opacity: 1;
+      }
 
-  dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line2);border-radius:14px;max-width:560px;width:92vw;padding:0}
-  dialog::backdrop{background:rgba(0,0,0,.7)}
-  dialog .dh{padding:14px 16px;border-bottom:1px solid var(--line);font-family:"Shippori Mincho",serif;font-weight:700}
-  dialog .db{padding:16px}dialog p{margin:0 0 10px;color:var(--muted);font-size:13px}
-  dialog input.txt{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:14px}
-  dialog textarea{width:100%;height:190px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:ui-monospace,monospace;font-size:12.5px;resize:vertical}
-  dialog .df{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
-  .glist{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
-  .grow{display:flex;gap:6px;align-items:center}
-  .grow input{flex:1;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:13px}
-  .grow button{width:30px;height:30px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:6px;cursor:pointer}
-  .grow button:hover{border-color:var(--line2)}
-  .leglist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-  .leglist li{background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--red);border-radius:6px;padding:8px 10px;font-size:13px}
-  .leglist li.ok{border-left-color:var(--green);color:#bfe0bf}
+      dialog {
+        background: var(--panel);
+        color: var(--ink);
+        border: 1px solid var(--line2);
+        border-radius: 14px;
+        max-width: 560px;
+        width: 92vw;
+        padding: 0;
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.7);
+      }
+      dialog .dh {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        font-family: "Shippori Mincho", serif;
+        font-weight: 700;
+      }
+      dialog .db {
+        padding: 16px;
+      }
+      dialog p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      dialog input.txt {
+        width: 100%;
+        background: var(--bg);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 11px;
+        font-size: 14px;
+      }
+      dialog textarea {
+        width: 100%;
+        height: 190px;
+        background: var(--bg);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        font-family: ui-monospace, monospace;
+        font-size: 12.5px;
+        resize: vertical;
+      }
+      dialog .df {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        padding: 12px 16px;
+        border-top: 1px solid var(--line);
+        flex-wrap: wrap;
+      }
+      .glist {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .grow {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .grow input {
+        flex: 1;
+        background: var(--bg);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 6px 9px;
+        font-size: 13px;
+      }
+      .grow button {
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        color: var(--ink);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .grow button:hover {
+        border-color: var(--line2);
+      }
+      .leglist {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .leglist li {
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--red);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+      .leglist li.ok {
+        border-left-color: var(--green);
+        color: #bfe0bf;
+      }
 
-  @media(max-width:760px){
-    .row{grid-template-columns:66px auto 1fr 24px 30px;grid-template-areas:"qty mana name st rm" "v v v v v";row-gap:4px}
-    .qty{grid-area:qty}.mana{grid-area:mana;justify-content:flex-start}.cname{grid-area:name}.rm{grid-area:rm}.stbox{grid-area:st}.vwrap{grid-area:v}
-    .ghead{top:154px}
-  }
-</style>
-</head>
-<body>
-<header>
-  <div class="bar">
-    <svg class="mark" viewBox="0 0 28 28" aria-hidden="true">
-      <rect x="4.5" y="7" width="12.5" height="17" rx="2.4" fill="#1b1517" stroke="var(--red-deep)" stroke-width="1.5" transform="rotate(-11 10.5 15.5)"/>
-      <rect x="9" y="4" width="12.5" height="17" rx="2.4" fill="#221619" stroke="var(--red)" stroke-width="1.5" transform="rotate(9 15 12.5)"/>
-      <circle cx="15.2" cy="12.3" r="2.3" fill="var(--red)"/>
-    </svg>
-    <div class="deckpick">
-      <select id="deckSel"></select>
-      <button class="icob" id="newDeck">＋</button>
-      <button class="icob" id="renDeck">✎</button>
-      <button class="icob" id="dupDeck">⧉</button>
-      <button class="icob" id="delDeck">🗑</button>
-      <button class="icob" id="importBtn">↑</button>
-      <button class="icob" id="exportBtn">↓</button>
-    </div>
-    <span class="count" id="count">0 / 100</span>
-    <span class="legchip" id="legchip"><span class="ld"></span><span id="legtxt"></span></span>
-    <div class="pips" id="pips"></div>
-    <div class="lang" id="langseg"><button data-l="fr">FR</button><button data-l="en">EN</button></div>
-  </div>
-  <div class="controls">
-    <span class="hint" id="lblGroup"></span>
-    <div class="seg" id="groupseg">
-      <button data-g="type" class="on" id="gbType"></button><button data-g="cmc" id="gbCost"></button>
-      <button data-g="color" id="gbColor"></button>
-    </div>
-    <button class="icob" id="collapseAll" title="">⊟</button>
-    <div class="search">
-      <span class="mag">⌕</span>
-      <input id="add" autocomplete="off" spellcheck="false">
-      <div class="ac" id="ac"></div>
-    </div>
-    <div class="filter"><span class="mag">⚲</span><input id="filter" autocomplete="off" spellcheck="false"></div>
-  </div>
-</header>
+      @media (max-width: 760px) {
+        .row {
+          grid-template-columns: 66px auto 1fr 24px 30px;
+          grid-template-areas: "qty mana name st rm" "v v v v v";
+          row-gap: 4px;
+        }
+        .qty {
+          grid-area: qty;
+        }
+        .mana {
+          grid-area: mana;
+          justify-content: flex-start;
+        }
+        .cname {
+          grid-area: name;
+        }
+        .rm {
+          grid-area: rm;
+        }
+        .stbox {
+          grid-area: st;
+        }
+        .vwrap {
+          grid-area: v;
+        }
+        .ghead {
+          top: 154px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <svg class="mark" viewBox="0 0 28 28" aria-hidden="true">
+          <rect
+            x="4.5"
+            y="7"
+            width="12.5"
+            height="17"
+            rx="2.4"
+            fill="#1b1517"
+            stroke="var(--red-deep)"
+            stroke-width="1.5"
+            transform="rotate(-11 10.5 15.5)"
+          />
+          <rect
+            x="9"
+            y="4"
+            width="12.5"
+            height="17"
+            rx="2.4"
+            fill="#221619"
+            stroke="var(--red)"
+            stroke-width="1.5"
+            transform="rotate(9 15 12.5)"
+          />
+          <circle cx="15.2" cy="12.3" r="2.3" fill="var(--red)" />
+        </svg>
+        <div class="deckpick">
+          <select id="deckSel"></select>
+          <button class="icob" id="newDeck">＋</button>
+          <button class="icob" id="renDeck">✎</button>
+          <button class="icob" id="dupDeck">⧉</button>
+          <button class="icob" id="delDeck">🗑</button>
+          <button class="icob" id="importBtn">↑</button>
+          <button class="icob" id="exportBtn">↓</button>
+        </div>
+        <span class="count" id="count">0 / 100</span>
+        <span class="legchip" id="legchip"
+          ><span class="ld"></span><span id="legtxt"></span
+        ></span>
+        <div class="pips" id="pips"></div>
+        <div class="lang" id="langseg">
+          <button data-l="fr">FR</button><button data-l="en">EN</button>
+        </div>
+      </div>
+      <div class="controls">
+        <span class="hint" id="lblGroup"></span>
+        <div class="seg" id="groupseg">
+          <button data-g="type" class="on" id="gbType"></button
+          ><button data-g="cmc" id="gbCost"></button>
+          <button data-g="color" id="gbColor"></button>
+        </div>
+        <button class="icob" id="collapseAll" title="">⊟</button>
+        <div class="search">
+          <span class="mag">⌕</span>
+          <input id="add" autocomplete="off" spellcheck="false" />
+          <div class="ac" id="ac"></div>
+        </div>
+        <div class="filter">
+          <span class="mag">⚲</span
+          ><input id="filter" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+    </header>
 
-<main><div class="status" id="status" style="display:none"></div><div id="list"></div></main>
+    <main>
+      <div class="status" id="status" style="display: none"></div>
+      <div id="list"></div>
+    </main>
 
-<img id="prev" alt=""><div id="modal"><img id="modalimg" alt=""></div>
-<div class="toast" id="toast"></div>
+    <img id="prev" alt="" />
+    <div id="modal"><img id="modalimg" alt="" /></div>
+    <div class="toast" id="toast"></div>
 
-<dialog id="importDlg"><div class="dh" id="importTitle"></div>
-  <div class="db"><p id="importDesc"></p>
-    <textarea id="importText" spellcheck="false"></textarea>
-    <input type="file" id="fileInp" accept=".txt,.json,.dec,.cod,text/plain,application/json" style="display:none"></div>
-  <div class="df"><button class="btn" id="fileBtn"></button><button class="btn red" id="doImportBtn"></button><button class="btn" id="importClose"></button></div>
-</dialog>
+    <dialog id="importDlg">
+      <div class="dh" id="importTitle"></div>
+      <div class="db">
+        <p id="importDesc"></p>
+        <textarea id="importText" spellcheck="false"></textarea>
+        <input
+          type="file"
+          id="fileInp"
+          accept=".txt,.json,.dec,.cod,text/plain,application/json"
+          style="display: none"
+        />
+      </div>
+      <div class="df">
+        <button class="btn" id="fileBtn"></button
+        ><button class="btn red" id="doImportBtn"></button
+        ><button class="btn" id="importClose"></button>
+      </div>
+    </dialog>
 
-<dialog id="exportDlg"><div class="dh"><span id="exportTitle"></span> — <span id="exDeckName"></span></div>
-  <div class="db"><div class="seg" id="exFmt" style="margin-bottom:10px">
-      <button data-f="txt" class="on" id="fmtTxt"></button><button data-f="var" id="fmtVar"></button><button data-f="archidekt" id="fmtArchidekt"></button><button data-f="json" id="fmtJson"></button></div>
-    <textarea id="exportText" spellcheck="false" readonly></textarea></div>
-  <div class="df"><button class="btn" id="exCopy"></button><button class="btn" id="exDlTxt"></button><button class="btn" id="exDlJson"></button><button class="btn" id="exportClose"></button></div>
-</dialog>
+    <dialog id="exportDlg">
+      <div class="dh">
+        <span id="exportTitle"></span> — <span id="exDeckName"></span>
+      </div>
+      <div class="db">
+        <div class="seg" id="exFmt" style="margin-bottom: 10px">
+          <button data-f="txt" class="on" id="fmtTxt"></button
+          ><button data-f="var" id="fmtVar"></button
+          ><button data-f="archidekt" id="fmtArchidekt"></button
+          ><button data-f="json" id="fmtJson"></button>
+        </div>
+        <textarea id="exportText" spellcheck="false" readonly></textarea>
+      </div>
+      <div class="df">
+        <button class="btn" id="exCopy"></button
+        ><button class="btn" id="exDlTxt"></button
+        ><button class="btn" id="exDlJson"></button
+        ><button class="btn" id="exportClose"></button>
+      </div>
+    </dialog>
 
-<dialog id="legDlg"><div class="dh" id="legDlgTitle"></div>
-  <div class="db"><ul class="leglist" id="leglist"></ul></div>
-  <div class="df"><button class="btn" id="legClose"></button></div>
-</dialog>
+    <dialog id="legDlg">
+      <div class="dh" id="legDlgTitle"></div>
+      <div class="db"><ul class="leglist" id="leglist"></ul></div>
+      <div class="df"><button class="btn" id="legClose"></button></div>
+    </dialog>
 
-<dialog id="prompt"><div class="dh" id="pTitle"></div>
-  <div class="db"><input class="txt" id="pInput"></div>
-  <div class="df"><button class="btn" id="pCancel"></button><button class="btn red" id="pOk"></button></div>
-</dialog>
+    <dialog id="prompt">
+      <div class="dh" id="pTitle"></div>
+      <div class="db"><input class="txt" id="pInput" /></div>
+      <div class="df">
+        <button class="btn" id="pCancel"></button
+        ><button class="btn red" id="pOk"></button>
+      </div>
+    </dialog>
 
-<script>
-"use strict";
-const $=s=>document.querySelector(s);
-const SVG=c=>`https://svgs.scryfall.io/card-symbols/${c.replace(/\//g,'').toUpperCase()}.svg`;
-const COLOR={W:'--W',U:'--U',B:'--B',R:'--R',G:'--G'};
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const normName=n=>n.split(" //")[0].trim().toLowerCase();
-const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
-const escAttr=s=>String(s).replace(/"/g,"&quot;").replace(/</g,"&lt;");
-const uidGen=(()=>{let i=1;return()=>i++;})();
-const STORE_KEY="mtg-cmdr-decks";
+    <script>
+      "use strict";
+      const $ = (s) => document.querySelector(s);
+      const SVG = (c) =>
+        `https://svgs.scryfall.io/card-symbols/${c.replace(/\//g, "").toUpperCase()}.svg`;
+      const COLOR = { W: "--W", U: "--U", B: "--B", R: "--R", G: "--G" };
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const normName = (n) => n.split(" //")[0].trim().toLowerCase();
+      const esc = (s) =>
+        String(s).replace(
+          /[&<>]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
+        );
+      const escAttr = (s) =>
+        String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+      const uidGen = (() => {
+        let i = 1;
+        return () => i++;
+      })();
+      const STORE_KEY = "mtg-cmdr-decks";
 
-/* ================= i18n ================= */
-const T={
- fr:{app:"Éditeur de decks Commander",
-  ttNew:"Nouveau deck",ttRen:"Renommer",ttDup:"Dupliquer",ttDel:"Supprimer",ttImp:"Importer un deck",ttExp:"Exporter le deck",ttGroups:"Gérer les groupes",ttCollapse:"Tout replier / déplier",
-  grp:"Grouper :",gType:"Type",gCost:"Coût",gColor:"Couleur",gCustom:"Perso",
-  addPh:"Ajouter une carte — nom (fr ou en)…",filterPh:"Filtrer le deck…",
-  emptyBig:"Deck vide",emptyHint:"Ajoute des cartes avec la recherche en haut, ou importe une liste avec le bouton « Importer » (↑).",
-  loading:"(chargement…)",loadingCards:"Chargement des cartes…",variantPh:"nom variante…",noGroup:"— sans groupe —",
-  Commander:"Commandant",Creature:"Créatures",Planeswalker:"Planeswalkers",Instant:"Éphémères",Sorcery:"Rituels",Artifact:"Artefacts",Enchantment:"Enchantements",Battle:"Batailles",Land:"Terrains",Other:"Autre",
-  White:"Blanc",Blue:"Bleu",Black:"Noir",Red:"Rouge",Green:"Vert",Multicolor:"Multicolore",Colorless:"Incolore",Lands:"Terrains",
-  cost:"Coût",costX:"Coût X",
-  importTitle:"Importer un deck",importDesc:"Colle une liste (texte « 1 Nom » par ligne, sections optionnelles) ou un export JSON, ou téléverse un fichier .txt/.json. Un nouveau deck sera créé.",
-  uploadFile:"Téléverser un fichier…",doImport:"Importer → nouveau deck",close:"Fermer",
-  exportTitle:"Exporter",fmtTxt:"Texte",fmtVar:"Texte + variantes",fmtArchidekt:"Archidekt",fmtJson:"JSON",copy:"Copier",dlTxt:"Télécharger .txt",dlJson:"Télécharger .json",
-  cancel:"Annuler",ok:"Valider",promptNew:"Nom du nouveau deck",promptRename:"Renommer le deck",
-  promptDelete:n=>`Supprimer « ${n} » ? Tape SUPPRIMER pour confirmer.`,
-  groupsTitle:"Groupes personnalisés",newGroupPh:"Nom du groupe…",noneOpt:"(aucun)",
-  legTitle:"Légalité Commander",legal:"Légal",issuesN:n=>`${n} problème${n>1?"s":""}`,
-  legTotal:n=>`Le deck compte ${n} cartes (attendu : 100).`,
-  legNoCmd:"Aucun commandant désigné (clique la couronne ♛ sur une carte).",
-  legDup:(n,c,m)=>`« ${n} » : ${c} exemplaires (max ${m}).`,
-  legColor:n=>`« ${n} » : hors de l'identité de couleur du commandant.`,
-  legOk:"Aucun problème détecté. 🐺",
-  markCmd:"Désigner comme commandant",stTodo:"Proxy : à faire",stWip:"Proxy : en cours",stDone:"Proxy : fait",
-  tCopied:"Copié",tAdded:n=>`Ajouté : ${n}`,tPlus:n=>`+1 ${n}`,tDeckCreated:"Deck créé",tDeckDup:"Deck dupliqué",tDeckDel:"Deck supprimé",
-  tImported:n=>`Deck importé : ${n}`,tNothing:"Rien à importer",tBadJson:"JSON invalide",tNotFound:"Introuvable — essaie le nom anglais exact.",
-  tSearching:"Recherche…",tCantDelLast:"Impossible de supprimer le dernier deck",tCancelled:"Annulé",tFileLoaded:"Fichier chargé — clique Importer",tNoResult:"Aucun résultat. Essaie le nom anglais exact.",
-  scryfallDown:"⚠️ Scryfall injoignable depuis cet aperçu. Télécharge ce .html et ouvre-le dans ton navigateur pour les visuels, symboles et la recherche."},
- en:{app:"Commander Deck Editor",
-  ttNew:"New deck",ttRen:"Rename",ttDup:"Duplicate",ttDel:"Delete",ttImp:"Import a deck",ttExp:"Export deck",ttGroups:"Manage groups",ttCollapse:"Collapse / expand all",
-  grp:"Group by:",gType:"Type",gCost:"Cost",gColor:"Color",gCustom:"Custom",
-  addPh:"Add a card — name (en or fr)…",filterPh:"Filter deck…",
-  emptyBig:"Empty deck",emptyHint:"Add cards with the search above, or import a list with the “Import” button (↑).",
-  loading:"(loading…)",loadingCards:"Loading cards…",variantPh:"variant name…",noGroup:"— no group —",
-  Commander:"Commander",Creature:"Creatures",Planeswalker:"Planeswalkers",Instant:"Instants",Sorcery:"Sorceries",Artifact:"Artifacts",Enchantment:"Enchantments",Battle:"Battles",Land:"Lands",Other:"Other",
-  White:"White",Blue:"Blue",Black:"Black",Red:"Red",Green:"Green",Multicolor:"Multicolor",Colorless:"Colorless",Lands:"Lands",
-  cost:"Cost",costX:"Cost X",
-  importTitle:"Import a deck",importDesc:"Paste a list (text “1 Name” per line, optional sections) or a JSON export, or upload a .txt/.json file. A new deck will be created.",
-  uploadFile:"Upload a file…",doImport:"Import → new deck",close:"Close",
-  exportTitle:"Export",fmtTxt:"Text",fmtVar:"Text + variants",fmtArchidekt:"Archidekt",fmtJson:"JSON",copy:"Copy",dlTxt:"Download .txt",dlJson:"Download .json",
-  cancel:"Cancel",ok:"OK",promptNew:"New deck name",promptRename:"Rename deck",
-  promptDelete:n=>`Delete “${n}”? Type DELETE to confirm.`,
-  groupsTitle:"Custom groups",newGroupPh:"Group name…",noneOpt:"(none)",
-  legTitle:"Commander legality",legal:"Legal",issuesN:n=>`${n} issue${n>1?"s":""}`,
-  legTotal:n=>`Deck has ${n} cards (expected: 100).`,
-  legNoCmd:"No commander set (click the ♛ crown on a card).",
-  legDup:(n,c,m)=>`“${n}”: ${c} copies (max ${m}).`,
-  legColor:n=>`“${n}”: outside the commander's color identity.`,
-  legOk:"No issues found. 🐺",
-  markCmd:"Set as commander",stTodo:"Proxy: to do",stWip:"Proxy: in progress",stDone:"Proxy: done",
-  tCopied:"Copied",tAdded:n=>`Added: ${n}`,tPlus:n=>`+1 ${n}`,tDeckCreated:"Deck created",tDeckDup:"Deck duplicated",tDeckDel:"Deck deleted",
-  tImported:n=>`Deck imported: ${n}`,tNothing:"Nothing to import",tBadJson:"Invalid JSON",tNotFound:"Not found — try the exact English name.",
-  tSearching:"Searching…",tCantDelLast:"Can't delete the last deck",tCancelled:"Cancelled",tFileLoaded:"File loaded — click Import",tNoResult:"No results. Try the exact English name.",
-  scryfallDown:"⚠️ Scryfall unreachable from this preview. Download this .html and open it in your browser for images, symbols and search."}
-};
-let lang="fr";
-const t=k=>T[lang][k];
-const DELWORD=()=>lang==="fr"?"SUPPRIMER":"DELETE";
+      /* ================= i18n ================= */
+      const T = {
+        fr: {
+          app: "Éditeur de decks Commander",
+          ttNew: "Nouveau deck",
+          ttRen: "Renommer",
+          ttDup: "Dupliquer",
+          ttDel: "Supprimer",
+          ttImp: "Importer un deck",
+          ttExp: "Exporter le deck",
+          ttGroups: "Gérer les groupes",
+          ttCollapse: "Tout replier / déplier",
+          grp: "Grouper :",
+          gType: "Type",
+          gCost: "Coût",
+          gColor: "Couleur",
+          gCustom: "Perso",
+          addPh: "Ajouter une carte — nom (fr ou en)…",
+          filterPh: "Filtrer le deck…",
+          emptyBig: "Deck vide",
+          emptyHint:
+            "Ajoute des cartes avec la recherche en haut, ou importe une liste avec le bouton « Importer » (↑).",
+          loading: "(chargement…)",
+          loadingCards: "Chargement des cartes…",
+          variantPh: "nom variante…",
+          noGroup: "— sans groupe —",
+          Commander: "Commandant",
+          Creature: "Créatures",
+          Planeswalker: "Planeswalkers",
+          Instant: "Éphémères",
+          Sorcery: "Rituels",
+          Artifact: "Artefacts",
+          Enchantment: "Enchantements",
+          Battle: "Batailles",
+          Land: "Terrains",
+          Other: "Autre",
+          White: "Blanc",
+          Blue: "Bleu",
+          Black: "Noir",
+          Red: "Rouge",
+          Green: "Vert",
+          Multicolor: "Multicolore",
+          Colorless: "Incolore",
+          Lands: "Terrains",
+          cost: "Coût",
+          costX: "Coût X",
+          importTitle: "Importer un deck",
+          importDesc:
+            "Colle une liste (texte « 1 Nom » par ligne, sections optionnelles) ou un export JSON, ou téléverse un fichier .txt/.json. Un nouveau deck sera créé.",
+          uploadFile: "Téléverser un fichier…",
+          doImport: "Importer → nouveau deck",
+          close: "Fermer",
+          exportTitle: "Exporter",
+          fmtTxt: "Texte",
+          fmtVar: "Texte + variantes",
+          fmtArchidekt: "Archidekt",
+          fmtJson: "JSON",
+          copy: "Copier",
+          dlTxt: "Télécharger .txt",
+          dlJson: "Télécharger .json",
+          cancel: "Annuler",
+          ok: "Valider",
+          promptNew: "Nom du nouveau deck",
+          promptRename: "Renommer le deck",
+          promptDelete: (n) =>
+            `Supprimer « ${n} » ? Tape SUPPRIMER pour confirmer.`,
+          groupsTitle: "Groupes personnalisés",
+          newGroupPh: "Nom du groupe…",
+          noneOpt: "(aucun)",
+          legTitle: "Légalité Commander",
+          legal: "Légal",
+          issuesN: (n) => `${n} problème${n > 1 ? "s" : ""}`,
+          legTotal: (n) => `Le deck compte ${n} cartes (attendu : 100).`,
+          legNoCmd:
+            "Aucun commandant désigné (clique la couronne ♛ sur une carte).",
+          legDup: (n, c, m) => `« ${n} » : ${c} exemplaires (max ${m}).`,
+          legColor: (n) =>
+            `« ${n} » : hors de l'identité de couleur du commandant.`,
+          legOk: "Aucun problème détecté. 🐺",
+          markCmd: "Désigner comme commandant",
+          stTodo: "Proxy : à faire",
+          stWip: "Proxy : en cours",
+          stDone: "Proxy : fait",
+          tCopied: "Copié",
+          tAdded: (n) => `Ajouté : ${n}`,
+          tPlus: (n) => `+1 ${n}`,
+          tDeckCreated: "Deck créé",
+          tDeckDup: "Deck dupliqué",
+          tDeckDel: "Deck supprimé",
+          tImported: (n) => `Deck importé : ${n}`,
+          tNothing: "Rien à importer",
+          tBadJson: "JSON invalide",
+          tNotFound: "Introuvable — essaie le nom anglais exact.",
+          tSearching: "Recherche…",
+          tCantDelLast: "Impossible de supprimer le dernier deck",
+          tCancelled: "Annulé",
+          tFileLoaded: "Fichier chargé — clique Importer",
+          tNoResult: "Aucun résultat. Essaie le nom anglais exact.",
+          scryfallDown:
+            "⚠️ Scryfall injoignable depuis cet aperçu. Télécharge ce .html et ouvre-le dans ton navigateur pour les visuels, symboles et la recherche.",
+        },
+        en: {
+          app: "Commander Deck Editor",
+          ttNew: "New deck",
+          ttRen: "Rename",
+          ttDup: "Duplicate",
+          ttDel: "Delete",
+          ttImp: "Import a deck",
+          ttExp: "Export deck",
+          ttGroups: "Manage groups",
+          ttCollapse: "Collapse / expand all",
+          grp: "Group by:",
+          gType: "Type",
+          gCost: "Cost",
+          gColor: "Color",
+          gCustom: "Custom",
+          addPh: "Add a card — name (en or fr)…",
+          filterPh: "Filter deck…",
+          emptyBig: "Empty deck",
+          emptyHint:
+            "Add cards with the search above, or import a list with the “Import” button (↑).",
+          loading: "(loading…)",
+          loadingCards: "Loading cards…",
+          variantPh: "variant name…",
+          noGroup: "— no group —",
+          Commander: "Commander",
+          Creature: "Creatures",
+          Planeswalker: "Planeswalkers",
+          Instant: "Instants",
+          Sorcery: "Sorceries",
+          Artifact: "Artifacts",
+          Enchantment: "Enchantments",
+          Battle: "Battles",
+          Land: "Lands",
+          Other: "Other",
+          White: "White",
+          Blue: "Blue",
+          Black: "Black",
+          Red: "Red",
+          Green: "Green",
+          Multicolor: "Multicolor",
+          Colorless: "Colorless",
+          Lands: "Lands",
+          cost: "Cost",
+          costX: "Cost X",
+          importTitle: "Import a deck",
+          importDesc:
+            "Paste a list (text “1 Name” per line, optional sections) or a JSON export, or upload a .txt/.json file. A new deck will be created.",
+          uploadFile: "Upload a file…",
+          doImport: "Import → new deck",
+          close: "Close",
+          exportTitle: "Export",
+          fmtTxt: "Text",
+          fmtVar: "Text + variants",
+          fmtArchidekt: "Archidekt",
+          fmtJson: "JSON",
+          copy: "Copy",
+          dlTxt: "Download .txt",
+          dlJson: "Download .json",
+          cancel: "Cancel",
+          ok: "OK",
+          promptNew: "New deck name",
+          promptRename: "Rename deck",
+          promptDelete: (n) => `Delete “${n}”? Type DELETE to confirm.`,
+          groupsTitle: "Custom groups",
+          newGroupPh: "Group name…",
+          noneOpt: "(none)",
+          legTitle: "Commander legality",
+          legal: "Legal",
+          issuesN: (n) => `${n} issue${n > 1 ? "s" : ""}`,
+          legTotal: (n) => `Deck has ${n} cards (expected: 100).`,
+          legNoCmd: "No commander set (click the ♛ crown on a card).",
+          legDup: (n, c, m) => `“${n}”: ${c} copies (max ${m}).`,
+          legColor: (n) => `“${n}”: outside the commander's color identity.`,
+          legOk: "No issues found. 🐺",
+          markCmd: "Set as commander",
+          stTodo: "Proxy: to do",
+          stWip: "Proxy: in progress",
+          stDone: "Proxy: done",
+          tCopied: "Copied",
+          tAdded: (n) => `Added: ${n}`,
+          tPlus: (n) => `+1 ${n}`,
+          tDeckCreated: "Deck created",
+          tDeckDup: "Deck duplicated",
+          tDeckDel: "Deck deleted",
+          tImported: (n) => `Deck imported: ${n}`,
+          tNothing: "Nothing to import",
+          tBadJson: "Invalid JSON",
+          tNotFound: "Not found — try the exact English name.",
+          tSearching: "Searching…",
+          tCantDelLast: "Can't delete the last deck",
+          tCancelled: "Cancelled",
+          tFileLoaded: "File loaded — click Import",
+          tNoResult: "No results. Try the exact English name.",
+          scryfallDown:
+            "⚠️ Scryfall unreachable from this preview. Download this .html and open it in your browser for images, symbols and search.",
+        },
+      };
+      let lang = "fr";
+      const t = (k) => T[lang][k];
+      const DELWORD = () => (lang === "fr" ? "SUPPRIMER" : "DELETE");
 
-/* ================= state ================= */
-let decks=[], activeId=null, groupBy="type", filterQ="";
-const collapsed=new Set(); let lastKeys=[];
-const cache={};        // normName -> EN card
-const frData={};       // normName -> {img, name} (lazy FR)
-async function saveAll(){ try{ if(window.storage) await window.storage.set(STORE_KEY,JSON.stringify({decks,activeId,lang})); }catch(e){} }
-async function loadAll(){ try{ if(window.storage){ const r=await window.storage.get(STORE_KEY); if(r&&r.value){ const o=JSON.parse(r.value); if(o.decks&&o.decks.length) return o; } } }catch(e){} return null; }
-const active=()=>decks.find(d=>d.id===activeId)||decks[0];
+      /* ================= state ================= */
+      let decks = [],
+        activeId = null,
+        groupBy = "type",
+        filterQ = "";
+      const collapsed = new Set();
+      let lastKeys = [];
+      const cache = {}; // normName -> EN card
+      const frData = {}; // normName -> {img, name} (lazy FR)
+      async function saveAll() {
+        try {
+          if (window.storage)
+            await window.storage.set(
+              STORE_KEY,
+              JSON.stringify({ decks, activeId, lang }),
+            );
+        } catch (e) {}
+      }
+      async function loadAll() {
+        try {
+          if (window.storage) {
+            const r = await window.storage.get(STORE_KEY);
+            if (r && r.value) {
+              const o = JSON.parse(r.value);
+              if (o.decks && o.decks.length) return o;
+            }
+          }
+        } catch (e) {}
+        return null;
+      }
+      const active = () => decks.find((d) => d.id === activeId) || decks[0];
 
-/* ================= Scryfall ================= */
-async function fetchCollection(names){
-  const uniq=[...new Set(names)].filter(n=>!cache[normName(n)]);
-  for(let i=0;i<uniq.length;i+=70){
-    const batch=uniq.slice(i,i+70).map(n=>({name:n})); let ok=false;
-    try{ const res=await fetch("https://api.scryfall.com/cards/collection",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identifiers:batch})});
-      if(res.ok){ const j=await res.json(); (j.data||[]).forEach(c=>cache[normName(c.name)]=c); ok=true; } }catch(e){}
-    if(!ok){ for(const n of uniq.slice(i,i+70)){ try{ const r=await fetch("https://api.scryfall.com/cards/named?exact="+encodeURIComponent(n)); if(r.ok){ const c=await r.json(); cache[normName(c.name)]=c; } }catch(e){} await sleep(60);} }
-    await sleep(110);
-  }
-}
-async function searchOne(q){
-  for(const u of ["https://api.scryfall.com/cards/named?exact="+encodeURIComponent(q),
-                  "https://api.scryfall.com/cards/named?fuzzy="+encodeURIComponent(q),
-                  "https://api.scryfall.com/cards/search?include_multilingual=true&q="+encodeURIComponent(q)]){
-    try{ const r=await fetch(u); if(r.ok){ const j=await r.json(); const c=j.data?j.data[0]:j; if(c){ cache[normName(c.name)]=c; return c; } } }catch(e){} await sleep(50);
-  } return null;
-}
-async function resolveFr(name){
-  const k=normName(name); if(frData[k]!==undefined) return frData[k];
-  const c=cache[k]; if(!c||!c.set||!c.collector_number){ frData[k]=null; return null; }
-  try{ const r=await fetch(`https://api.scryfall.com/cards/${c.set}/${c.collector_number}/fr`);
-    if(r.ok){ const fc=await r.json(); const im=(fc.image_uris&&(fc.image_uris.normal||fc.image_uris.large))||(fc.card_faces&&fc.card_faces[0].image_uris&&fc.card_faces[0].image_uris.normal)||null;
-      frData[k]={img:im,name:fc.printed_name||null}; return frData[k]; } }catch(e){}
-  frData[k]=null; return null;
-}
+      /* ================= Scryfall ================= */
+      async function fetchCollection(names) {
+        const uniq = [...new Set(names)].filter((n) => !cache[normName(n)]);
+        for (let i = 0; i < uniq.length; i += 70) {
+          const batch = uniq.slice(i, i + 70).map((n) => ({ name: n }));
+          let ok = false;
+          try {
+            const res = await fetch(
+              "https://api.scryfall.com/cards/collection",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ identifiers: batch }),
+              },
+            );
+            if (res.ok) {
+              const j = await res.json();
+              (j.data || []).forEach((c) => (cache[normName(c.name)] = c));
+              ok = true;
+            }
+          } catch (e) {}
+          if (!ok) {
+            for (const n of uniq.slice(i, i + 70)) {
+              try {
+                const r = await fetch(
+                  "https://api.scryfall.com/cards/named?exact=" +
+                    encodeURIComponent(n),
+                );
+                if (r.ok) {
+                  const c = await r.json();
+                  cache[normName(c.name)] = c;
+                }
+              } catch (e) {}
+              await sleep(60);
+            }
+          }
+          await sleep(110);
+        }
+      }
+      async function searchOne(q) {
+        for (const u of [
+          "https://api.scryfall.com/cards/named?exact=" + encodeURIComponent(q),
+          "https://api.scryfall.com/cards/named?fuzzy=" + encodeURIComponent(q),
+          "https://api.scryfall.com/cards/search?include_multilingual=true&q=" +
+            encodeURIComponent(q),
+        ]) {
+          try {
+            const r = await fetch(u);
+            if (r.ok) {
+              const j = await r.json();
+              const c = j.data ? j.data[0] : j;
+              if (c) {
+                cache[normName(c.name)] = c;
+                return c;
+              }
+            }
+          } catch (e) {}
+          await sleep(50);
+        }
+        return null;
+      }
+      async function resolveFr(name) {
+        const k = normName(name);
+        if (frData[k] !== undefined) return frData[k];
+        const c = cache[k];
+        if (!c || !c.set || !c.collector_number) {
+          frData[k] = null;
+          return null;
+        }
+        try {
+          const r = await fetch(
+            `https://api.scryfall.com/cards/${c.set}/${c.collector_number}/fr`,
+          );
+          if (r.ok) {
+            const fc = await r.json();
+            const im =
+              (fc.image_uris &&
+                (fc.image_uris.normal || fc.image_uris.large)) ||
+              (fc.card_faces &&
+                fc.card_faces[0].image_uris &&
+                fc.card_faces[0].image_uris.normal) ||
+              null;
+            frData[k] = { img: im, name: fc.printed_name || null };
+            return frData[k];
+          }
+        } catch (e) {}
+        frData[k] = null;
+        return null;
+      }
 
-/* ================= helpers ================= */
-const cardOf=name=>cache[normName(name)];
-const STLABEL={todo:"stTodo",wip:"stWip",done:"stDone"};
-const statusTip=s=>t(STLABEL[s]||"stTodo");
-function enImg(c){ const f=c.image_uris?c:(c.card_faces&&c.card_faces[0]); return (f&&f.image_uris)?(f.image_uris.normal||f.image_uris.large):""; }
-function manaOf(c){ if(c.mana_cost) return c.mana_cost; if(c.card_faces&&c.card_faces[0]&&c.card_faces[0].mana_cost) return c.card_faces[0].mana_cost; return ""; }
-function typeOf(c){ const tl=c.type_line||(c.card_faces&&c.card_faces[0].type_line)||""; return tl.split("//")[0]; }
-function primType(c){ const tl=typeOf(c),o=["Creature","Planeswalker","Instant","Sorcery","Artifact","Enchantment","Battle","Land"]; for(const x of o) if(tl.includes(x)) return x; return "Other"; }
-function colorCat(c){ if(typeOf(c).includes("Land"))return "Lands"; const cols=c.colors||(c.card_faces&&c.card_faces[0].colors)||[]; if(!cols.length)return "Colorless"; if(cols.length>1)return "Multicolor"; return {W:"White",U:"Blue",B:"Black",R:"Red",G:"Green"}[cols[0]]; }
-function hasX(c){ return /\{X\}/.test(manaOf(c)); }
-const NUMW={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
-function maxCopies(c){ if(!c) return 1; if((c.type_line||"").includes("Basic Land")) return Infinity;
-  const o=(c.oracle_text||"")+(c.card_faces?" "+c.card_faces.map(f=>f.oracle_text||"").join(" "):"");
-  if(/any number of cards named/i.test(o)) return Infinity;
-  const m=o.match(/up to (\w+) cards named/i); if(m){ const w=m[1].toLowerCase(); return NUMW[w]||parseInt(w)||1; } return 1; }
-function commanderIdentity(){ const ids=new Set(); for(const it of active().cards) if(it.cmd){ const c=cardOf(it.name); if(c)(c.color_identity||[]).forEach(x=>ids.add(x)); } return ids; }
+      /* ================= helpers ================= */
+      const cardOf = (name) => cache[normName(name)];
+      const STLABEL = { todo: "stTodo", wip: "stWip", done: "stDone" };
+      const statusTip = (s) => t(STLABEL[s] || "stTodo");
+      function enImg(c) {
+        const f = c.image_uris ? c : c.card_faces && c.card_faces[0];
+        return f && f.image_uris
+          ? f.image_uris.normal || f.image_uris.large
+          : "";
+      }
+      function manaOf(c) {
+        if (c.mana_cost) return c.mana_cost;
+        if (c.card_faces && c.card_faces[0] && c.card_faces[0].mana_cost)
+          return c.card_faces[0].mana_cost;
+        return "";
+      }
+      function typeOf(c) {
+        const tl =
+          c.type_line || (c.card_faces && c.card_faces[0].type_line) || "";
+        return tl.split("//")[0];
+      }
+      function primType(c) {
+        const tl = typeOf(c),
+          o = [
+            "Creature",
+            "Planeswalker",
+            "Instant",
+            "Sorcery",
+            "Artifact",
+            "Enchantment",
+            "Battle",
+            "Land",
+          ];
+        for (const x of o) if (tl.includes(x)) return x;
+        return "Other";
+      }
+      function colorCat(c) {
+        if (typeOf(c).includes("Land")) return "Lands";
+        const cols = c.colors || (c.card_faces && c.card_faces[0].colors) || [];
+        if (!cols.length) return "Colorless";
+        if (cols.length > 1) return "Multicolor";
+        return { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" }[
+          cols[0]
+        ];
+      }
+      function hasX(c) {
+        return /\{X\}/.test(manaOf(c));
+      }
+      const NUMW = {
+        one: 1,
+        two: 2,
+        three: 3,
+        four: 4,
+        five: 5,
+        six: 6,
+        seven: 7,
+        eight: 8,
+        nine: 9,
+        ten: 10,
+        eleven: 11,
+        twelve: 12,
+      };
+      function maxCopies(c) {
+        if (!c) return 1;
+        if ((c.type_line || "").includes("Basic Land")) return Infinity;
+        const o =
+          (c.oracle_text || "") +
+          (c.card_faces
+            ? " " + c.card_faces.map((f) => f.oracle_text || "").join(" ")
+            : "");
+        if (/any number of cards named/i.test(o)) return Infinity;
+        const m = o.match(/up to (\w+) cards named/i);
+        if (m) {
+          const w = m[1].toLowerCase();
+          return NUMW[w] || parseInt(w) || 1;
+        }
+        return 1;
+      }
+      function commanderIdentity() {
+        const ids = new Set();
+        for (const it of active().cards)
+          if (it.cmd) {
+            const c = cardOf(it.name);
+            if (c) (c.color_identity || []).forEach((x) => ids.add(x));
+          }
+        return ids;
+      }
 
-/* ================= rendu ================= */
-function renderMana(mc){ if(!mc) return '<span class="none">—</span>'; const s=[...mc.matchAll(/\{([^}]+)\}/g)].map(m=>m[1]); if(!s.length) return '<span class="none">—</span>'; return s.map(x=>`<img src="${SVG(x)}" alt="{${x}}" loading="lazy">`).join(""); }
-function displayName(it){ const c=cardOf(it.name); if(lang==="fr"){ const fd=frData[normName(it.name)]; if(fd&&fd.name) return fd.name; } return c?c.name:it.name; }
-function groupsFor(cards){
-  const g={};
-  for(const it of cards){ const c=cardOf(it.name); let key;
-    if(it.cmd) key="Commander";
-    else if(!c) key="__load";
-    else if(groupBy==="type") key=primType(c);
-    else if(groupBy==="cmc") key=typeOf(c).includes("Land")?"__lands":(hasX(c)?"__X":("__c"+(c.cmc!=null?c.cmc:0)));
-    else if(groupBy==="color") key=colorCat(c);
-    else key=(it.group&&it.group.trim())?"g:"+it.group.trim():"__none";
-    (g[key]=g[key]||[]).push(it); }
-  let keys=Object.keys(g);
-  function rank(k){
-    if(k==="Commander")return -1000;
-    if(groupBy==="type"){const o=["Creature","Planeswalker","Instant","Sorcery","Artifact","Enchantment","Battle","Land","Other"];return o.indexOf(k);}
-    if(groupBy==="color"){const o=["White","Blue","Black","Red","Green","Multicolor","Colorless","Lands"];return o.indexOf(k);}
-    if(groupBy==="cmc"){ if(k==="__lands")return 999; if(k==="__X")return 900; if(k.startsWith("__c"))return +k.slice(3); return 500; }
-    if(groupBy==="custom"){ if(k==="__none")return 9999; if(k.startsWith("g:")){ const gi=active().groups.indexOf(k.slice(2)); return gi<0?5000:gi; } }
-    return 0;
-  }
-  keys.sort((a,b)=>rank(a)-rank(b)||a.localeCompare(b));
-  for(const k of keys) g[k].sort((a,b)=>{const ca=cardOf(a.name)?cardOf(a.name).cmc||0:0,cb=cardOf(b.name)?cardOf(b.name).cmc||0:0;return ca-cb||displayName(a).localeCompare(displayName(b));});
-  const label=k=>{ if(k==="Commander")return t("Commander"); if(k==="__load")return t("loading"); if(k==="__lands"||k==="Lands")return t("Lands");
-    if(k==="__X")return t("costX"); if(k.startsWith("__c"))return t("cost")+" "+k.slice(3); if(k==="__none")return t("noGroup"); if(k.startsWith("g:"))return k.slice(2);
-    return t(k)||k; };
-  return keys.map(k=>[k,label(k),g[k]]);
-}
-function matchFilter(it){ if(!filterQ) return true; const q=filterQ.toLowerCase();
-  return it.name.toLowerCase().includes(q)||(it.variant||"").toLowerCase().includes(q)||displayName(it).toLowerCase().includes(q); }
-function render(){
-  renderDeckSel(); applyStaticI18n();
-  const d=active(); const list=$("#list"); list.innerHTML="";
-  const shown=d.cards.filter(matchFilter);
-  if(!d.cards.length){ list.innerHTML=`<div class="empty-state"><div class="big">${esc(t("emptyBig"))}</div>${esc(t("emptyHint"))}</div>`; updateStats(); return; }
-  const groups=groupsFor(shown); lastKeys=groups.map(g=>g[0]);
-  for(const [key,gl,items] of groups){
-    const n=items.reduce((s,i)=>s+i.qty,0); if(!items.length) continue;
-    const sec=document.createElement("section"); sec.className="group"; const isC=key==="Commander"; const isCol=collapsed.has(key);
-    sec.innerHTML=`<div class="ghead ${isC?'cmd':''}"><span class="chev">${isCol?'▸':'▾'}</span><span class="gname ${isC?'cmd':''}">${esc(gl)}</span><span class="gcount">${n}</span></div>`;
-    sec.querySelector(".ghead").onclick=()=>{ if(collapsed.has(key))collapsed.delete(key); else collapsed.add(key); render(); };
-    if(!isCol) for(const it of items) sec.appendChild(rowEl(it));
-    list.appendChild(sec);
-  }
-  updateStats();
-}
-function rowEl(it){
-  const c=cardOf(it.name); const image=c?enImg(c):"";
-  const r=document.createElement("div"); r.className="row";
-  const dfc=c&&c.card_faces&&!c.image_uris?' <span class="dfc">◧</span>':'';
-  const ident=commanderIdentity(); const off=c&&active().cards.some(x=>x.cmd)&&(c.color_identity||[]).some(x=>!ident.has(x));
-  r.innerHTML=`<span class="qty"><button>−</button><span class="n">${it.qty}</span><button>+</button></span>
-    <span class="mana">${c?renderMana(manaOf(c)):''}</span>
-    <span class="cname"><button class="crown ${it.cmd?'on':''}" title="${esc(t("markCmd"))}">♛</button><span class="nm ${off?'bad':''}" data-has="${image?1:0}">${esc(displayName(it))}${dfc}</span></span>
-    <span class="vwrap"><input value="${escAttr(it.variant||'')}" placeholder="${esc(t('variantPh'))}"></span>
+      /* ================= rendu ================= */
+      function renderMana(mc) {
+        if (!mc) return '<span class="none">—</span>';
+        const s = [...mc.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
+        if (!s.length) return '<span class="none">—</span>';
+        return s
+          .map((x) => `<img src="${SVG(x)}" alt="{${x}}" loading="lazy">`)
+          .join("");
+      }
+      function displayName(it) {
+        const c = cardOf(it.name);
+        if (lang === "fr") {
+          const fd = frData[normName(it.name)];
+          if (fd && fd.name) return fd.name;
+        }
+        return c ? c.name : it.name;
+      }
+      function groupsFor(cards) {
+        const g = {};
+        for (const it of cards) {
+          const c = cardOf(it.name);
+          let key;
+          if (it.cmd) key = "Commander";
+          else if (!c) key = "__load";
+          else if (groupBy === "type") key = primType(c);
+          else if (groupBy === "cmc")
+            key = typeOf(c).includes("Land")
+              ? "__lands"
+              : hasX(c)
+                ? "__X"
+                : "__c" + (c.cmc != null ? c.cmc : 0);
+          else if (groupBy === "color") key = colorCat(c);
+          else
+            key =
+              it.group && it.group.trim() ? "g:" + it.group.trim() : "__none";
+          (g[key] = g[key] || []).push(it);
+        }
+        let keys = Object.keys(g);
+        function rank(k) {
+          if (k === "Commander") return -1000;
+          if (groupBy === "type") {
+            const o = [
+              "Creature",
+              "Planeswalker",
+              "Instant",
+              "Sorcery",
+              "Artifact",
+              "Enchantment",
+              "Battle",
+              "Land",
+              "Other",
+            ];
+            return o.indexOf(k);
+          }
+          if (groupBy === "color") {
+            const o = [
+              "White",
+              "Blue",
+              "Black",
+              "Red",
+              "Green",
+              "Multicolor",
+              "Colorless",
+              "Lands",
+            ];
+            return o.indexOf(k);
+          }
+          if (groupBy === "cmc") {
+            if (k === "__lands") return 999;
+            if (k === "__X") return 900;
+            if (k.startsWith("__c")) return +k.slice(3);
+            return 500;
+          }
+          if (groupBy === "custom") {
+            if (k === "__none") return 9999;
+            if (k.startsWith("g:")) {
+              const gi = active().groups.indexOf(k.slice(2));
+              return gi < 0 ? 5000 : gi;
+            }
+          }
+          return 0;
+        }
+        keys.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+        for (const k of keys)
+          g[k].sort((a, b) => {
+            const ca = cardOf(a.name) ? cardOf(a.name).cmc || 0 : 0,
+              cb = cardOf(b.name) ? cardOf(b.name).cmc || 0 : 0;
+            return ca - cb || displayName(a).localeCompare(displayName(b));
+          });
+        const label = (k) => {
+          if (k === "Commander") return t("Commander");
+          if (k === "__load") return t("loading");
+          if (k === "__lands" || k === "Lands") return t("Lands");
+          if (k === "__X") return t("costX");
+          if (k.startsWith("__c")) return t("cost") + " " + k.slice(3);
+          if (k === "__none") return t("noGroup");
+          if (k.startsWith("g:")) return k.slice(2);
+          return t(k) || k;
+        };
+        return keys.map((k) => [k, label(k), g[k]]);
+      }
+      function matchFilter(it) {
+        if (!filterQ) return true;
+        const q = filterQ.toLowerCase();
+        return (
+          it.name.toLowerCase().includes(q) ||
+          (it.variant || "").toLowerCase().includes(q) ||
+          displayName(it).toLowerCase().includes(q)
+        );
+      }
+      function render() {
+        renderDeckSel();
+        applyStaticI18n();
+        const d = active();
+        const list = $("#list");
+        list.innerHTML = "";
+        const shown = d.cards.filter(matchFilter);
+        if (!d.cards.length) {
+          list.innerHTML = `<div class="empty-state"><div class="big">${esc(t("emptyBig"))}</div>${esc(t("emptyHint"))}</div>`;
+          updateStats();
+          return;
+        }
+        const groups = groupsFor(shown);
+        lastKeys = groups.map((g) => g[0]);
+        for (const [key, gl, items] of groups) {
+          const n = items.reduce((s, i) => s + i.qty, 0);
+          if (!items.length) continue;
+          const sec = document.createElement("section");
+          sec.className = "group";
+          const isC = key === "Commander";
+          const isCol = collapsed.has(key);
+          sec.innerHTML = `<div class="ghead ${isC ? "cmd" : ""}"><span class="chev">${isCol ? "▸" : "▾"}</span><span class="gname ${isC ? "cmd" : ""}">${esc(gl)}</span><span class="gcount">${n}</span></div>`;
+          sec.querySelector(".ghead").onclick = () => {
+            if (collapsed.has(key)) collapsed.delete(key);
+            else collapsed.add(key);
+            render();
+          };
+          if (!isCol) for (const it of items) sec.appendChild(rowEl(it));
+          list.appendChild(sec);
+        }
+        updateStats();
+      }
+      function rowEl(it) {
+        const c = cardOf(it.name);
+        const image = c ? enImg(c) : "";
+        const r = document.createElement("div");
+        r.className = "row";
+        const dfc =
+          c && c.card_faces && !c.image_uris
+            ? ' <span class="dfc">◧</span>'
+            : "";
+        const ident = commanderIdentity();
+        const off =
+          c &&
+          active().cards.some((x) => x.cmd) &&
+          (c.color_identity || []).some((x) => !ident.has(x));
+        r.innerHTML = `<span class="qty"><button>−</button><span class="n">${it.qty}</span><button>+</button></span>
+    <span class="mana">${c ? renderMana(manaOf(c)) : ""}</span>
+    <span class="cname"><button class="crown ${it.cmd ? "on" : ""}" title="${esc(t("markCmd"))}">♛</button><span class="nm ${off ? "bad" : ""}" data-has="${image ? 1 : 0}">${esc(displayName(it))}${dfc}</span></span>
+    <span class="vwrap"><input value="${escAttr(it.variant || "")}" placeholder="${esc(t("variantPh"))}"></span>
     <button class="rm">✕</button>
-    <button class="stbox ${it.status||'todo'}" title="${esc(statusTip(it.status||'todo'))}"></button>`;
-  const [minus,plus]=r.querySelectorAll(".qty button");
-  minus.onclick=()=>{ it.qty--; if(it.qty<=0){active().cards=active().cards.filter(x=>x!==it);render();} else {r.querySelector(".n").textContent=it.qty;updateStats();renderDeckSel();} saveAll(); };
-  plus.onclick=()=>{ it.qty++; r.querySelector(".n").textContent=it.qty; updateStats(); renderDeckSel(); saveAll(); };
-  r.querySelector(".rm").onclick=()=>{ active().cards=active().cards.filter(x=>x!==it); render(); saveAll(); };
-  r.querySelector(".crown").onclick=e=>{ e.stopPropagation(); it.cmd=!it.cmd; render(); saveAll(); };
-  const inp=r.querySelector(".vwrap input"); inp.oninput=()=>{ it.variant=inp.value; saveAll(); };
-  const stb=r.querySelector(".stbox"); stb.onclick=()=>{ const ord=["todo","wip","done"]; it.status=ord[(ord.indexOf(it.status||"todo")+1)%3]; stb.className="stbox "+it.status; stb.title=statusTip(it.status); saveAll(); };
-  const nm=r.querySelector(".nm");
-  if(image){ nm.addEventListener("mouseenter",e=>showPrev(it.name,e)); nm.addEventListener("mousemove",movePrev);
-    nm.addEventListener("mouseleave",hidePrev); nm.addEventListener("click",()=>showModal(it.name)); }
-  return r;
-}
-function renderDeckSel(){ const sel=$("#deckSel"); sel.innerHTML=""; decks.forEach(d=>{ const o=document.createElement("option"); o.value=d.id; o.textContent=`${d.name}  (${d.cards.reduce((s,c)=>s+c.qty,0)})`; sel.appendChild(o); }); sel.value=activeId; }
-function updateStats(){
-  const d=active(); const total=d.cards.reduce((s,i)=>s+i.qty,0);
-  const cEl=$("#count"); cEl.textContent=`${total} / 100`; cEl.className="count"+(total!==100?" bad":"");
-  const tal={W:0,U:0,B:0,R:0,G:0};
-  for(const it of d.cards){ const c=cardOf(it.name); if(!c||typeOf(c).includes("Land"))continue; const mc=manaOf(c);
-    for(const m of mc.matchAll(/\{([^}]+)\}/g)) for(const ch of m[1].replace(/[^WUBRG]/g,"")) if(tal[ch]!=null)tal[ch]+=it.qty; }
-  const sum=Object.values(tal).reduce((a,b)=>a+b,0)||1; const el=$("#pips"); el.innerHTML="";
-  for(const c of ["W","U","B","R","G"]) if(tal[c]){ const s=document.createElement("span"); s.className="pip"; s.innerHTML=`<span class="dot" style="background:var(${COLOR[c]})"></span><b>${Math.round(100*tal[c]/sum)}%</b>`; el.appendChild(s); }
-  // légalité
-  const iss=legalityIssues(); const chip=$("#legchip"), dot=chip.querySelector(".ld");
-  if(iss.length){ dot.style.background="var(--red)"; $("#legtxt").textContent=t("issuesN")(iss.length); }
-  else { dot.style.background="var(--green)"; $("#legtxt").textContent=t("legal"); }
-}
-function legalityIssues(){
-  const d=active(); const issues=[]; const total=d.cards.reduce((s,i)=>s+i.qty,0);
-  if(total!==100) issues.push(t("legTotal")(total));
-  const cmds=d.cards.filter(i=>i.cmd); if(!cmds.length) issues.push(t("legNoCmd"));
-  const ident=commanderIdentity();
-  for(const it of d.cards){ const c=cardOf(it.name); if(!c)continue; const mx=maxCopies(c);
-    if(it.qty>mx && !it.cmd) issues.push(t("legDup")(displayName(it),it.qty,mx===Infinity?"∞":mx));
-    if(cmds.length && (c.color_identity||[]).some(x=>!ident.has(x))) issues.push(t("legColor")(displayName(it))); }
-  return issues;
-}
+    <button class="stbox ${it.status || "todo"}" title="${esc(statusTip(it.status || "todo"))}"></button>`;
+        const [minus, plus] = r.querySelectorAll(".qty button");
+        minus.onclick = () => {
+          it.qty--;
+          if (it.qty <= 0) {
+            active().cards = active().cards.filter((x) => x !== it);
+            render();
+          } else {
+            r.querySelector(".n").textContent = it.qty;
+            updateStats();
+            renderDeckSel();
+          }
+          saveAll();
+        };
+        plus.onclick = () => {
+          it.qty++;
+          r.querySelector(".n").textContent = it.qty;
+          updateStats();
+          renderDeckSel();
+          saveAll();
+        };
+        r.querySelector(".rm").onclick = () => {
+          active().cards = active().cards.filter((x) => x !== it);
+          render();
+          saveAll();
+        };
+        r.querySelector(".crown").onclick = (e) => {
+          e.stopPropagation();
+          it.cmd = !it.cmd;
+          render();
+          saveAll();
+        };
+        const inp = r.querySelector(".vwrap input");
+        inp.oninput = () => {
+          it.variant = inp.value;
+          saveAll();
+        };
+        const stb = r.querySelector(".stbox");
+        stb.onclick = () => {
+          const ord = ["todo", "wip", "done"];
+          it.status = ord[(ord.indexOf(it.status || "todo") + 1) % 3];
+          stb.className = "stbox " + it.status;
+          stb.title = statusTip(it.status);
+          saveAll();
+        };
+        const nm = r.querySelector(".nm");
+        if (image) {
+          nm.addEventListener("mouseenter", (e) => showPrev(it.name, e));
+          nm.addEventListener("mousemove", movePrev);
+          nm.addEventListener("mouseleave", hidePrev);
+          nm.addEventListener("click", () => showModal(it.name));
+        }
+        return r;
+      }
+      function renderDeckSel() {
+        const sel = $("#deckSel");
+        sel.innerHTML = "";
+        decks.forEach((d) => {
+          const o = document.createElement("option");
+          o.value = d.id;
+          o.textContent = `${d.name}  (${d.cards.reduce((s, c) => s + c.qty, 0)})`;
+          sel.appendChild(o);
+        });
+        sel.value = activeId;
+      }
+      function updateStats() {
+        const d = active();
+        const total = d.cards.reduce((s, i) => s + i.qty, 0);
+        const cEl = $("#count");
+        cEl.textContent = `${total} / 100`;
+        cEl.className = "count" + (total !== 100 ? " bad" : "");
+        const tal = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+        for (const it of d.cards) {
+          const c = cardOf(it.name);
+          if (!c || typeOf(c).includes("Land")) continue;
+          const mc = manaOf(c);
+          for (const m of mc.matchAll(/\{([^}]+)\}/g))
+            for (const ch of m[1].replace(/[^WUBRG]/g, ""))
+              if (tal[ch] != null) tal[ch] += it.qty;
+        }
+        const sum = Object.values(tal).reduce((a, b) => a + b, 0) || 1;
+        const el = $("#pips");
+        el.innerHTML = "";
+        for (const c of ["W", "U", "B", "R", "G"])
+          if (tal[c]) {
+            const s = document.createElement("span");
+            s.className = "pip";
+            s.innerHTML = `<span class="dot" style="background:var(${COLOR[c]})"></span><b>${Math.round((100 * tal[c]) / sum)}%</b>`;
+            el.appendChild(s);
+          }
+        // légalité
+        const iss = legalityIssues();
+        const chip = $("#legchip"),
+          dot = chip.querySelector(".ld");
+        if (iss.length) {
+          dot.style.background = "var(--red)";
+          $("#legtxt").textContent = t("issuesN")(iss.length);
+        } else {
+          dot.style.background = "var(--green)";
+          $("#legtxt").textContent = t("legal");
+        }
+      }
+      function legalityIssues() {
+        const d = active();
+        const issues = [];
+        const total = d.cards.reduce((s, i) => s + i.qty, 0);
+        if (total !== 100) issues.push(t("legTotal")(total));
+        const cmds = d.cards.filter((i) => i.cmd);
+        if (!cmds.length) issues.push(t("legNoCmd"));
+        const ident = commanderIdentity();
+        for (const it of d.cards) {
+          const c = cardOf(it.name);
+          if (!c) continue;
+          const mx = maxCopies(c);
+          if (it.qty > mx && !it.cmd)
+            issues.push(
+              t("legDup")(displayName(it), it.qty, mx === Infinity ? "∞" : mx),
+            );
+          if (
+            cmds.length &&
+            (c.color_identity || []).some((x) => !ident.has(x))
+          )
+            issues.push(t("legColor")(displayName(it)));
+        }
+        return issues;
+      }
 
-/* ================= aperçu ================= */
-const prev=$("#prev");
-function showPrev(name,e){ const c=cardOf(name); if(!c)return; prev.src=enImg(c); prev.classList.add("show"); movePrev(e);
-  if(lang==="fr") resolveFr(name).then(fd=>{ if(fd&&fd.img&&prev.classList.contains("show")) prev.src=fd.img; }); }
-function movePrev(e){ const w=236,h=330,pad=14; let x=e.clientX+18,y=e.clientY-h/2; if(x+w+pad>innerWidth)x=e.clientX-w-18; y=Math.max(pad,Math.min(y,innerHeight-h-pad)); prev.style.left=x+"px"; prev.style.top=y+"px"; }
-function hidePrev(){ prev.classList.remove("show"); }
-const modal=$("#modal"),modalimg=$("#modalimg");
-function showModal(name){ if(matchMedia("(hover:hover)").matches)return; const c=cardOf(name); if(!c)return; modalimg.src=enImg(c); modal.classList.add("show");
-  if(lang==="fr") resolveFr(name).then(fd=>{ if(fd&&fd.img&&modal.classList.contains("show")) modalimg.src=fd.img; }); }
-modal.onclick=()=>modal.classList.remove("show");
+      /* ================= aperçu ================= */
+      const prev = $("#prev");
+      function showPrev(name, e) {
+        const c = cardOf(name);
+        if (!c) return;
+        prev.src = enImg(c);
+        prev.classList.add("show");
+        movePrev(e);
+        if (lang === "fr")
+          resolveFr(name).then((fd) => {
+            if (fd && fd.img && prev.classList.contains("show"))
+              prev.src = fd.img;
+          });
+      }
+      function movePrev(e) {
+        const w = 236,
+          h = 330,
+          pad = 14;
+        let x = e.clientX + 18,
+          y = e.clientY - h / 2;
+        if (x + w + pad > innerWidth) x = e.clientX - w - 18;
+        y = Math.max(pad, Math.min(y, innerHeight - h - pad));
+        prev.style.left = x + "px";
+        prev.style.top = y + "px";
+      }
+      function hidePrev() {
+        prev.classList.remove("show");
+      }
+      const modal = $("#modal"),
+        modalimg = $("#modalimg");
+      function showModal(name) {
+        if (matchMedia("(hover:hover)").matches) return;
+        const c = cardOf(name);
+        if (!c) return;
+        modalimg.src = enImg(c);
+        modal.classList.add("show");
+        if (lang === "fr")
+          resolveFr(name).then((fd) => {
+            if (fd && fd.img && modal.classList.contains("show"))
+              modalimg.src = fd.img;
+          });
+      }
+      modal.onclick = () => modal.classList.remove("show");
 
-/* ================= autocomplétion ================= */
-const acBox=$("#ac"), addInp=$("#add"); let acItems=[], acIdx=-1, acTimer;
-addInp.addEventListener("input",()=>{ clearTimeout(acTimer); const q=addInp.value.trim(); if(q.length<2){ closeAC(); return; } acTimer=setTimeout(()=>runAC(q),240); });
-addInp.addEventListener("keydown",e=>{
-  if(!acBox.classList.contains("show")){ if(e.key==="Enter"&&addInp.value.trim()) pickText(addInp.value.trim()); return; }
-  if(e.key==="ArrowDown"){e.preventDefault();acIdx=Math.min(acIdx+1,acItems.length-1);paintAC();}
-  else if(e.key==="ArrowUp"){e.preventDefault();acIdx=Math.max(acIdx-1,0);paintAC();}
-  else if(e.key==="Enter"){e.preventDefault(); if(acIdx>=0&&acItems[acIdx])addCard(acItems[acIdx].name); else pickText(addInp.value.trim());}
-  else if(e.key==="Escape") closeAC();
-});
-document.addEventListener("click",e=>{ if(!e.target.closest(".search")) closeAC(); });
-async function runAC(q){
-  const seen=new Set(), out=[];
-  const [a,b]=await Promise.allSettled([
-    fetch("https://api.scryfall.com/cards/autocomplete?q="+encodeURIComponent(q)).then(r=>r.ok?r.json():null),
-    fetch("https://api.scryfall.com/cards/search?include_multilingual=true&order=name&q="+encodeURIComponent(q)).then(r=>r.ok?r.json():null),
-  ]);
-  if(a.value&&a.value.data) a.value.data.forEach(n=>{ const k=normName(n); if(!seen.has(k)){seen.add(k);out.push({name:n,alt:null});} });
-  if(b.value&&b.value.data) b.value.data.slice(0,14).forEach(c=>{ const n=c.name.split(" //")[0].trim(); const k=normName(n);
-     const fr=(c.printed_name&&c.lang&&c.lang!=="en")?c.printed_name:null; cache[k]=cache[k]||c;
-     if(!seen.has(k)){seen.add(k);out.push({name:n,alt:fr});} else if(fr){ const ex=out.find(o=>normName(o.name)===k); if(ex&&!ex.alt)ex.alt=fr; } });
-  acItems=out.slice(0,12); acIdx=out.length?0:-1; paintAC(); acBox.classList.add("show");
-  if(!out.length) acBox.innerHTML=`<div class="empty">${esc(t("tNoResult"))}</div>`;
-}
-function paintAC(){ if(!acItems.length) return;
-  acBox.innerHTML=acItems.map((it,i)=>{ const main=lang==="fr"&&it.alt?it.alt:it.name; const sub=lang==="fr"&&it.alt?it.name:it.alt;
-    return `<div class="it ${i===acIdx?'on':''}" data-i="${i}"><span>${esc(main)}</span>${sub?`<span class="alt">${esc(sub)}</span>`:''}</div>`; }).join("");
-  acBox.querySelectorAll(".it").forEach(el=>el.onclick=()=>addCard(acItems[+el.dataset.i].name));
-  const on=acBox.querySelector(".it.on"); if(on)on.scrollIntoView({block:"nearest"});
-}
-function closeAC(){ acBox.classList.remove("show"); acBox.innerHTML=""; acItems=[]; acIdx=-1; }
-async function pickText(q){ toast(t("tSearching")); const c=await searchOne(q); if(!c){toast(t("tNotFound"));return;} addCard(c.name); }
-async function addCard(name){ closeAC(); addInp.value=""; if(!cardOf(name)) await searchOne(name);
-  const real=(cardOf(name)||{}).name||name; const d=active(); const ex=d.cards.find(i=>normName(i.name)===normName(real));
-  if(ex){ ex.qty++; toast(t("tPlus")(displayName(ex))); } else { d.cards.push({name:real,qty:1,variant:"",group:"",cmd:false,status:"todo"}); toast(t("tAdded")(real)); }
-  render(); saveAll(); }
+      /* ================= autocomplétion ================= */
+      const acBox = $("#ac"),
+        addInp = $("#add");
+      let acItems = [],
+        acIdx = -1,
+        acTimer;
+      addInp.addEventListener("input", () => {
+        clearTimeout(acTimer);
+        const q = addInp.value.trim();
+        if (q.length < 2) {
+          closeAC();
+          return;
+        }
+        acTimer = setTimeout(() => runAC(q), 240);
+      });
+      addInp.addEventListener("keydown", (e) => {
+        if (!acBox.classList.contains("show")) {
+          if (e.key === "Enter" && addInp.value.trim())
+            pickText(addInp.value.trim());
+          return;
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          acIdx = Math.min(acIdx + 1, acItems.length - 1);
+          paintAC();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          acIdx = Math.max(acIdx - 1, 0);
+          paintAC();
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          if (acIdx >= 0 && acItems[acIdx]) addCard(acItems[acIdx].name);
+          else pickText(addInp.value.trim());
+        } else if (e.key === "Escape") closeAC();
+      });
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search")) closeAC();
+      });
+      async function runAC(q) {
+        const seen = new Set(),
+          out = [];
+        const [a, b] = await Promise.allSettled([
+          fetch(
+            "https://api.scryfall.com/cards/autocomplete?q=" +
+              encodeURIComponent(q),
+          ).then((r) => (r.ok ? r.json() : null)),
+          fetch(
+            "https://api.scryfall.com/cards/search?include_multilingual=true&order=name&q=" +
+              encodeURIComponent(q),
+          ).then((r) => (r.ok ? r.json() : null)),
+        ]);
+        if (a.value && a.value.data)
+          a.value.data.forEach((n) => {
+            const k = normName(n);
+            if (!seen.has(k)) {
+              seen.add(k);
+              out.push({ name: n, alt: null });
+            }
+          });
+        if (b.value && b.value.data)
+          b.value.data.slice(0, 14).forEach((c) => {
+            const n = c.name.split(" //")[0].trim();
+            const k = normName(n);
+            const fr =
+              c.printed_name && c.lang && c.lang !== "en"
+                ? c.printed_name
+                : null;
+            cache[k] = cache[k] || c;
+            if (!seen.has(k)) {
+              seen.add(k);
+              out.push({ name: n, alt: fr });
+            } else if (fr) {
+              const ex = out.find((o) => normName(o.name) === k);
+              if (ex && !ex.alt) ex.alt = fr;
+            }
+          });
+        acItems = out.slice(0, 12);
+        acIdx = out.length ? 0 : -1;
+        paintAC();
+        acBox.classList.add("show");
+        if (!out.length)
+          acBox.innerHTML = `<div class="empty">${esc(t("tNoResult"))}</div>`;
+      }
+      function paintAC() {
+        if (!acItems.length) return;
+        acBox.innerHTML = acItems
+          .map((it, i) => {
+            const main = lang === "fr" && it.alt ? it.alt : it.name;
+            const sub = lang === "fr" && it.alt ? it.name : it.alt;
+            return `<div class="it ${i === acIdx ? "on" : ""}" data-i="${i}"><span>${esc(main)}</span>${sub ? `<span class="alt">${esc(sub)}</span>` : ""}</div>`;
+          })
+          .join("");
+        acBox
+          .querySelectorAll(".it")
+          .forEach(
+            (el) => (el.onclick = () => addCard(acItems[+el.dataset.i].name)),
+          );
+        const on = acBox.querySelector(".it.on");
+        if (on) on.scrollIntoView({ block: "nearest" });
+      }
+      function closeAC() {
+        acBox.classList.remove("show");
+        acBox.innerHTML = "";
+        acItems = [];
+        acIdx = -1;
+      }
+      async function pickText(q) {
+        toast(t("tSearching"));
+        const c = await searchOne(q);
+        if (!c) {
+          toast(t("tNotFound"));
+          return;
+        }
+        addCard(c.name);
+      }
+      async function addCard(name) {
+        closeAC();
+        addInp.value = "";
+        if (!cardOf(name)) await searchOne(name);
+        const real = (cardOf(name) || {}).name || name;
+        const d = active();
+        const ex = d.cards.find((i) => normName(i.name) === normName(real));
+        if (ex) {
+          ex.qty++;
+          toast(t("tPlus")(displayName(ex)));
+        } else {
+          d.cards.push({
+            name: real,
+            qty: 1,
+            variant: "",
+            group: "",
+            cmd: false,
+            status: "todo",
+          });
+          toast(t("tAdded")(real));
+        }
+        render();
+        saveAll();
+      }
 
-/* ================= filtre ================= */
-$("#filter").addEventListener("input",e=>{ filterQ=e.target.value.trim(); render(); });
-$("#collapseAll").onclick=()=>{ if(lastKeys.some(k=>!collapsed.has(k))) lastKeys.forEach(k=>collapsed.add(k)); else collapsed.clear(); render(); };
+      /* ================= filtre ================= */
+      $("#filter").addEventListener("input", (e) => {
+        filterQ = e.target.value.trim();
+        render();
+      });
+      $("#collapseAll").onclick = () => {
+        if (lastKeys.some((k) => !collapsed.has(k)))
+          lastKeys.forEach((k) => collapsed.add(k));
+        else collapsed.clear();
+        render();
+      };
 
-/* ================= groupement ================= */
-$("#groupseg").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; groupBy=b.dataset.g; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); render(); });
+      /* ================= groupement ================= */
+      $("#groupseg").addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        groupBy = b.dataset.g;
+        [...e.currentTarget.children].forEach((x) =>
+          x.classList.toggle("on", x === b),
+        );
+        render();
+      });
 
-/* ================= gestion decks ================= */
-$("#deckSel").addEventListener("change",e=>{ activeId=e.target.value; hydrateActive(); saveAll(); });
-$("#newDeck").onclick=()=>askPrompt(t("promptNew"),"",name=>{ name=name||t("promptNew"); const d={id:"d"+uidGen()+Date.now(),name,groups:[],cards:[]}; decks.push(d); activeId=d.id; render(); saveAll(); toast(t("tDeckCreated")); });
-$("#renDeck").onclick=()=>askPrompt(t("promptRename"),active().name,name=>{ if(!name)return; active().name=name; render(); saveAll(); });
-$("#dupDeck").onclick=()=>{ const s=active(); const d={id:"d"+uidGen()+Date.now(),name:s.name+" (copie)",groups:[...(s.groups||[])],cards:s.cards.map(c=>({...c}))}; decks.push(d); activeId=d.id; render(); saveAll(); toast(t("tDeckDup")); };
-$("#delDeck").onclick=()=>{ if(decks.length<=1){toast(t("tCantDelLast"));return;}
-  askPrompt(t("promptDelete")(active().name),"",v=>{ if((v||"").trim().toUpperCase()!==DELWORD()){toast(t("tCancelled"));return;} decks=decks.filter(d=>d.id!==activeId); activeId=decks[0].id; render(); saveAll(); toast(t("tDeckDel")); }); };
+      /* ================= gestion decks ================= */
+      $("#deckSel").addEventListener("change", (e) => {
+        activeId = e.target.value;
+        hydrateActive();
+        saveAll();
+      });
+      $("#newDeck").onclick = () =>
+        askPrompt(t("promptNew"), "", (name) => {
+          name = name || t("promptNew");
+          const d = {
+            id: "d" + uidGen() + Date.now(),
+            name,
+            groups: [],
+            cards: [],
+          };
+          decks.push(d);
+          activeId = d.id;
+          render();
+          saveAll();
+          toast(t("tDeckCreated"));
+        });
+      $("#renDeck").onclick = () =>
+        askPrompt(t("promptRename"), active().name, (name) => {
+          if (!name) return;
+          active().name = name;
+          render();
+          saveAll();
+        });
+      $("#dupDeck").onclick = () => {
+        const s = active();
+        const d = {
+          id: "d" + uidGen() + Date.now(),
+          name: s.name + " (copie)",
+          groups: [...(s.groups || [])],
+          cards: s.cards.map((c) => ({ ...c })),
+        };
+        decks.push(d);
+        activeId = d.id;
+        render();
+        saveAll();
+        toast(t("tDeckDup"));
+      };
+      $("#delDeck").onclick = () => {
+        if (decks.length <= 1) {
+          toast(t("tCantDelLast"));
+          return;
+        }
+        askPrompt(t("promptDelete")(active().name), "", (v) => {
+          if ((v || "").trim().toUpperCase() !== DELWORD()) {
+            toast(t("tCancelled"));
+            return;
+          }
+          decks = decks.filter((d) => d.id !== activeId);
+          activeId = decks[0].id;
+          render();
+          saveAll();
+          toast(t("tDeckDel"));
+        });
+      };
 
-/* ================= légalité ================= */
-const legDlg=$("#legDlg");
-$("#legchip").onclick=()=>{ const iss=legalityIssues(); const ul=$("#leglist"); ul.innerHTML="";
-  if(!iss.length){ const li=document.createElement("li"); li.className="ok"; li.textContent=t("legOk"); ul.appendChild(li); }
-  else iss.forEach(m=>{ const li=document.createElement("li"); li.textContent=m; ul.appendChild(li); });
-  legDlg.showModal(); };
-$("#legClose").onclick=()=>legDlg.close();
+      /* ================= légalité ================= */
+      const legDlg = $("#legDlg");
+      $("#legchip").onclick = () => {
+        const iss = legalityIssues();
+        const ul = $("#leglist");
+        ul.innerHTML = "";
+        if (!iss.length) {
+          const li = document.createElement("li");
+          li.className = "ok";
+          li.textContent = t("legOk");
+          ul.appendChild(li);
+        } else
+          iss.forEach((m) => {
+            const li = document.createElement("li");
+            li.textContent = m;
+            ul.appendChild(li);
+          });
+        legDlg.showModal();
+      };
+      $("#legClose").onclick = () => legDlg.close();
 
-/* ================= import / export ================= */
-const importDlg=$("#importDlg");
-$("#importBtn").onclick=()=>{ $("#importText").value=""; importDlg.showModal(); };
-$("#importClose").onclick=()=>importDlg.close();
-$("#fileBtn").onclick=()=>$("#fileInp").click();
-$("#fileInp").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ $("#importText").value=rd.result; toast(t("tFileLoaded")); }; rd.readAsText(f); e.target.value=""; };
-$("#doImportBtn").onclick=async()=>{ const v=$("#importText").value; importDlg.close(); await doImport(v); };
-const exportDlg=$("#exportDlg"); let exFmt="txt";
-function paintExport(){ $("#exportText").value = exFmt==="json"?exportJSON() : exFmt==="var"?exportVariant() : exFmt==="archidekt"?exportArchidekt() : exportPlain(); }
-function safeName(){ return (active().name||"deck").replace(/[^\w\- ]/g,"").trim()||"deck"; }
-$("#exportBtn").onclick=()=>{ exFmt="txt"; [...$("#exFmt").children].forEach(x=>x.classList.toggle("on",x.dataset.f==="txt")); $("#exDeckName").textContent=active().name; paintExport(); exportDlg.showModal(); };
-$("#exFmt").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; exFmt=b.dataset.f; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); paintExport(); });
-$("#exCopy").onclick=()=>{ navigator.clipboard.writeText($("#exportText").value); toast(t("tCopied")); };
-$("#exDlTxt").onclick=()=>download(safeName()+".txt", exFmt==="var"?exportVariant():exFmt==="archidekt"?exportArchidekt():exportPlain());
-$("#exDlJson").onclick=()=>download(safeName()+".json", exportJSON());
-$("#exportClose").onclick=()=>exportDlg.close();
-function exportPlain(){ const d=active(); const cmd=d.cards.filter(i=>i.cmd), rest=d.cards.filter(i=>!i.cmd);
-  let out=""; if(cmd.length){ out+="Commander\n"+cmd.map(i=>`${i.qty} ${i.name}`).join("\n")+"\n\nDeck\n"; } out+=rest.map(i=>`${i.qty} ${i.name}`).join("\n"); return out; }
-function exportVariant(){ return active().cards.map(i=>`${i.qty} ${i.name}`+(i.variant?`  //  ${i.variant}`:"")).join("\n"); }
-function exportJSON(){ const d=active(); return JSON.stringify({name:d.name,groups:d.groups||[],cards:d.cards},null,2); }
-function exportArchidekt(){ return active().cards.map(it=>{ const c=cardOf(it.name);
-  let s=`${it.qty}x ${it.name}`;
-  if(c&&c.set&&c.collector_number) s+=` (${String(c.set).toUpperCase()}) ${c.collector_number}`;
-  const cat=it.cmd?"Commander":(c?(primType(c)==="Other"?"Deck":primType(c)):"Deck");
-  return s+` [${cat}]`; }).join("\n"); }
-function download(fn,txt){ const b=new Blob([txt],{type:"text/plain"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=fn; a.click(); }
-async function doImport(txt){
-  txt=txt.trim(); if(!txt){toast(t("tNothing"));return;}
-  let name=lang==="fr"?"Deck importé":"Imported deck", groups=[], cards=[];
-  if(txt[0]==="["||txt[0]==="{"){ try{ const j=JSON.parse(txt); const arr=Array.isArray(j)?j:(j.cards||j.deck||[]); if(j.name)name=j.name; if(j.groups)groups=j.groups;
-      cards=arr.map(x=>({name:x.name,qty:x.qty||1,variant:x.variant||"",group:x.group||"",cmd:!!x.cmd,status:x.status||"todo"})); }catch(e){toast(t("tBadJson"));return;} }
-  else { let inCmd=false; for(const ln of txt.split("\n")){ let raw=ln.trim(); if(!raw||raw.startsWith("//")||raw.startsWith("#"))continue;
-      if(/^commander\b/i.test(raw)){inCmd=true;continue;} if(/^(deck|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|planeswalkers?|sideboard|maybeboard)\b/i.test(raw)){inCmd=false;continue;}
-      let variant=""; const vi=raw.indexOf("  //  "); if(vi>=0){ variant=raw.slice(vi+6).trim(); raw=raw.slice(0,vi).trim(); }
-      let isCmd=inCmd; if(/\[commander(\{[^}]*\})?\]/i.test(raw)) isCmd=true;                 // catégorie Archidekt
-      raw=raw.replace(/\[[^\]]*\]/g,"").replace(/\^[^^]*\^/g,"").replace(/\*[^*]*\*/g,"").trim(); // [cat] ^have^ *foil*
-      raw=raw.replace(/\s*\([A-Za-z0-9]{2,6}\)(?:\s*[0-9A-Za-z\u2605-]+)?\s*$/,"").trim();       // (SET) 123
-      let qty=1,cn=raw; const mm=raw.match(/^(\d+)\s*[xX]?\s+(.+)$/); if(mm){ qty=parseInt(mm[1]); cn=mm[2].trim(); }
-      if(!cn)continue; cards.push({name:cn,qty,variant,group:"",cmd:isCmd,status:"todo"}); } }
-  if(!cards.length){toast(t("tNothing"));return;}
-  $("#status").style.display="flex"; $("#status").innerHTML='<span class="spin"></span> '+esc(t("loadingCards"));
-  await fetchCollection(cards.map(c=>c.name));
-  for(const c of cards){ if(!cardOf(c.name)){ const r=await searchOne(c.name); if(r)c.name=r.name; } else c.name=cardOf(c.name).name; }
-  const d={id:"d"+uidGen()+Date.now(),name,groups,cards}; decks.push(d); activeId=d.id;
-  $("#status").style.display="none"; render(); saveAll(); toast(t("tImported")(name));
-}
+      /* ================= import / export ================= */
+      const importDlg = $("#importDlg");
+      $("#importBtn").onclick = () => {
+        $("#importText").value = "";
+        importDlg.showModal();
+      };
+      $("#importClose").onclick = () => importDlg.close();
+      $("#fileBtn").onclick = () => $("#fileInp").click();
+      $("#fileInp").onchange = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const rd = new FileReader();
+        rd.onload = () => {
+          $("#importText").value = rd.result;
+          toast(t("tFileLoaded"));
+        };
+        rd.readAsText(f);
+        e.target.value = "";
+      };
+      $("#doImportBtn").onclick = async () => {
+        const v = $("#importText").value;
+        importDlg.close();
+        await doImport(v);
+      };
+      const exportDlg = $("#exportDlg");
+      let exFmt = "txt";
+      function paintExport() {
+        $("#exportText").value =
+          exFmt === "json"
+            ? exportJSON()
+            : exFmt === "var"
+              ? exportVariant()
+              : exFmt === "archidekt"
+                ? exportArchidekt()
+                : exportPlain();
+      }
+      function safeName() {
+        return (
+          (active().name || "deck").replace(/[^\w\- ]/g, "").trim() || "deck"
+        );
+      }
+      $("#exportBtn").onclick = () => {
+        exFmt = "txt";
+        [...$("#exFmt").children].forEach((x) =>
+          x.classList.toggle("on", x.dataset.f === "txt"),
+        );
+        $("#exDeckName").textContent = active().name;
+        paintExport();
+        exportDlg.showModal();
+      };
+      $("#exFmt").addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        exFmt = b.dataset.f;
+        [...e.currentTarget.children].forEach((x) =>
+          x.classList.toggle("on", x === b),
+        );
+        paintExport();
+      });
+      $("#exCopy").onclick = () => {
+        navigator.clipboard.writeText($("#exportText").value);
+        toast(t("tCopied"));
+      };
+      $("#exDlTxt").onclick = () =>
+        download(
+          safeName() + ".txt",
+          exFmt === "var"
+            ? exportVariant()
+            : exFmt === "archidekt"
+              ? exportArchidekt()
+              : exportPlain(),
+        );
+      $("#exDlJson").onclick = () =>
+        download(safeName() + ".json", exportJSON());
+      $("#exportClose").onclick = () => exportDlg.close();
+      function exportPlain() {
+        const d = active();
+        const cmd = d.cards.filter((i) => i.cmd),
+          rest = d.cards.filter((i) => !i.cmd);
+        let out = "";
+        if (cmd.length) {
+          out +=
+            "Commander\n" +
+            cmd.map((i) => `${i.qty} ${i.name}`).join("\n") +
+            "\n\nDeck\n";
+        }
+        out += rest.map((i) => `${i.qty} ${i.name}`).join("\n");
+        return out;
+      }
+      function exportVariant() {
+        return active()
+          .cards.map(
+            (i) =>
+              `${i.qty} ${i.name}` + (i.variant ? `  //  ${i.variant}` : ""),
+          )
+          .join("\n");
+      }
+      function exportJSON() {
+        const d = active();
+        return JSON.stringify(
+          { name: d.name, groups: d.groups || [], cards: d.cards },
+          null,
+          2,
+        );
+      }
+      function exportArchidekt() {
+        return active()
+          .cards.map((it) => {
+            const c = cardOf(it.name);
+            let s = `${it.qty}x ${it.name}`;
+            if (c && c.set && c.collector_number)
+              s += ` (${String(c.set).toUpperCase()}) ${c.collector_number}`;
+            const cat = it.cmd
+              ? "Commander"
+              : c
+                ? primType(c) === "Other"
+                  ? "Deck"
+                  : primType(c)
+                : "Deck";
+            return s + ` [${cat}]`;
+          })
+          .join("\n");
+      }
+      function download(fn, txt) {
+        const b = new Blob([txt], { type: "text/plain" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        a.download = fn;
+        a.click();
+      }
+      async function doImport(txt) {
+        txt = txt.trim();
+        if (!txt) {
+          toast(t("tNothing"));
+          return;
+        }
+        let name = lang === "fr" ? "Deck importé" : "Imported deck",
+          groups = [],
+          cards = [];
+        if (txt[0] === "[" || txt[0] === "{") {
+          try {
+            const j = JSON.parse(txt);
+            const arr = Array.isArray(j) ? j : j.cards || j.deck || [];
+            if (j.name) name = j.name;
+            if (j.groups) groups = j.groups;
+            cards = arr.map((x) => ({
+              name: x.name,
+              qty: x.qty || 1,
+              variant: x.variant || "",
+              group: x.group || "",
+              cmd: !!x.cmd,
+              status: x.status || "todo",
+            }));
+          } catch (e) {
+            toast(t("tBadJson"));
+            return;
+          }
+        } else {
+          let inCmd = false;
+          for (const ln of txt.split("\n")) {
+            let raw = ln.trim();
+            if (!raw || raw.startsWith("//") || raw.startsWith("#")) continue;
+            if (/^commander\b/i.test(raw)) {
+              inCmd = true;
+              continue;
+            }
+            if (
+              /^(deck|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|planeswalkers?|sideboard|maybeboard)\b/i.test(
+                raw,
+              )
+            ) {
+              inCmd = false;
+              continue;
+            }
+            let variant = "";
+            const vi = raw.indexOf("  //  ");
+            if (vi >= 0) {
+              variant = raw.slice(vi + 6).trim();
+              raw = raw.slice(0, vi).trim();
+            }
+            let isCmd = inCmd;
+            if (/\[commander(\{[^}]*\})?\]/i.test(raw)) isCmd = true; // catégorie Archidekt
+            raw = raw
+              .replace(/\[[^\]]*\]/g, "")
+              .replace(/\^[^^]*\^/g, "")
+              .replace(/\*[^*]*\*/g, "")
+              .trim(); // [cat] ^have^ *foil*
+            raw = raw
+              .replace(
+                /\s*\([A-Za-z0-9]{2,6}\)(?:\s*[0-9A-Za-z\u2605-]+)?\s*$/,
+                "",
+              )
+              .trim(); // (SET) 123
+            let qty = 1,
+              cn = raw;
+            const mm = raw.match(/^(\d+)\s*[xX]?\s+(.+)$/);
+            if (mm) {
+              qty = parseInt(mm[1]);
+              cn = mm[2].trim();
+            }
+            if (!cn) continue;
+            cards.push({
+              name: cn,
+              qty,
+              variant,
+              group: "",
+              cmd: isCmd,
+              status: "todo",
+            });
+          }
+        }
+        if (!cards.length) {
+          toast(t("tNothing"));
+          return;
+        }
+        $("#status").style.display = "flex";
+        $("#status").innerHTML =
+          '<span class="spin"></span> ' + esc(t("loadingCards"));
+        await fetchCollection(cards.map((c) => c.name));
+        for (const c of cards) {
+          if (!cardOf(c.name)) {
+            const r = await searchOne(c.name);
+            if (r) c.name = r.name;
+          } else c.name = cardOf(c.name).name;
+        }
+        const d = { id: "d" + uidGen() + Date.now(), name, groups, cards };
+        decks.push(d);
+        activeId = d.id;
+        $("#status").style.display = "none";
+        render();
+        saveAll();
+        toast(t("tImported")(name));
+      }
 
-/* ================= prompt ================= */
-const pdlg=$("#prompt"); let pcb=null;
-function askPrompt(title,val,cb){ $("#pTitle").textContent=title; $("#pInput").value=val; pcb=cb; pdlg.showModal(); setTimeout(()=>$("#pInput").focus(),30); }
-$("#pOk").onclick=()=>{ pdlg.close(); if(pcb)pcb($("#pInput").value.trim()); };
-$("#pCancel").onclick=()=>pdlg.close();
-$("#pInput").addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();$("#pOk").click();} });
+      /* ================= prompt ================= */
+      const pdlg = $("#prompt");
+      let pcb = null;
+      function askPrompt(title, val, cb) {
+        $("#pTitle").textContent = title;
+        $("#pInput").value = val;
+        pcb = cb;
+        pdlg.showModal();
+        setTimeout(() => $("#pInput").focus(), 30);
+      }
+      $("#pOk").onclick = () => {
+        pdlg.close();
+        if (pcb) pcb($("#pInput").value.trim());
+      };
+      $("#pCancel").onclick = () => pdlg.close();
+      $("#pInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          $("#pOk").click();
+        }
+      });
 
-/* ================= toast ================= */
-let tt; function toast(m){ const el=$("#toast"); el.textContent=m; el.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove("show"),1700); }
+      /* ================= toast ================= */
+      let tt;
+      function toast(m) {
+        const el = $("#toast");
+        el.textContent = m;
+        el.classList.add("show");
+        clearTimeout(tt);
+        tt = setTimeout(() => el.classList.remove("show"), 1700);
+      }
 
-/* ================= i18n statique + langue ================= */
-function applyStaticI18n(){
-  document.documentElement.lang=lang; document.title=t("app");
-  const set=(id,txt)=>{ const e=$("#"+id); if(e)e.textContent=txt; };
-  const tip=(id,txt)=>{ const e=$("#"+id); if(e)e.title=txt; };
-  tip("newDeck",t("ttNew"));tip("renDeck",t("ttRen"));tip("dupDeck",t("ttDup"));tip("delDeck",t("ttDel"));
-  tip("importBtn",t("ttImp"));tip("exportBtn",t("ttExp"));tip("collapseAll",t("ttCollapse"));
-  set("lblGroup",t("grp"));set("gbType",t("gType"));set("gbCost",t("gCost"));set("gbColor",t("gColor"));
-  $("#add").placeholder=t("addPh"); $("#filter").placeholder=t("filterPh");
-  set("importTitle",t("importTitle"));set("importDesc",t("importDesc"));set("fileBtn",t("uploadFile"));set("doImportBtn",t("doImport"));set("importClose",t("close"));
-  set("exportTitle",t("exportTitle"));set("fmtTxt",t("fmtTxt"));set("fmtVar",t("fmtVar"));set("fmtArchidekt",t("fmtArchidekt"));set("fmtJson",t("fmtJson"));set("exCopy",t("copy"));set("exDlTxt",t("dlTxt"));set("exDlJson",t("dlJson"));set("exportClose",t("close"));
-  set("legDlgTitle",t("legTitle")); set("legClose",t("close"));
-  set("pCancel",t("cancel"));set("pOk",t("ok"));
-  [...$("#langseg").children].forEach(b=>b.classList.toggle("on",b.dataset.l===lang));
-}
-$("#langseg").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; lang=b.dataset.l; render(); saveAll(); });
+      /* ================= i18n statique + langue ================= */
+      function applyStaticI18n() {
+        document.documentElement.lang = lang;
+        document.title = t("app");
+        const set = (id, txt) => {
+          const e = $("#" + id);
+          if (e) e.textContent = txt;
+        };
+        const tip = (id, txt) => {
+          const e = $("#" + id);
+          if (e) e.title = txt;
+        };
+        tip("newDeck", t("ttNew"));
+        tip("renDeck", t("ttRen"));
+        tip("dupDeck", t("ttDup"));
+        tip("delDeck", t("ttDel"));
+        tip("importBtn", t("ttImp"));
+        tip("exportBtn", t("ttExp"));
+        tip("collapseAll", t("ttCollapse"));
+        set("lblGroup", t("grp"));
+        set("gbType", t("gType"));
+        set("gbCost", t("gCost"));
+        set("gbColor", t("gColor"));
+        $("#add").placeholder = t("addPh");
+        $("#filter").placeholder = t("filterPh");
+        set("importTitle", t("importTitle"));
+        set("importDesc", t("importDesc"));
+        set("fileBtn", t("uploadFile"));
+        set("doImportBtn", t("doImport"));
+        set("importClose", t("close"));
+        set("exportTitle", t("exportTitle"));
+        set("fmtTxt", t("fmtTxt"));
+        set("fmtVar", t("fmtVar"));
+        set("fmtArchidekt", t("fmtArchidekt"));
+        set("fmtJson", t("fmtJson"));
+        set("exCopy", t("copy"));
+        set("exDlTxt", t("dlTxt"));
+        set("exDlJson", t("dlJson"));
+        set("exportClose", t("close"));
+        set("legDlgTitle", t("legTitle"));
+        set("legClose", t("close"));
+        set("pCancel", t("cancel"));
+        set("pOk", t("ok"));
+        [...$("#langseg").children].forEach((b) =>
+          b.classList.toggle("on", b.dataset.l === lang),
+        );
+      }
+      $("#langseg").addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        lang = b.dataset.l;
+        render();
+        saveAll();
+      });
 
-/* ================= init ================= */
-async function hydrateActive(){
-  const d=active(); d.groups=d.groups||[]; const missing=d.cards.map(c=>c.name).filter(n=>!cardOf(n));
-  if(missing.length){ $("#status").style.display="flex"; $("#status").innerHTML='<span class="spin"></span> '+esc(t("loadingCards")); try{ await fetchCollection(missing); }catch(e){} }
-  if(d.cards.length && !d.cards.some(c=>cardOf(c.name))){ $("#status").style.display="flex"; $("#status").innerHTML=esc(t("scryfallDown")); }
-  else $("#status").style.display="none";
-  render();
-}
-(async function init(){
-  const saved=await loadAll();
-  if(saved){ decks=saved.decks; activeId=saved.activeId||decks[0].id; if(saved.lang)lang=saved.lang; }
-  else{ decks=[{id:"d0",name:"Deck 1",groups:[],cards:[]}]; activeId="d0"; }
-  decks.forEach(d=>{d.groups=d.groups||[]; d.cards.forEach(c=>{if(c.cmd===undefined)c.cmd=false; if(c.group===undefined)c.group=""; if(c.status===undefined)c.status="todo";});});
-  if(!decks.find(d=>d.id===activeId)) activeId=decks[0].id;
-  applyStaticI18n(); renderDeckSel(); await hydrateActive();
-})();
-</script>
-</body>
+      /* ================= init ================= */
+      async function hydrateActive() {
+        const d = active();
+        d.groups = d.groups || [];
+        const missing = d.cards.map((c) => c.name).filter((n) => !cardOf(n));
+        if (missing.length) {
+          $("#status").style.display = "flex";
+          $("#status").innerHTML =
+            '<span class="spin"></span> ' + esc(t("loadingCards"));
+          try {
+            await fetchCollection(missing);
+          } catch (e) {}
+        }
+        if (d.cards.length && !d.cards.some((c) => cardOf(c.name))) {
+          $("#status").style.display = "flex";
+          $("#status").innerHTML = esc(t("scryfallDown"));
+        } else $("#status").style.display = "none";
+        render();
+      }
+      (async function init() {
+        const saved = await loadAll();
+        if (saved) {
+          decks = saved.decks;
+          activeId = saved.activeId || decks[0].id;
+          if (saved.lang) lang = saved.lang;
+        } else {
+          decks = [{ id: "d0", name: "Deck 1", groups: [], cards: [] }];
+          activeId = "d0";
+        }
+        decks.forEach((d) => {
+          d.groups = d.groups || [];
+          d.cards.forEach((c) => {
+            if (c.cmd === undefined) c.cmd = false;
+            if (c.group === undefined) c.group = "";
+            if (c.status === undefined) c.status = "todo";
+          });
+        });
+        if (!decks.find((d) => d.id === activeId)) activeId = decks[0].id;
+        applyStaticI18n();
+        renderDeckSel();
+        await hydrateActive();
+      })();
+    </script>
+  </body>
 </html>
