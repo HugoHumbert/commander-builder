@@ -255,8 +255,31 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         color: var(--ink);
-        padding: 9px 12px 9px 34px;
+        padding: 9px 30px 9px 34px;
         font-size: 14px;
+      }
+      .clr {
+        position: absolute;
+        right: 7px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: 0;
+        color: var(--faint);
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        padding: 5px;
+        border-radius: 6px;
+        display: none;
+        z-index: 2;
+      }
+      .clr:hover {
+        color: var(--red);
+        background: #1c1416;
+      }
+      .clr.on {
+        display: block;
       }
       .search input:focus,
       .filter input:focus {
@@ -838,11 +861,21 @@
         <div class="search">
           <span class="mag">⌕</span>
           <input id="add" autocomplete="off" spellcheck="false" />
+          <button class="clr" id="addClr" tabindex="-1" aria-label="Effacer">
+            ✕
+          </button>
           <div class="ac" id="ac"></div>
         </div>
         <div class="filter">
           <span class="mag">⚲</span
-          ><input id="filter" autocomplete="off" spellcheck="false" />
+          ><input id="filter" autocomplete="off" spellcheck="false" /><button
+            class="clr"
+            id="filterClr"
+            tabindex="-1"
+            aria-label="Effacer"
+          >
+            ✕
+          </button>
         </div>
       </div>
     </header>
@@ -1893,6 +1926,7 @@
       async function addCard(name) {
         closeAC();
         addInp.value = "";
+        $("#addClr").classList.remove("on");
         if (!cardOf(name)) await searchOne(name);
         const real = (cardOf(name) || {}).name || name;
         const d = active();
@@ -1931,6 +1965,26 @@
         filterQ = e.target.value.trim();
         render();
       });
+      $("#filter").addEventListener("input", (e) => {
+        $("#filterClr").classList.toggle("on", !!e.target.value);
+      });
+      $("#filterClr").onclick = () => {
+        const f = $("#filter");
+        f.value = "";
+        filterQ = "";
+        $("#filterClr").classList.remove("on");
+        render();
+        f.focus();
+      };
+      $("#add").addEventListener("input", () => {
+        $("#addClr").classList.toggle("on", !!$("#add").value);
+      });
+      $("#addClr").onclick = () => {
+        addInp.value = "";
+        $("#addClr").classList.remove("on");
+        closeAC();
+        addInp.focus();
+      };
       $("#collapseAll").onclick = () => {
         if (lastKeys.some((k) => !collapsed.has(k)))
           lastKeys.forEach((k) => collapsed.add(k));
