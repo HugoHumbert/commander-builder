@@ -168,6 +168,43 @@
       .legchip:hover {
         border-color: var(--line2);
       }
+      .prog {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .pchip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        background: var(--panel2);
+        color: var(--muted);
+      }
+      .pchip:hover {
+        border-color: var(--line2);
+        color: var(--ink);
+      }
+      .pchip b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .pchip .cdot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+      }
+      .pchip.fo {
+        color: var(--gold);
+      }
+      .pchip.fo b {
+        color: var(--gold);
+      }
       .pips {
         display: flex;
         gap: 9px;
@@ -366,9 +403,28 @@
         cursor: pointer;
         user-select: none;
       }
-      #customBar {
+      #colhead {
         position: sticky;
         top: var(--headerH, 100px);
+        z-index: 9;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: flex-end;
+        padding: 7px 8px;
+        background: linear-gradient(#0c0a0bf6, #0c0a0be6);
+        backdrop-filter: blur(6px);
+        border-bottom: 1px solid var(--line);
+      }
+      .chlbl {
+        margin-right: auto;
+        color: var(--faint);
+        font-size: 12px;
+        font-family: "Shippori Mincho", serif;
+      }
+      #customBar {
+        position: sticky;
+        top: var(--customBarTop, 140px);
         z-index: 8;
         background: linear-gradient(#0c0a0bf5, #0c0a0be2);
         backdrop-filter: blur(6px);
@@ -918,6 +974,17 @@
 
     <main>
       <div class="status" id="status" style="display: none"></div>
+      <div id="colhead">
+        <span class="chlbl" id="chlbl"></span>
+        <div class="prog">
+          <button class="pchip st" id="bulkStatus">
+            <span class="cdot"></span><b id="doneN">0</b>/<span id="totN"
+              >0</span
+            >
+          </button>
+          <button class="pchip fo" id="bulkFoil">✦ <b id="foilN">0</b></button>
+        </div>
+      </div>
       <div id="customBar" style="display: none">
         <button class="btn" id="groupsBtn">
           ☷ <span id="groupsBtnLbl"></span>
@@ -1032,6 +1099,10 @@
           dragHint:
             "Glisse-dépose les cartes entre les groupes, ou utilise le menu par carte.",
           ttCollapse: "Tout replier / déplier",
+          bulkStatusTip:
+            "Faites — clic : cycle tout le statut (à faire → en cours → fait)",
+          bulkFoilTip: "Foil — clic : tout basculer foil / non-foil",
+          colheadLbl: "Proxys",
           grp: "Grouper :",
           gType: "Type",
           gCost: "Coût",
@@ -1133,6 +1204,10 @@
           dragHint:
             "Drag & drop cards between groups, or use the per-card menu.",
           ttCollapse: "Collapse / expand all",
+          bulkStatusTip:
+            "Done — click: cycle the whole column (to do → in progress → done)",
+          bulkFoilTip: "Foil — click: toggle all foil / non-foil",
+          colheadLbl: "Proxies",
           grp: "Group by:",
           gType: "Type",
           gCost: "Cost",
@@ -1780,6 +1855,14 @@
           dot.style.background = "var(--green)";
           $("#legtxt").textContent = t("legal");
         }
+        const doneN = d.cards.reduce(
+          (s, i) => s + (i.status === "done" ? i.qty : 0),
+          0,
+        );
+        const foilN = d.cards.reduce((s, i) => s + (i.foil ? i.qty : 0), 0);
+        $("#doneN").textContent = doneN;
+        $("#totN").textContent = total;
+        $("#foilN").textContent = foilN;
       }
       function legalityIssues() {
         const d = active();
@@ -1994,14 +2077,14 @@
 
       /* ================= filtre ================= */
       function layout() {
+        const R = document.documentElement.style;
         const h = $("header").offsetHeight;
-        document.documentElement.style.setProperty("--headerH", h + "px");
+        R.setProperty("--headerH", h + "px");
+        const ch = $("#colhead").offsetHeight || 0;
         const cbH =
           groupBy === "custom" ? $("#customBar").offsetHeight || 0 : 0;
-        document.documentElement.style.setProperty(
-          "--gheadTop",
-          h + cbH + "px",
-        );
+        R.setProperty("--customBarTop", h + ch + "px");
+        R.setProperty("--gheadTop", h + ch + cbH + "px");
       }
       addEventListener("resize", layout);
       $("#filter").addEventListener("input", (e) => {
@@ -2033,6 +2116,24 @@
           lastKeys.forEach((k) => collapsed.add(k));
         else collapsed.clear();
         render();
+      };
+      $("#bulkStatus").onclick = () => {
+        const d = active();
+        if (!d.cards.length) return;
+        const ord = ["todo", "wip", "done"];
+        const first = d.cards[0].status || "todo";
+        const uniform = d.cards.every((c) => (c.status || "todo") === first);
+        const target = uniform ? ord[(ord.indexOf(first) + 1) % 3] : "done";
+        d.cards.forEach((c) => (c.status = target));
+        render();
+        saveAll();
+      };
+      $("#bulkFoil").onclick = () => {
+        const d = active();
+        const allFoil = d.cards.length && d.cards.every((c) => c.foil);
+        d.cards.forEach((c) => (c.foil = !allFoil));
+        render();
+        saveAll();
       };
 
       /* ================= groupement ================= */
@@ -2492,6 +2593,9 @@
         tip("importBtn", t("ttImp"));
         tip("exportBtn", t("ttExp"));
         tip("collapseAll", t("ttCollapse"));
+        tip("bulkStatus", t("bulkStatusTip"));
+        tip("bulkFoil", t("bulkFoilTip"));
+        set("chlbl", t("colheadLbl"));
         set("groupsBtnLbl", t("ttGroups"));
         set("customHint", t("dragHint"));
         set("lblGroup", t("grp"));
