@@ -416,7 +416,7 @@
 
       .row {
         display: grid;
-        grid-template-columns: 76px 112px 1fr 1.15fr 30px 26px;
+        grid-template-columns: 76px 112px 1fr 1.1fr 30px 26px 22px;
         align-items: center;
         gap: 10px;
         padding: 7px 6px;
@@ -566,6 +566,39 @@
         padding: 0;
         justify-self: center;
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+      }
+      .foil {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        justify-self: center;
+        cursor: pointer;
+      }
+      .foil input {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 1px solid var(--line2);
+        border-radius: 4px;
+        cursor: pointer;
+        background: var(--panel2);
+        position: relative;
+        margin: 0;
+      }
+      .foil input:checked {
+        border-color: var(--gold);
+        background: linear-gradient(135deg, #e4c877, #9c7a2f 55%, #6a4fa0);
+        box-shadow: 0 0 7px rgba(201, 162, 75, 0.55);
+      }
+      .foil input:checked::after {
+        content: "✦";
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font-size: 9px;
+        color: #1a1310;
       }
       .stbox.todo {
         background: #6b6360;
@@ -777,8 +810,8 @@
 
       @media (max-width: 760px) {
         .row {
-          grid-template-columns: 66px auto 1fr 24px 30px;
-          grid-template-areas: "qty mana name st rm" "v v v v v";
+          grid-template-columns: 66px auto 1fr 22px 22px 30px;
+          grid-template-areas: "qty mana name st fo rm" "v v v v v v";
           row-gap: 4px;
         }
         .qty {
@@ -796,6 +829,9 @@
         }
         .stbox {
           grid-area: st;
+        }
+        .foil {
+          grid-area: fo;
         }
         .vwrap {
           grid-area: v;
@@ -1606,7 +1642,8 @@
     <span class="cname"><button class="crown ${it.cmd ? "on" : ""}" title="${esc(t("markCmd"))}">♛</button><span class="nm ${off ? "bad" : ""}" data-has="${image ? 1 : 0}">${esc(displayName(it))}${dfc}</span></span>
     <span class="vwrap"><input value="${escAttr(it.variant || "")}" placeholder="${esc(t("variantPh"))}">${groupSel}</span>
     <button class="rm">✕</button>
-    <button class="stbox ${it.status || "todo"}" title="${esc(statusTip(it.status || "todo"))}"></button>`;
+    <button class="stbox ${it.status || "todo"}" title="${esc(statusTip(it.status || "todo"))}"></button>
+    <label class="foil" title="Foil"><input type="checkbox" ${it.foil ? "checked" : ""}></label>`;
         const [minus, plus] = r.querySelectorAll(".qty button");
         minus.onclick = () => {
           it.qty--;
@@ -1680,6 +1717,11 @@
           it.status = ord[(ord.indexOf(it.status || "todo") + 1) % 3];
           stb.className = "stbox " + it.status;
           stb.title = statusTip(it.status);
+          saveAll();
+        };
+        const foilCb = r.querySelector(".foil input");
+        foilCb.onchange = () => {
+          it.foil = foilCb.checked;
           saveAll();
         };
         const nm = r.querySelector(".nm");
@@ -1942,6 +1984,7 @@
             group: "",
             cmd: false,
             status: "todo",
+            foil: false,
           });
           toast(t("tAdded")(real));
         }
@@ -2279,6 +2322,7 @@
                   ? "Deck"
                   : primType(c)
                 : "Deck";
+            if (it.foil) s += " *F*";
             return s + ` [${cat}]`;
           })
           .join("\n");
@@ -2312,6 +2356,7 @@
               group: x.group || "",
               cmd: !!x.cmd,
               status: x.status || "todo",
+              foil: !!x.foil,
             }));
           } catch (e) {
             toast(t("tBadJson"));
@@ -2342,6 +2387,7 @@
             }
             let isCmd = inCmd;
             if (/\[commander(\{[^}]*\})?\]/i.test(raw)) isCmd = true; // catégorie Archidekt
+            const isFoil = /\*f\*|\*foil\*/i.test(raw); // marqueur foil
             raw = raw
               .replace(/\[[^\]]*\]/g, "")
               .replace(/\^[^^]*\^/g, "")
@@ -2368,6 +2414,7 @@
               group: "",
               cmd: isCmd,
               status: "todo",
+              foil: isFoil,
             });
           }
         }
@@ -2522,6 +2569,7 @@
             if (c.cmd === undefined) c.cmd = false;
             if (c.group === undefined) c.group = "";
             if (c.status === undefined) c.status = "todo";
+            if (c.foil === undefined) c.foil = false;
           });
         });
         if (!decks.find((d) => d.id === activeId)) activeId = decks[0].id;
