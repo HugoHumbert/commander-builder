@@ -1792,11 +1792,13 @@
           it.status = ord[(ord.indexOf(it.status || "todo") + 1) % 3];
           stb.className = "stbox " + it.status;
           stb.title = statusTip(it.status);
+          updateStats();
           saveAll();
         };
         const foilCb = r.querySelector(".foil input");
         foilCb.onchange = () => {
           it.foil = foilCb.checked;
+          updateStats();
           saveAll();
         };
         const nm = r.querySelector(".nm");
