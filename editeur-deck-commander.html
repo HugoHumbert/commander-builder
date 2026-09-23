@@ -931,6 +931,7 @@
           <button class="icob" id="delDeck">🗑</button>
           <button class="icob" id="importBtn">↑</button>
           <button class="icob" id="exportBtn">↓</button>
+          <button class="icob" id="undoBtn">↶</button>
         </div>
         <span class="count" id="count">0 / 100</span>
         <span class="legchip" id="legchip"
@@ -1103,6 +1104,9 @@
             "Faites — clic : cycle tout le statut (à faire → en cours → fait)",
           bulkFoilTip: "Foil — clic : tout basculer foil / non-foil",
           colheadLbl: "Proxys",
+          undone: "Annulé",
+          nothingUndo: "Rien à annuler",
+          undoTip: "Annuler (Ctrl+Z)",
           grp: "Grouper :",
           gType: "Type",
           gCost: "Coût",
@@ -1208,6 +1212,9 @@
             "Done — click: cycle the whole column (to do → in progress → done)",
           bulkFoilTip: "Foil — click: toggle all foil / non-foil",
           colheadLbl: "Proxies",
+          undone: "Undone",
+          nothingUndo: "Nothing to undo",
+          undoTip: "Undo (Ctrl+Z)",
           grp: "Group by:",
           gType: "Type",
           gCost: "Cost",
@@ -1307,6 +1314,39 @@
       const collapsed = new Set();
       let lastKeys = [];
       let dragItem = null;
+      let undoStack = [];
+      function pushUndo() {
+        try {
+          undoStack.push(JSON.stringify({ decks, activeId }));
+          if (undoStack.length > 40) undoStack.shift();
+        } catch (e) {}
+      }
+      async function doUndo() {
+        if (!undoStack.length) {
+          toast(t("nothingUndo"));
+          return;
+        }
+        const snap = JSON.parse(undoStack.pop());
+        decks = snap.decks;
+        activeId = snap.activeId;
+        decks.forEach((d) => {
+          d.groups = d.groups || [];
+        });
+        await hydrateActive();
+        saveAll();
+        toast(t("undone"));
+      }
+      document.addEventListener("keydown", (e) => {
+        if (
+          (e.ctrlKey || e.metaKey) &&
+          !e.shiftKey &&
+          (e.key === "z" || e.key === "Z")
+        ) {
+          if (e.target.closest("input,textarea,select")) return;
+          e.preventDefault();
+          doUndo();
+        }
+      });
       const cache = {}; // normName -> EN card
       const frData = {}; // normName -> {img, name} (lazy FR)
       async function saveAll() {
@@ -1740,6 +1780,7 @@
           saveAll();
         };
         r.querySelector(".rm").onclick = () => {
+          pushUndo();
           active().cards = active().cards.filter((x) => x !== it);
           render();
           saveAll();
@@ -1788,6 +1829,7 @@
         }
         const stb = r.querySelector(".stbox");
         stb.onclick = () => {
+          pushUndo();
           const ord = ["todo", "wip", "done"];
           it.status = ord[(ord.indexOf(it.status || "todo") + 1) % 3];
           stb.className = "stbox " + it.status;
@@ -1797,6 +1839,7 @@
         };
         const foilCb = r.querySelector(".foil input");
         foilCb.onchange = () => {
+          pushUndo();
           it.foil = foilCb.checked;
           updateStats();
           saveAll();
@@ -2055,6 +2098,7 @@
         addInp.value = "";
         $("#addClr").classList.remove("on");
         if (!cardOf(name)) await searchOne(name);
+        pushUndo();
         const real = (cardOf(name) || {}).name || name;
         const d = active();
         const ex = d.cards.find((i) => normName(i.name) === normName(real));
@@ -2122,6 +2166,7 @@
       $("#bulkStatus").onclick = () => {
         const d = active();
         if (!d.cards.length) return;
+        pushUndo();
         const ord = ["todo", "wip", "done"];
         const first = d.cards[0].status || "todo";
         const uniform = d.cards.every((c) => (c.status || "todo") === first);
@@ -2132,11 +2177,14 @@
       };
       $("#bulkFoil").onclick = () => {
         const d = active();
-        const allFoil = d.cards.length && d.cards.every((c) => c.foil);
+        if (!d.cards.length) return;
+        pushUndo();
+        const allFoil = d.cards.every((c) => c.foil);
         d.cards.forEach((c) => (c.foil = !allFoil));
         render();
         saveAll();
       };
+      $("#undoBtn").onclick = () => doUndo();
 
       /* ================= groupement ================= */
       $("#groupseg").addEventListener("click", (e) => {
@@ -2157,6 +2205,7 @@
       });
       $("#newDeck").onclick = () =>
         askPrompt(t("promptNew"), "", (name) => {
+          pushUndo();
           name = name || t("promptNew");
           const d = {
             id: "d" + uidGen() + Date.now(),
@@ -2178,6 +2227,7 @@
           saveAll();
         });
       $("#dupDeck").onclick = () => {
+        pushUndo();
         const s = active();
         const d = {
           id: "d" + uidGen() + Date.now(),
@@ -2201,6 +2251,7 @@
             toast(t("tCancelled"));
             return;
           }
+          pushUndo();
           decks = decks.filter((d) => d.id !== activeId);
           activeId = decks[0].id;
           render();
@@ -2535,6 +2586,7 @@
             if (r) c.name = r.name;
           } else c.name = cardOf(c.name).name;
         }
+        pushUndo();
         const d = { id: "d" + uidGen() + Date.now(), name, groups, cards };
         decks.push(d);
         activeId = d.id;
@@ -2598,6 +2650,7 @@
         tip("bulkStatus", t("bulkStatusTip"));
         tip("bulkFoil", t("bulkFoilTip"));
         set("chlbl", t("colheadLbl"));
+        tip("undoBtn", t("undoTip"));
         set("groupsBtnLbl", t("ttGroups"));
         set("customHint", t("dragHint"));
         set("lblGroup", t("grp"));
