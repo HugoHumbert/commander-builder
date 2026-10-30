@@ -1,0 +1,14 @@
+{
+  "name": "commander-builder",
+  "private": true,
+  "description": "Éditeur de decks MTG Commander, tout-en-un dans un fichier HTML",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 \"tests/*.test.js\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0",
+    "prettier": "^3.9.10"
+  }
+}

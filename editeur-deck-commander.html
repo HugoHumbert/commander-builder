@@ -120,8 +120,19 @@
         border-color: var(--line2);
         background: #221a1c;
       }
-      .icob.linked {
+      .icob.linked,
+      .icob.warn {
         position: relative;
+      }
+      .icob.warn::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--gold);
       }
       .icob.linked::after {
         content: "";
@@ -802,29 +813,83 @@
         flex: 1;
         border-top: 1px solid var(--line);
       }
-      .idir {
+      .ilib {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         margin-top: 16px;
-        padding: 12px;
+        padding: 10px 12px;
         border: 1px solid var(--line);
         border-radius: 10px;
         background: var(--panel2);
-        transition: border-color 0.12s;
-      }
-      .idir label {
-        display: block;
-        margin-bottom: 7px;
         font-size: 12.5px;
+        color: var(--muted);
+      }
+      .ilib span {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .ilib.need {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      /* fenêtre des dossiers de proxys */
+      .libnote {
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--gold);
+        border-radius: 10px;
+        background: #1d1810;
+        color: var(--gold);
+        font-size: 13px;
+      }
+      .liblist {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .librow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--bg);
+      }
+      .librow .lname {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
         font-weight: 600;
       }
-      .idir .sm {
-        margin-top: 7px;
-        color: var(--faint);
-        font-size: 11.5px;
-        line-height: 1.4;
+      .librow .lst {
+        font-size: 12px;
+        white-space: nowrap;
       }
-      .idir.need {
+      .librow .lst.ok {
+        color: #9fd09f;
+      }
+      .librow .lst.warn {
+        color: var(--gold);
+      }
+      .libempty {
+        padding: 10px;
+        color: var(--faint);
+        font-size: 13px;
+        text-align: center;
+      }
+      dialog p.libhelp {
+        margin: 12px 0 0;
+        color: var(--faint);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .pimg.miss {
         border-color: var(--gold);
-        box-shadow: 0 0 10px rgba(201, 162, 75, 0.25);
+        color: var(--gold);
       }
       .btn.ghost {
         margin-right: auto;
@@ -1115,6 +1180,7 @@
           <button class="icob" id="importBtn">↑</button>
           <button class="icob" id="exportBtn">↓</button>
           <button class="icob" id="quickSaveBtn">💾</button>
+          <button class="icob" id="libBtn">📁</button>
           <button class="icob" id="undoBtn">↶</button>
         </div>
         <span class="count" id="count">0 / 100</span>
@@ -1257,10 +1323,9 @@
         <div class="isep" id="imgOrLink"></div>
         <input class="txt" id="imgInp" spellcheck="false" />
 
-        <div class="idir" id="imgDirBox">
-          <label for="imgDir" id="imgDirLbl"></label>
-          <input class="txt" id="imgDir" spellcheck="false" />
-          <div class="sm" id="imgDirHelp"></div>
+        <div class="ilib" id="imgLib">
+          <span id="imgLibTxt"></span>
+          <button class="btn" id="imgLibBtn"></button>
         </div>
       </div>
       <div class="df">
@@ -1269,6 +1334,24 @@
         ><button class="btn red" id="imgOk"></button>
       </div>
     </dialog>
+
+    <dialog id="libDlg">
+      <div class="dh" id="libTitle"></div>
+      <div class="db">
+        <div class="libnote" id="libNote" style="display: none"></div>
+        <div class="liblist" id="libList"></div>
+        <button class="btn" id="libAdd"></button>
+        <p class="libhelp" id="libHelp"></p>
+      </div>
+      <div class="df"><button class="btn" id="libClose"></button></div>
+    </dialog>
+    <input
+      type="file"
+      id="libDirInp"
+      webkitdirectory
+      multiple
+      style="display: none"
+    />
 
     <dialog id="prompt">
       <div class="dh" id="pTitle"></div>
@@ -1411,19 +1494,41 @@
           imgReplace: "Glisse ou clique pour remplacer",
           imgOrLink: "ou colle un lien",
           imgPh: "https://…  ou  C:\\…\\carte.png",
-          imgDirLbl: "📁 Dossier des proxys de ce deck",
-          imgDirPh: "C:\\…\\Proxys\\Mon deck",
-          imgDirHelp:
-            "Le navigateur ne donne que le nom des fichiers choisis ou glissés : ce dossier sert à retrouver leur chemin complet. Il est commun à toutes les cartes du deck.",
-          imgPending: (n) =>
-            `Indique ci-dessous le dossier qui contient « ${n} ».`,
           imgErr:
-            "⚠ Image introuvable. Pour un fichier local, vérifie qu'il est bien dans le dossier des proxys ci-dessous.",
+            "⚠ Impossible d'afficher l'image. Un chemin local (C:\\…) ne s'affiche que si la page est ouverte depuis ton disque : utilise plutôt un dossier de proxys 📁.",
           imgRemove: "🗑 Retirer l'image",
           imgSave: "Enregistrer",
-          promptDir:
-            "Dossier des images de proxy de ce deck (ex. C:\\…\\Proxys\\Mon deck)",
           imgNotImg: "Ce fichier n'est pas une image",
+          imgInLib: (r, p) => `✓ 📁 ${r} › ${p}`,
+          imgNoRoot: (r) =>
+            `⚠ Le dossier « ${r} » ne fait pas partie de tes dossiers de proxys.`,
+          imgNeedPerm: (r) => `⚠ Le dossier « ${r} » doit être ré-autorisé.`,
+          imgNotInLib: (r) => `⚠ Fichier introuvable dans « ${r} ».`,
+          imgLibNone: "📁 Aucun dossier de proxys",
+          imgLibWarn: (n) =>
+            `⚠ ${n} dossier${n > 1 ? "s" : ""} de proxys à ré-autoriser`,
+          imgLibAdd: "Ajouter un dossier…",
+          imgLibManage: "Gérer…",
+          ttLib: "Dossiers des proxys (images sur ton ordinateur)",
+          ttLibWarn: (n) =>
+            `Dossiers des proxys — ${n} à ré-autoriser pour afficher les images`,
+          libTitle: "📁 Dossiers des proxys",
+          libAdd: "＋ Ajouter un dossier…",
+          libEmpty: "Aucun dossier pour l'instant.",
+          libOk: "✓ accessible",
+          libPerm: "⚠ à ré-autoriser",
+          libReselect: "⚠ à resélectionner",
+          libAuth: "Autoriser",
+          libRemove: "Retirer ce dossier",
+          libHelp:
+            "Les images restent sur ton ordinateur : la page les lit directement dans ces dossiers, sous-dossiers compris, et rien n'est envoyé. Un dossier parent suffit à couvrir tous ses sous-dossiers. La liste est commune à tous les decks.",
+          libHelpFallback:
+            "Ce navigateur ne retient pas l'accès aux dossiers : il faudra les resélectionner à chaque session (Chrome et Edge le retiennent).",
+          libPending: (n) =>
+            `« ${n} » n'est dans aucun dossier accessible : autorise ou ajoute le dossier qui le contient (un dossier parent suffit).`,
+          libReplaced: (n) => `Dossier « ${n} » mis à jour`,
+          libConverted: (n) =>
+            `${n} image${n > 1 ? "s" : ""} reliée${n > 1 ? "s" : ""} aux dossiers de proxys`,
           imgLinked: (n) => `Image liée : ${n}`,
           tCopied: "Copié",
           tAdded: (n) => `Ajouté : ${n}`,
@@ -1549,18 +1654,40 @@
           imgReplace: "Drop or click to replace",
           imgOrLink: "or paste a link",
           imgPh: "https://…  or  C:\\…\\card.png",
-          imgDirLbl: "📁 This deck's proxy folder",
-          imgDirPh: "C:\\…\\Proxies\\My deck",
-          imgDirHelp:
-            "Browsers only give the name of chosen or dropped files: this folder is used to rebuild their full path. It's shared by every card in the deck.",
-          imgPending: (n) => `Enter below the folder that contains “${n}”.`,
           imgErr:
-            "⚠ Image not found. For a local file, check that it's in the proxy folder below.",
+            "⚠ Can't display the image. A local path (C:\\…) only works when the page is opened from your disk: use a proxy folder 📁 instead.",
           imgRemove: "🗑 Remove image",
           imgSave: "Save",
-          promptDir:
-            "Folder of this deck's proxy images (e.g. C:\\…\\Proxies\\My deck)",
           imgNotImg: "This file is not an image",
+          imgInLib: (r, p) => `✓ 📁 ${r} › ${p}`,
+          imgNoRoot: (r) => `⚠ Folder “${r}” isn't one of your proxy folders.`,
+          imgNeedPerm: (r) => `⚠ Folder “${r}” needs to be re-authorized.`,
+          imgNotInLib: (r) => `⚠ File not found in “${r}”.`,
+          imgLibNone: "📁 No proxy folder",
+          imgLibWarn: (n) =>
+            `⚠ ${n} proxy folder${n > 1 ? "s" : ""} to re-authorize`,
+          imgLibAdd: "Add a folder…",
+          imgLibManage: "Manage…",
+          ttLib: "Proxy folders (images on your computer)",
+          ttLibWarn: (n) =>
+            `Proxy folders — ${n} to re-authorize to show the images`,
+          libTitle: "📁 Proxy folders",
+          libAdd: "＋ Add a folder…",
+          libEmpty: "No folder yet.",
+          libOk: "✓ accessible",
+          libPerm: "⚠ re-authorize",
+          libReselect: "⚠ select again",
+          libAuth: "Authorize",
+          libRemove: "Remove this folder",
+          libHelp:
+            "Images stay on your computer: the page reads them straight from these folders, subfolders included, and nothing is uploaded. A parent folder covers all its subfolders. The list is shared by every deck.",
+          libHelpFallback:
+            "This browser doesn't remember folder access: you'll need to select them again each session (Chrome and Edge remember it).",
+          libPending: (n) =>
+            `“${n}” isn't in any accessible folder: authorize or add the folder that contains it (a parent folder is enough).`,
+          libReplaced: (n) => `Folder “${n}” updated`,
+          libConverted: (n) =>
+            `${n} image${n > 1 ? "s" : ""} linked to proxy folders`,
           imgLinked: (n) => `Image linked: ${n}`,
           tCopied: "Copied",
           tAdded: (n) => `Added: ${n}`,
@@ -2134,28 +2261,27 @@
           saveAll();
         };
         const pi = r.querySelector(".pimg");
-        const paintPimg = () => {
-          pi.classList.toggle("on", !!it.proxyImg);
-          pi.style.backgroundImage = it.proxyImg
-            ? `url("${it.proxyImg.replace(/"/g, "%22")}")`
-            : "";
-        };
-        paintPimg();
-        pi.onclick = () => openImgDlg(it, paintPimg);
-        dropZone(r, (dt) =>
-          dropToUrl(dt, active().proxyDir, (u) => {
+        paintImgBtn(pi, it.proxyImg);
+        pi.onclick = () => openImgDlg(it);
+        dropZone(r, (d) =>
+          linkImage(d, (ref) => {
             pushUndo();
-            it.proxyImg = u;
-            paintPimg();
+            it.proxyImg = ref;
+            paintImgBtn(pi, ref);
             saveAll();
             toast(t("imgLinked")(displayName(it)));
           }),
         );
+        let piHover = false;
         pi.addEventListener("mouseenter", (e) => {
-          if (it.proxyImg) showPrevSrc(it.proxyImg, e);
+          piHover = true;
+          imgUrl(it.proxyImg).then((u) => u && piHover && showPrevSrc(u, e));
         });
         pi.addEventListener("mousemove", movePrev);
-        pi.addEventListener("mouseleave", hidePrev);
+        pi.addEventListener("mouseleave", () => {
+          piHover = false;
+          hidePrev();
+        });
         const nm = r.querySelector(".nm");
         if (image) {
           nm.addEventListener("mouseenter", (e) => showPrev(it.name, e));
@@ -2550,7 +2676,6 @@
         const d = {
           id: "d" + uidGen() + Date.now(),
           name: s.name + " (copie)",
-          proxyDir: s.proxyDir || "",
           groups: [...(s.groups || [])],
           cards: s.cards.map((c) => ({ ...c })),
         };
@@ -2886,7 +3011,6 @@
         return JSON.stringify(
           {
             name: d.name,
-            proxyDir: d.proxyDir || "",
             groups: d.groups || [],
             cards: d.cards,
           },
@@ -2928,7 +3052,6 @@
         }
         let name = lang === "fr" ? "Deck importé" : "Imported deck",
           groups = [],
-          proxyDir = "",
           cards = [];
         if (txt[0] === "[" || txt[0] === "{") {
           try {
@@ -2936,7 +3059,6 @@
             const arr = Array.isArray(j) ? j : j.cards || j.deck || [];
             if (j.name) name = j.name;
             if (j.groups) groups = j.groups;
-            if (j.proxyDir) proxyDir = j.proxyDir;
             cards = arr.map((x) => ({
               name: x.name,
               qty: x.qty || 1,
@@ -3026,7 +3148,6 @@
         const d = {
           id: "d" + uidGen() + Date.now(),
           name,
-          proxyDir,
           groups,
           cards,
         };
@@ -3039,12 +3160,16 @@
       }
 
       /* ================= image du proxy ================= */
-      const imgDlg = $("#imgDlg"),
-        imgInp = $("#imgInp"),
-        imgDirInp = $("#imgDir"),
-        imgPrevBox = $("#imgPrev");
-      let imgTarget = null,
-        imgDone = null;
+      // Champ proxyImg d'une carte :
+      //  - "https://…"               image web
+      //  - "file:///…"               ancien lien local (ne s'affiche que si le .html est ouvert depuis le disque)
+      //  - "lib:Dossier/sous/x.png"  fichier d'un dossier de proxys autorisé (voir lib)
+      const isLibRef = (r) => typeof r === "string" && r.startsWith("lib:");
+      function parseLibRef(r) {
+        const s = r.slice(4),
+          i = s.indexOf("/");
+        return i < 0 ? null : { root: s.slice(0, i), path: s.slice(i + 1) };
+      }
       // chemin Windows / Unix -> URL file:///
       function toImgUrl(v) {
         v = v.trim().replace(/^"(.*)"$/, "$1");
@@ -3056,37 +3181,332 @@
           return "file://" + encodeURI(v).replace(/#/g, "%23");
         return v;
       }
-      const cleanDir = (v) =>
-        (v || "")
-          .trim()
-          .replace(/^"(.*)"$/, "$1")
-          .replace(/[\\/]+$/, "");
-      // drag & drop d'image : fichier (dossier du deck + nom) ou URL web
+
+      /* ---- dossiers de proxys ---- */
+      // Chrome / Edge : handles de dossier (File System Access API) gardés dans
+      // IndexedDB ; la page lit les images sur le disque, rien n'est envoyé.
+      // Autres navigateurs : <input webkitdirectory>, à resélectionner à chaque session.
+      // Liste commune à tous les decks ; une image y est repérée par le nom du
+      // dossier + son chemin relatif, ce qui reste valable si le dossier bouge.
+      const canDirHandle = !!window.showDirectoryPicker;
+      const lib = {
+        // { name, handle, perm: "granted" | "prompt" | "denied", files: Map(chemin -> File) | null }
+        roots: [],
+        urls: new Map(), // ref -> blob URL
+        find: (name) => lib.roots.find((r) => r.name === name),
+        ready: (r) => !!r && (r.handle ? r.perm === "granted" : !!r.files),
+        needsAuth: () => lib.roots.filter((r) => !lib.ready(r)),
+        async load() {
+          lib.roots = [];
+          for (const name of (await handles.get("roots")) || []) {
+            const handle = canDirHandle
+              ? await handles.get("root:" + name)
+              : null;
+            let perm = "prompt";
+            try {
+              if (handle) perm = await handle.queryPermission({ mode: "read" });
+            } catch (e) {}
+            lib.roots.push({ name, handle, perm, files: null });
+          }
+        },
+        async save(root) {
+          if (root && root.handle)
+            await handles.set("root:" + root.name, root.handle);
+          await handles.set(
+            "roots",
+            lib.roots.map((r) => r.name),
+          );
+        },
+        // ajoute (ou remplace, même nom) un dossier ; renvoie l'ancien s'il y en avait un
+        async add(root) {
+          const old = lib.find(root.name);
+          if (old) lib.roots[lib.roots.indexOf(old)] = root;
+          else lib.roots.push(root);
+          lib.forget(root.name);
+          await lib.save(root);
+          return old;
+        },
+        async remove(name) {
+          lib.roots = lib.roots.filter((r) => r.name !== name);
+          lib.forget(name);
+          await handles.set("root:" + name, null);
+          await lib.save();
+        },
+        forget(name) {
+          for (const k of [...lib.urls.keys()])
+            if (k.startsWith("lib:" + name + "/")) lib.urls.delete(k);
+        },
+        async authorize(r) {
+          try {
+            r.perm = await r.handle.requestPermission({ mode: "read" });
+          } catch (e) {}
+          lib.forget(r.name);
+          return r.perm === "granted";
+        },
+        // File désigné par une ref, ou null
+        async file(ref) {
+          const p = parseLibRef(ref),
+            r = p && lib.find(p.root);
+          if (!lib.ready(r)) return null;
+          if (!r.handle) return r.files.get(p.path) || null;
+          try {
+            const segs = p.path.split("/");
+            let d = r.handle;
+            for (const s of segs.slice(0, -1))
+              d = await d.getDirectoryHandle(s);
+            return await (
+              await d.getFileHandle(segs[segs.length - 1])
+            ).getFile();
+          } catch (e) {
+            return null;
+          }
+        },
+        async url(ref) {
+          if (lib.urls.has(ref)) return lib.urls.get(ref);
+          const f = await lib.file(ref);
+          if (!f) return null;
+          const u = URL.createObjectURL(f);
+          lib.urls.set(ref, u);
+          return u;
+        },
+        // pourquoi une ref ne s'affiche pas : "noroot" | "perm" | "notfound"
+        why(ref) {
+          const p = parseLibRef(ref),
+            r = p && lib.find(p.root);
+          return !r ? "noroot" : !lib.ready(r) ? "perm" : "notfound";
+        },
+        // retrouve un fichier (handle déposé / choisi, ou File) dans les dossiers -> ref
+        async locate(src) {
+          if (src.kind === "file" && typeof src.getFile === "function") {
+            for (const r of lib.roots) {
+              if (!r.handle || r.perm !== "granted") continue;
+              try {
+                const p = await r.handle.resolve(src);
+                if (p && p.length) return "lib:" + r.name + "/" + p.join("/");
+              } catch (e) {}
+            }
+            return null;
+          }
+          // File seul (repli) : même nom et même taille dans un dossier sélectionné
+          for (const r of lib.roots)
+            if (r.files)
+              for (const [p, f] of r.files)
+                if (f.name === src.name && f.size === src.size)
+                  return "lib:" + r.name + "/" + p;
+          return null;
+        },
+        // ancien lien file:/// -> ref, si un dossier accessible contient le fichier
+        async fromFileUrl(u) {
+          let segs;
+          try {
+            segs = decodeURIComponent(u.replace(/^file:\/*/i, "")).split("/");
+          } catch (e) {
+            return null;
+          }
+          const low = segs.map((s) => s.toLowerCase());
+          for (const r of lib.roots) {
+            if (!lib.ready(r)) continue;
+            const i = low.lastIndexOf(r.name.toLowerCase());
+            if (i < 0) continue;
+            const ref = "lib:" + r.name + "/" + segs.slice(i + 1).join("/");
+            if (await lib.file(ref)) return ref;
+          }
+          return null;
+        },
+      };
+      // URL affichable d'une ref (null si inaccessible)
+      const imgUrl = async (ref) =>
+        !ref ? null : isLibRef(ref) ? lib.url(ref) : ref;
+      function libWhyText(ref) {
+        const root = (parseLibRef(ref) || { root: "?" }).root,
+          w = lib.why(ref);
+        return t(
+          w === "noroot"
+            ? "imgNoRoot"
+            : w === "perm"
+              ? "imgNeedPerm"
+              : "imgNotInLib",
+        )(root);
+      }
+      async function paintImgBtn(btn, ref) {
+        btn.dataset.ref = ref || "";
+        btn.classList.toggle("on", !!ref);
+        btn.classList.remove("miss");
+        btn.title = t("imgTip");
+        btn.style.backgroundImage = "";
+        if (!ref) return;
+        const u = await imgUrl(ref);
+        if (btn.dataset.ref !== ref) return; // repeint entre-temps
+        if (u)
+          btn.style.backgroundImage = `url("${u.replace(/["\s()]/g, encodeURIComponent)}")`;
+        else {
+          btn.classList.add("miss");
+          btn.title = libWhyText(ref);
+        }
+      }
+      // les liens file:/// contenus dans un dossier accessible deviennent des refs lib
+      async function convertLegacy() {
+        let n = 0;
+        for (const d of decks)
+          for (const c of d.cards)
+            if (/^file:/i.test(c.proxyImg || "")) {
+              const ref = await lib.fromFileUrl(c.proxyImg);
+              if (ref) {
+                c.proxyImg = ref;
+                n++;
+              }
+            }
+        if (n) {
+          saveAll();
+          toast(t("libConverted")(n));
+        }
+      }
+
+      /* ---- fenêtre des dossiers ---- */
+      const libDlg = $("#libDlg"),
+        libDirInp = $("#libDirInp");
+      let libPending = null; // { src, apply } : image à relier dès qu'un dossier la contient
+      function paintLibBtn() {
+        const n = lib.needsAuth().length,
+          b = $("#libBtn");
+        b.classList.toggle("warn", n > 0);
+        b.title = n ? t("ttLibWarn")(n) : t("ttLib");
+      }
+      function renderLib() {
+        const note = $("#libNote");
+        note.textContent = libPending
+          ? t("libPending")(libPending.src.name)
+          : "";
+        note.style.display = libPending ? "" : "none";
+        const box = $("#libList");
+        box.innerHTML = lib.roots.length
+          ? ""
+          : `<div class="libempty">${esc(t("libEmpty"))}</div>`;
+        for (const r of lib.roots) {
+          const ok = lib.ready(r);
+          const row = document.createElement("div");
+          row.className = "librow";
+          row.innerHTML = `<span class="lname">📁 ${esc(r.name)}</span><span class="lst ${ok ? "ok" : "warn"}">${esc(t(ok ? "libOk" : r.handle ? "libPerm" : "libReselect"))}</span>${ok ? "" : `<button class="btn lauth">${esc(t("libAuth"))}</button>`}<button class="rm" title="${esc(t("libRemove"))}">✕</button>`;
+          const a = row.querySelector(".lauth");
+          if (a)
+            a.onclick = async () => {
+              if (!r.handle) return libDirInp.click();
+              await lib.authorize(r);
+              await afterLibChange();
+            };
+          row.querySelector(".rm").onclick = async () => {
+            await lib.remove(r.name);
+            await afterLibChange();
+          };
+          box.appendChild(row);
+        }
+        $("#libHelp").textContent =
+          t("libHelp") + (canDirHandle ? "" : " " + t("libHelpFallback"));
+        paintLibBtn();
+      }
+      function openLibDlg() {
+        renderLib();
+        if (!libDlg.open) libDlg.showModal();
+      }
+      async function afterLibChange(msg) {
+        await convertLegacy();
+        if (libPending) {
+          const ref = await lib.locate(libPending.src);
+          if (ref) {
+            const p = libPending;
+            libPending = null;
+            p.apply(ref);
+            libDlg.close();
+          }
+        }
+        if (msg) toast(msg);
+        renderLib();
+        render();
+        if (imgDlg.open) paintImgPrev();
+      }
+      async function addLibRoot() {
+        if (!canDirHandle) return libDirInp.click();
+        let handle;
+        try {
+          handle = await showDirectoryPicker({ id: "proxys", mode: "read" });
+        } catch (e) {
+          return; // annulé
+        }
+        let perm = "granted";
+        try {
+          perm = await handle.queryPermission({ mode: "read" });
+        } catch (e) {}
+        const old = await lib.add({
+          name: handle.name,
+          handle,
+          perm,
+          files: null,
+        });
+        await afterLibChange(old ? t("libReplaced")(handle.name) : null);
+      }
+      libDirInp.onchange = async () => {
+        const fs = [...libDirInp.files];
+        libDirInp.value = "";
+        if (!fs.length) return;
+        const name = fs[0].webkitRelativePath.split("/")[0];
+        const files = new Map();
+        for (const f of fs)
+          if (!f.type || f.type.startsWith("image/"))
+            files.set(f.webkitRelativePath.split("/").slice(1).join("/"), f);
+        const old = await lib.add({
+          name,
+          handle: null,
+          perm: "granted",
+          files,
+        });
+        await afterLibChange(
+          old && lib.ready(old) ? t("libReplaced")(name) : null,
+        );
+      };
+      $("#libBtn").onclick = openLibDlg;
+      $("#libAdd").onclick = addLibRoot;
+      $("#libClose").onclick = () => {
+        libPending = null;
+        libDlg.close();
+      };
+
+      /* ---- glisser-déposer / choix d'un fichier ---- */
       const isImgDrag = (e) =>
         !dragItem &&
         [...e.dataTransfer.types].some(
           (x) => x === "Files" || x === "text/uri-list",
         );
-      function dropToUrl(dt, dir, cb) {
-        const f = dt.files && dt.files[0];
-        if (f && f.type && !f.type.startsWith("image/")) {
-          toast(t("imgNotImg"));
-          return;
-        }
+      // à appeler pendant l'événement drop : le DataTransfer est vidé ensuite
+      function takeDrop(dt) {
+        const it0 = dt.items && dt.items[0];
         const uri = (dt.getData("text/uri-list") || "")
           .split(/\r?\n/)
           .find((l) => l && !l.startsWith("#"));
-        if (uri && /^(https?|file):/i.test(uri.trim())) return cb(uri.trim());
-        if (!f) return;
-        const go = (d) => cb(toImgUrl(cleanDir(d) + "/" + f.name));
-        if (dir) return go(dir);
-        askPrompt(t("promptDir"), "", (v) => {
-          v = cleanDir(v);
-          if (!v) return;
-          active().proxyDir = v;
-          saveAll();
-          go(v);
-        });
+        return {
+          file: (dt.files && dt.files[0]) || null,
+          handle:
+            it0 && it0.kind === "file" && it0.getAsFileSystemHandle
+              ? it0.getAsFileSystemHandle().catch(() => null)
+              : null,
+          uri: uri ? uri.trim() : "",
+        };
+      }
+      // relie une image déposée / choisie ; apply(ref) reçoit la référence
+      async function linkImage(d, apply) {
+        if (d.file && d.file.type && !d.file.type.startsWith("image/"))
+          return toast(t("imgNotImg"));
+        if (/^https?:/i.test(d.uri)) return apply(d.uri);
+        const h = d.handle ? await d.handle : null;
+        const src = h && h.kind === "file" ? h : d.file;
+        let ref = src ? await lib.locate(src) : null;
+        if (!ref && /^file:/i.test(d.uri)) ref = await lib.fromFileUrl(d.uri);
+        if (ref) return apply(ref);
+        if (src) {
+          // fichier hors des dossiers accessibles : on demande d'en ajouter un
+          libPending = { src, apply };
+          return openLibDlg();
+        }
+        if (d.uri) apply(d.uri);
       }
       function dropZone(el, onDrop) {
         el.addEventListener("dragover", (e) => {
@@ -3104,7 +3524,7 @@
           if (!isImgDrag(e)) return;
           e.preventDefault();
           e.stopPropagation();
-          onDrop(e.dataTransfer);
+          onDrop(takeDrop(e.dataTransfer));
         });
       }
       // évite que le navigateur ouvre l'image lâchée hors d'une zone
@@ -3112,10 +3532,16 @@
         addEventListener(ev, (e) => {
           if ([...e.dataTransfer.types].includes("Files")) e.preventDefault();
         });
-      const imgStatus = $("#imgStatus"),
-        imgDirBox = $("#imgDirBox"),
+
+      /* ---- fenêtre image du proxy ---- */
+      const imgDlg = $("#imgDlg"),
+        imgInp = $("#imgInp"),
+        imgPrevBox = $("#imgPrev"),
+        imgStatus = $("#imgStatus"),
         imgFile = $("#imgFile");
-      let imgPending = null; // nom d'un fichier choisi en attente du dossier
+      let imgTarget = null,
+        imgRef = "", // référence en cours d'édition
+        imgPaintId = 0;
       function setImgStatus(cls, txt) {
         imgStatus.className = "istatus" + (cls ? " " + cls : "");
         imgStatus.textContent = txt || "";
@@ -3127,75 +3553,123 @@
           return u;
         }
       };
-      function paintImgPrev() {
-        const u = toImgUrl(imgInp.value);
-        imgPrevBox.innerHTML = "";
-        imgPrevBox.classList.toggle("has", !!u);
+      function paintImgLib() {
+        const n = lib.needsAuth().length,
+          none = !lib.roots.length;
+        $("#imgLibTxt").textContent = none
+          ? t("imgLibNone")
+          : n
+            ? t("imgLibWarn")(n)
+            : "📁 " + lib.roots.map((r) => r.name).join(", ");
+        $("#imgLib").classList.toggle("need", none || n > 0);
+        $("#imgLibBtn").textContent = t(
+          none ? "imgLibAdd" : n ? "libAuth" : "imgLibManage",
+        );
+      }
+      async function paintImgPrev() {
+        const id = ++imgPaintId,
+          ref = imgRef;
         $("#imgRemove").style.visibility =
           imgTarget && imgTarget.proxyImg ? "visible" : "hidden";
-        imgDirBox.classList.toggle("need", !!imgPending);
-        if (!u) {
+        paintImgLib();
+        imgPrevBox.innerHTML = "";
+        imgPrevBox.classList.toggle("has", !!ref);
+        const broken = () =>
+          (imgPrevBox.innerHTML = `<div><div class="ico">⚠</div><div class="sm">${esc(t("imgDropSm"))}</div></div>`);
+        if (!ref) {
           imgPrevBox.innerHTML = `<div><div class="ico">🖼</div><div class="big">${esc(t("imgDropBig"))}</div><div class="sm">${esc(t("imgDropSm"))}</div></div>`;
-          if (imgPending) setImgStatus("warn", t("imgPending")(imgPending));
-          else setImgStatus("", "");
+          setImgStatus("", "");
+          return;
+        }
+        setImgStatus("", "…");
+        const u = await imgUrl(ref);
+        if (id !== imgPaintId) return;
+        if (!u) {
+          broken();
+          setImgStatus("err", libWhyText(ref));
           return;
         }
         const im = document.createElement("img");
         im.alt = "";
-        im.onload = () => setImgStatus("ok", "✓ " + fileLabel(u));
         im.onerror = () => {
-          imgPrevBox.innerHTML = `<div><div class="ico">⚠</div><div class="sm">${esc(t("imgDropSm"))}</div></div>`;
-          setImgStatus("err", t("imgErr"));
+          if (id !== imgPaintId) return;
+          broken();
+          setImgStatus("err", isLibRef(ref) ? libWhyText(ref) : t("imgErr"));
         };
         im.src = u;
         const ovl = document.createElement("div");
         ovl.className = "ovl";
         ovl.textContent = t("imgReplace");
         imgPrevBox.append(im, ovl);
-        setImgStatus("", "…");
+        if (isLibRef(ref)) {
+          // le fichier a été lu : il existe
+          const p = parseLibRef(ref);
+          setImgStatus("ok", t("imgInLib")(p.root, p.path));
+        } else
+          im.onload = () =>
+            id === imgPaintId && setImgStatus("ok", "✓ " + fileLabel(u));
       }
-      // fichier local : le navigateur ne donne que son nom -> dossier du deck
-      function useFileName(name) {
-        const dir = cleanDir(imgDirInp.value);
-        if (!dir) {
-          imgPending = name;
-          imgInp.value = "";
-          paintImgPrev();
-          imgDirInp.focus();
-          return;
-        }
-        imgPending = null;
-        imgInp.value = toImgUrl(dir + "/" + name);
+      const dlgApply = (ref) => {
+        imgRef = ref;
+        imgInp.value = isLibRef(ref) ? "" : ref;
         paintImgPrev();
-      }
-      function openImgDlg(it, done) {
+      };
+      function openImgDlg(it) {
         imgTarget = it;
-        imgDone = done;
-        imgPending = null;
         const base = displayName(it),
           vari = (it.variant || "").trim();
         $("#imgCard").innerHTML = vari
           ? `<span class="icard">${esc(vari)}</span> <span class="ibase">↔ ${esc(base)}</span>`
           : `<span class="icard">${esc(base)}</span>`;
-        imgInp.value = it.proxyImg || "";
-        imgDirInp.value = active().proxyDir || "";
+        imgRef = it.proxyImg || "";
+        imgInp.value = isLibRef(imgRef) ? "" : imgRef;
         paintImgPrev();
         imgDlg.showModal();
         setTimeout(() => imgPrevBox.focus(), 30);
       }
       function commitImg(v) {
         if (!imgTarget) return;
-        if (v !== (imgTarget.proxyImg || "")) {
-          pushUndo();
-          imgTarget.proxyImg = v;
-          saveAll();
-          if (imgDone) imgDone();
-        }
         imgDlg.close();
+        if (v === (imgTarget.proxyImg || "")) return;
+        pushUndo();
+        imgTarget.proxyImg = v;
+        saveAll();
+        render();
+      }
+      async function pickImage() {
+        if (!window.showOpenFilePicker) return imgFile.click();
+        const start = lib.roots.find((r) => r.handle && r.perm === "granted");
+        let h;
+        try {
+          [h] = await showOpenFilePicker({
+            types: [
+              {
+                description: "Images",
+                accept: {
+                  "image/*": [
+                    ".png",
+                    ".jpg",
+                    ".jpeg",
+                    ".webp",
+                    ".gif",
+                    ".avif",
+                  ],
+                },
+              },
+            ],
+            ...(start ? { startIn: start.handle } : {}),
+          });
+        } catch (e) {
+          return; // annulé
+        }
+        linkImage(
+          { file: null, handle: Promise.resolve(h), uri: "" },
+          dlgApply,
+        );
       }
       let imgTimer;
       imgInp.addEventListener("input", () => {
-        imgPending = null;
+        imgRef = toImgUrl(imgInp.value);
         clearTimeout(imgTimer);
         imgTimer = setTimeout(paintImgPrev, 250);
       });
@@ -3205,48 +3679,29 @@
           $("#imgOk").click();
         }
       });
-      // le dossier est un réglage du deck : enregistré dès qu'il change
-      let dirTimer;
-      imgDirInp.addEventListener("input", () => {
-        clearTimeout(dirTimer);
-        dirTimer = setTimeout(() => {
-          const dir = cleanDir(imgDirInp.value);
-          if (dir !== (active().proxyDir || "")) {
-            active().proxyDir = dir;
-            saveAll();
-          }
-          if (imgPending && dir) useFileName(imgPending);
-        }, 400);
-      });
-      imgPrevBox.onclick = () => imgFile.click();
+      imgPrevBox.onclick = pickImage;
       imgPrevBox.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          imgFile.click();
+          pickImage();
         }
       });
       imgFile.onchange = () => {
         const f = imgFile.files[0];
         imgFile.value = "";
-        if (!f) return;
-        if (f.type && !f.type.startsWith("image/"))
-          return toast(t("imgNotImg"));
-        useFileName(f.name);
+        if (f) linkImage({ file: f, handle: null, uri: "" }, dlgApply);
       };
-      dropZone(imgPrevBox, (dt) => {
-        const f = dt.files && dt.files[0];
-        if (f && f.type && !f.type.startsWith("image/"))
-          return toast(t("imgNotImg"));
-        const uri = (dt.getData("text/uri-list") || "")
-          .split(/\r?\n/)
-          .find((l) => l && !l.startsWith("#"));
-        if (uri && /^(https?|file):/i.test(uri.trim())) {
-          imgPending = null;
-          imgInp.value = uri.trim();
-          paintImgPrev();
-        } else if (f) useFileName(f.name);
-      });
-      $("#imgOk").onclick = () => commitImg(toImgUrl(imgInp.value));
+      dropZone(imgPrevBox, (d) => linkImage(d, dlgApply));
+      $("#imgLibBtn").onclick = openLibDlg;
+      // le champ lien prime ; vide, on garde l'éventuel fichier d'un dossier
+      $("#imgOk").onclick = () =>
+        commitImg(
+          imgInp.value.trim()
+            ? toImgUrl(imgInp.value)
+            : isLibRef(imgRef)
+              ? imgRef
+              : "",
+        );
       $("#imgRemove").onclick = () => commitImg("");
       $("#imgCancel").onclick = () => imgDlg.close();
 
@@ -3337,9 +3792,10 @@
         set("imgTitle", t("imgTitle"));
         set("imgOrLink", t("imgOrLink"));
         imgInp.placeholder = t("imgPh");
-        set("imgDirLbl", t("imgDirLbl"));
-        set("imgDirHelp", t("imgDirHelp"));
-        imgDirInp.placeholder = t("imgDirPh");
+        set("libTitle", t("libTitle"));
+        set("libAdd", t("libAdd"));
+        set("libClose", t("close"));
+        paintLibBtn();
         set("imgRemove", t("imgRemove"));
         set("imgCancel", t("cancel"));
         set("imgOk", t("imgSave"));
@@ -3388,6 +3844,7 @@
         }
         decks.forEach((d) => {
           d.groups = d.groups || [];
+          delete d.proxyDir; // ancien « dossier des proxys » par deck, remplacé par lib
           d.cards.forEach((c) => {
             if (c.cmd === undefined) c.cmd = false;
             if (c.group === undefined) c.group = "";
@@ -3397,6 +3854,7 @@
           });
         });
         if (!decks.find((d) => d.id === activeId)) activeId = decks[0].id;
+        await lib.load();
         applyStaticI18n();
         renderDeckSel();
         await hydrateActive();
