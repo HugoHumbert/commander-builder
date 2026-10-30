@@ -59,7 +59,13 @@ Passe le groupement sur **Custom** → une barre apparaît avec **☷ Gérer les
 - **Archidekt** (`1x Nom (SET) 123 [Catégorie]`).
 - **JSON** (conserve **tout** : noms de variantes, groupes et ordre des groupes, statut de proxy, commandant).
 
-Copie dans le presse-papier ou télécharge un fichier `.txt` / `.json`.
+Copie dans le presse-papier ou enregistre un fichier `.txt` / `.json`.
+
+### 💾 Sauvegarde rapide
+
+Le bouton **💾** (ou **Ctrl+S**) réécrit directement le fichier du dernier export du deck, sans redemander où l'enregistrer. La première fois, il demande où créer le fichier (JSON par défaut). Un export via _Enregistrer sous…_ devient le nouveau fichier de sauvegarde rapide du deck, dans son format. Une pastille verte sur 💾 indique qu'un fichier est lié. Ce lien est retenu par deck, même après un rechargement de la page.
+
+> Nécessite **Chrome** ou **Edge** (API d'accès aux fichiers). Sur les autres navigateurs, la sauvegarde rapide se contente de télécharger le fichier.
 
 ### Format JSON
 

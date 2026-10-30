@@ -120,6 +120,19 @@
         border-color: var(--line2);
         background: #221a1c;
       }
+      .icob.linked {
+        position: relative;
+      }
+      .icob.linked::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+      }
       .btn {
         background: var(--panel2);
         color: var(--ink);
@@ -1101,6 +1114,7 @@
           <button class="icob" id="delDeck">🗑</button>
           <button class="icob" id="importBtn">↑</button>
           <button class="icob" id="exportBtn">↓</button>
+          <button class="icob" id="quickSaveBtn">💾</button>
           <button class="icob" id="undoBtn">↶</button>
         </div>
         <span class="count" id="count">0 / 100</span>
@@ -1355,6 +1369,17 @@
           copy: "Copier",
           dlTxt: "Télécharger .txt",
           dlJson: "Télécharger .json",
+          saveTxt: "Enregistrer .txt sous…",
+          saveJson: "Enregistrer .json sous…",
+          ttQuickSave: (n) =>
+            `Sauvegarde rapide → ${n} (Ctrl+S). Pour changer de fichier : Exporter → Enregistrer sous…`,
+          ttQuickSaveNew:
+            "Sauvegarde rapide (Ctrl+S) — choisis le fichier la première fois, il sera réutilisé ensuite",
+          ttQuickSaveDl:
+            "Sauvegarde rapide (Ctrl+S) — ce navigateur ne permet que le téléchargement ; utilise Chrome ou Edge pour réécrire directement le même fichier",
+          tSavedTo: (n) => `Enregistré dans ${n}`,
+          tSaveErr: "Échec de l'enregistrement",
+          tSaveDenied: "Accès au fichier refusé",
           cancel: "Annuler",
           ok: "Valider",
           promptNew: "Nom du nouveau deck",
@@ -1485,6 +1510,17 @@
           copy: "Copy",
           dlTxt: "Download .txt",
           dlJson: "Download .json",
+          saveTxt: "Save .txt as…",
+          saveJson: "Save .json as…",
+          ttQuickSave: (n) =>
+            `Quick save → ${n} (Ctrl+S). To change file: Export → Save as…`,
+          ttQuickSaveNew:
+            "Quick save (Ctrl+S) — pick the file the first time, it will be reused afterwards",
+          ttQuickSaveDl:
+            "Quick save (Ctrl+S) — this browser can only download; use Chrome or Edge to overwrite the same file directly",
+          tSavedTo: (n) => `Saved to ${n}`,
+          tSaveErr: "Save failed",
+          tSaveDenied: "File access denied",
           cancel: "Cancel",
           ok: "OK",
           promptNew: "New deck name",
@@ -2666,15 +2702,16 @@
       };
       const exportDlg = $("#exportDlg");
       let exFmt = "txt";
+      const exportAs = (f) =>
+        f === "json"
+          ? exportJSON()
+          : f === "var"
+            ? exportVariant()
+            : f === "archidekt"
+              ? exportArchidekt()
+              : exportPlain();
       function paintExport() {
-        $("#exportText").value =
-          exFmt === "json"
-            ? exportJSON()
-            : exFmt === "var"
-              ? exportVariant()
-              : exFmt === "archidekt"
-                ? exportArchidekt()
-                : exportPlain();
+        $("#exportText").value = exportAs(exFmt);
       }
       function safeName() {
         return (
@@ -2704,17 +2741,124 @@
         toast(t("tCopied"));
       };
       $("#exDlTxt").onclick = () =>
-        download(
-          safeName() + ".txt",
-          exFmt === "var"
-            ? exportVariant()
-            : exFmt === "archidekt"
-              ? exportArchidekt()
-              : exportPlain(),
-        );
-      $("#exDlJson").onclick = () =>
-        download(safeName() + ".json", exportJSON());
+        saveToFile(exFmt === "json" ? "txt" : exFmt, true);
+      $("#exDlJson").onclick = () => saveToFile("json", true);
       $("#exportClose").onclick = () => exportDlg.close();
+
+      /* ================= sauvegarde rapide ================= */
+      // File System Access API (Chrome / Edge) : on garde, par deck, le fichier
+      // du dernier export (handle + format) dans IndexedDB pour pouvoir le
+      // réécrire directement, même après un rechargement de la page.
+      const canPickFile = !!window.showSaveFilePicker;
+      const handles = (() => {
+        const mem = {};
+        let dbp = null;
+        const db = () =>
+          dbp ||
+          (dbp = new Promise((res, rej) => {
+            const r = indexedDB.open("mtg-cmdr", 1);
+            r.onupgradeneeded = () => r.result.createObjectStore("handles");
+            r.onsuccess = () => res(r.result);
+            r.onerror = () => rej(r.error);
+          }));
+        const req = async (mode, fn) => {
+          const s = (await db())
+            .transaction("handles", mode)
+            .objectStore("handles");
+          return new Promise((res, rej) => {
+            const q = fn(s);
+            q.onsuccess = () => res(q.result);
+            q.onerror = () => rej(q.error);
+          });
+        };
+        return {
+          async get(k) {
+            if (k in mem) return mem[k];
+            try {
+              return (mem[k] =
+                (await req("readonly", (s) => s.get(k))) || null);
+            } catch (e) {
+              return null;
+            }
+          },
+          async set(k, v) {
+            mem[k] = v;
+            try {
+              await req("readwrite", (s) => s.put(v, k));
+            } catch (e) {}
+          },
+        };
+      })();
+      async function saveToFile(fmt, pick) {
+        const d = active();
+        if (!canPickFile) {
+          download(
+            safeName() + (fmt === "json" ? ".json" : ".txt"),
+            exportAs(fmt),
+          );
+          return;
+        }
+        let rec = pick ? null : await handles.get(d.id);
+        try {
+          if (!rec) {
+            const json = fmt === "json";
+            const handle = await showSaveFilePicker({
+              suggestedName: safeName() + (json ? ".json" : ".txt"),
+              types: [
+                json
+                  ? {
+                      description: "JSON",
+                      accept: { "application/json": [".json"] },
+                    }
+                  : { description: "Text", accept: { "text/plain": [".txt"] } },
+              ],
+            });
+            rec = { handle, fmt };
+            await handles.set(d.id, rec);
+          }
+          const perm = { mode: "readwrite" };
+          if (
+            (await rec.handle.queryPermission(perm)) !== "granted" &&
+            (await rec.handle.requestPermission(perm)) !== "granted"
+          ) {
+            toast(t("tSaveDenied"));
+            return;
+          }
+          const w = await rec.handle.createWritable();
+          await w.write(exportAs(rec.fmt));
+          await w.close();
+          toast(t("tSavedTo")(rec.handle.name));
+          paintQuickSave();
+        } catch (e) {
+          if (e.name === "AbortError") return;
+          // fichier déplacé / supprimé : on oublie le lien, le prochain
+          // quick save redemandera le fichier
+          if (e.name === "NotFoundError") {
+            await handles.set(d.id, null);
+            paintQuickSave();
+          }
+          toast(t("tSaveErr"));
+        }
+      }
+      // par défaut (premier quick save du deck) : JSON, qui conserve tout
+      const quickSave = () => saveToFile("json", false);
+      async function paintQuickSave() {
+        const b = $("#quickSaveBtn");
+        if (!canPickFile) {
+          b.title = t("ttQuickSaveDl");
+          return;
+        }
+        const rec = await handles.get(active().id);
+        b.classList.toggle("linked", !!rec);
+        b.title = rec ? t("ttQuickSave")(rec.handle.name) : t("ttQuickSaveNew");
+      }
+      $("#quickSaveBtn").onclick = quickSave;
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+          e.preventDefault();
+          quickSave();
+        }
+      });
       function exportPlain() {
         const d = active();
         const cmd = d.cards.filter((i) => i.cmd),
@@ -3156,6 +3300,7 @@
         tip("delDeck", t("ttDel"));
         tip("importBtn", t("ttImp"));
         tip("exportBtn", t("ttExp"));
+        paintQuickSave();
         tip("collapseAll", t("ttCollapse"));
         tip("bulkStatus", t("bulkStatusTip"));
         tip("bulkFoil", t("bulkFoilTip"));
@@ -3181,8 +3326,8 @@
         set("fmtArchidekt", t("fmtArchidekt"));
         set("fmtJson", t("fmtJson"));
         set("exCopy", t("copy"));
-        set("exDlTxt", t("dlTxt"));
-        set("exDlJson", t("dlJson"));
+        set("exDlTxt", t(canPickFile ? "saveTxt" : "dlTxt"));
+        set("exDlJson", t(canPickFile ? "saveJson" : "dlJson"));
         set("exportClose", t("close"));
         set("groupsTitle", t("groupsTitle"));
         if ($("#newGroupInp")) $("#newGroupInp").placeholder = t("newGroupPh");
