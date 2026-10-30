@@ -13,6 +13,7 @@ Le tout tient dans **un seul fichier HTML** — aucune installation, aucun build
 - **Symboles de mana visuels** (vrais SVG Scryfall) et **aperçu de la vraie carte au survol** (tap sur mobile).
 - **Nom de variante éditable** par carte (ex. `Judith, the Scourge Diva` → « Dame Papillon »).
 - **Statut de proxy** par carte : pastille cliquable **gris (à faire) → jaune (en cours) → vert (fait)**.
+- **Image du proxy** par carte : bouton 🖼 pour lier une image (URL ou chemin local `C:\…\carte.png`), ou **glisser-déposer** un fichier image directement sur la ligne de la carte. Le chemin est déduit du _dossier des proxys_ du deck (demandé une fois). Une image glissée depuis une page web est liée par son URL. Miniature + aperçu au survol.
 - **Commandant** : désigne une carte comme commandant (couronne ♛) ; groupe dédié en tête de liste.
 - **Groupement** par **Type**, **Coût** (avec une catégorie _Coût X_ à part), **Couleur**, ou **Custom**.
 - **Groupes personnalisés** : créer / renommer / réordonner / supprimer des groupes, et y **déplacer les cartes** en **glisser-déposer** (ou via un menu par carte).
@@ -65,6 +66,7 @@ Copie dans le presse-papier ou télécharge un fichier `.txt` / `.json`.
 ```json
 {
   "name": "Mon deck",
+  "proxyDir": "C:\\Proxys\\Mon deck",
   "groups": ["Rampe", "Removal", "Wincons"],
   "cards": [
     {
@@ -73,7 +75,8 @@ Copie dans le presse-papier ou télécharge un fichier `.txt` / `.json`.
       "variant": "Genichiro",
       "group": "",
       "cmd": true,
-      "status": "done"
+      "status": "done",
+      "proxyImg": "https://exemple.com/genichiro.png"
     },
     {
       "name": "Sol Ring",
@@ -87,7 +90,7 @@ Copie dans le presse-papier ou télécharge un fichier `.txt` / `.json`.
 }
 ```
 
-Champs par carte : `name` (nom anglais canonique), `qty`, `variant` (nom de reskin), `group` (groupe custom), `cmd` (commandant), `status` (`todo` / `wip` / `done`).
+Champs par carte : `name` (nom anglais canonique), `qty`, `variant` (nom de reskin), `group` (groupe custom), `cmd` (commandant), `status` (`todo` / `wip` / `done`), `foil`, `proxyImg` (URL de l'image du proxy).
 
 ---
 

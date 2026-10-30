@@ -472,7 +472,7 @@
 
       .row {
         display: grid;
-        grid-template-columns: 76px 112px 1fr 1.1fr 30px 26px 22px;
+        grid-template-columns: 76px 112px 1fr 1.1fr 30px 26px 22px 24px;
         align-items: center;
         gap: 10px;
         padding: 7px 6px;
@@ -655,6 +655,173 @@
         place-items: center;
         font-size: 9px;
         color: #1a1310;
+      }
+      .pimg {
+        width: 22px;
+        height: 22px;
+        justify-self: center;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: var(--panel2) center / cover no-repeat;
+        color: var(--faint);
+        font-size: 11px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .pimg:hover {
+        border-color: var(--line2);
+        color: var(--ink);
+      }
+      .pimg.on {
+        border-color: var(--green);
+        color: transparent;
+        box-shadow: 0 0 6px rgba(94, 157, 94, 0.45);
+      }
+      .row.imgdrop {
+        outline: 2px dashed var(--green);
+        outline-offset: -2px;
+        background: #0f1a10;
+      }
+      /* fenêtre image du proxy */
+      .icard {
+        color: var(--gold);
+      }
+      .ibase {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .idrop {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 210px;
+        padding: 18px;
+        border: 2px dashed var(--line2);
+        border-radius: 12px;
+        background: var(--bg);
+        text-align: center;
+        cursor: pointer;
+        transition:
+          border-color 0.12s,
+          background 0.12s;
+      }
+      .idrop:hover,
+      .idrop:focus-visible {
+        outline: none;
+        border-color: var(--faint);
+      }
+      .idrop.imgdrop {
+        border-color: var(--green);
+        background: #0f1a10;
+      }
+      .idrop .ico {
+        font-size: 30px;
+        opacity: 0.55;
+      }
+      .idrop .big {
+        margin: 8px 0 3px;
+        font-family: "Shippori Mincho", serif;
+        font-size: 16px;
+        color: var(--ink);
+      }
+      .idrop .sm {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .idrop.has {
+        padding: 10px;
+        border-style: solid;
+        border-color: var(--line);
+      }
+      .idrop img {
+        display: block;
+        max-width: 100%;
+        max-height: 320px;
+        border-radius: 10px;
+      }
+      .idrop .ovl {
+        position: absolute;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: rgba(0, 0, 0, 0.78);
+        color: var(--ink);
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.12s;
+        pointer-events: none;
+      }
+      .idrop.has:hover .ovl,
+      .idrop.has.imgdrop .ovl {
+        opacity: 1;
+      }
+      .istatus {
+        min-height: 18px;
+        margin: 8px 2px 0;
+        font-size: 12px;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+      .istatus.ok {
+        color: #9fd09f;
+      }
+      .istatus.err {
+        color: #e98;
+      }
+      .istatus.warn {
+        color: var(--gold);
+      }
+      .isep {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 14px 0 8px;
+        color: var(--faint);
+        font-size: 12px;
+      }
+      .isep::before,
+      .isep::after {
+        content: "";
+        flex: 1;
+        border-top: 1px solid var(--line);
+      }
+      .idir {
+        margin-top: 16px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel2);
+        transition: border-color 0.12s;
+      }
+      .idir label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 12.5px;
+        font-weight: 600;
+      }
+      .idir .sm {
+        margin-top: 7px;
+        color: var(--faint);
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .idir.need {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px rgba(201, 162, 75, 0.25);
+      }
+      .btn.ghost {
+        margin-right: auto;
+        border-color: transparent;
+        background: transparent;
+        color: var(--muted);
+      }
+      .btn.ghost:hover {
+        color: var(--red);
+        background: #1c1416;
       }
       .stbox.todo {
         background: #6b6360;
@@ -866,8 +1033,8 @@
 
       @media (max-width: 760px) {
         .row {
-          grid-template-columns: 66px auto 1fr 22px 22px 30px;
-          grid-template-areas: "qty mana name st fo rm" "v v v v v v";
+          grid-template-columns: 66px auto 1fr 22px 22px 24px 30px;
+          grid-template-areas: "qty mana name st fo im rm" "v v v v v v v";
           row-gap: 4px;
         }
         .qty {
@@ -888,6 +1055,9 @@
         }
         .foil {
           grid-area: fo;
+        }
+        .pimg {
+          grid-area: im;
         }
         .vwrap {
           grid-area: v;
@@ -1056,6 +1226,36 @@
       <div class="df"><button class="btn" id="legClose"></button></div>
     </dialog>
 
+    <dialog id="imgDlg">
+      <div class="dh">
+        <span id="imgTitle"></span> — <span id="imgCard"></span>
+      </div>
+      <div class="db">
+        <div class="idrop" id="imgPrev" tabindex="0"></div>
+        <input
+          type="file"
+          id="imgFile"
+          accept="image/*"
+          style="display: none"
+        />
+        <div class="istatus" id="imgStatus"></div>
+
+        <div class="isep" id="imgOrLink"></div>
+        <input class="txt" id="imgInp" spellcheck="false" />
+
+        <div class="idir" id="imgDirBox">
+          <label for="imgDir" id="imgDirLbl"></label>
+          <input class="txt" id="imgDir" spellcheck="false" />
+          <div class="sm" id="imgDirHelp"></div>
+        </div>
+      </div>
+      <div class="df">
+        <button class="btn ghost" id="imgRemove"></button
+        ><button class="btn" id="imgCancel"></button
+        ><button class="btn red" id="imgOk"></button>
+      </div>
+    </dialog>
+
     <dialog id="prompt">
       <div class="dh" id="pTitle"></div>
       <div class="db"><input class="txt" id="pInput" /></div>
@@ -1178,6 +1378,28 @@
           stTodo: "Proxy : à faire",
           stWip: "Proxy : en cours",
           stDone: "Proxy : fait",
+          imgTip:
+            "Image du proxy — clic pour lier, ou glisse-dépose une image sur la ligne",
+          imgTitle: "Image du proxy",
+          imgDropBig: "Glisse une image ici",
+          imgDropSm: "ou clique pour choisir un fichier",
+          imgReplace: "Glisse ou clique pour remplacer",
+          imgOrLink: "ou colle un lien",
+          imgPh: "https://…  ou  C:\\…\\carte.png",
+          imgDirLbl: "📁 Dossier des proxys de ce deck",
+          imgDirPh: "C:\\…\\Proxys\\Mon deck",
+          imgDirHelp:
+            "Le navigateur ne donne que le nom des fichiers choisis ou glissés : ce dossier sert à retrouver leur chemin complet. Il est commun à toutes les cartes du deck.",
+          imgPending: (n) =>
+            `Indique ci-dessous le dossier qui contient « ${n} ».`,
+          imgErr:
+            "⚠ Image introuvable. Pour un fichier local, vérifie qu'il est bien dans le dossier des proxys ci-dessous.",
+          imgRemove: "🗑 Retirer l'image",
+          imgSave: "Enregistrer",
+          promptDir:
+            "Dossier des images de proxy de ce deck (ex. C:\\…\\Proxys\\Mon deck)",
+          imgNotImg: "Ce fichier n'est pas une image",
+          imgLinked: (n) => `Image liée : ${n}`,
           tCopied: "Copié",
           tAdded: (n) => `Ajouté : ${n}`,
           tPlus: (n) => `+1 ${n}`,
@@ -1283,6 +1505,27 @@
           stTodo: "Proxy: to do",
           stWip: "Proxy: in progress",
           stDone: "Proxy: done",
+          imgTip:
+            "Proxy image — click to link, or drag & drop an image onto the row",
+          imgTitle: "Proxy image",
+          imgDropBig: "Drop an image here",
+          imgDropSm: "or click to choose a file",
+          imgReplace: "Drop or click to replace",
+          imgOrLink: "or paste a link",
+          imgPh: "https://…  or  C:\\…\\card.png",
+          imgDirLbl: "📁 This deck's proxy folder",
+          imgDirPh: "C:\\…\\Proxies\\My deck",
+          imgDirHelp:
+            "Browsers only give the name of chosen or dropped files: this folder is used to rebuild their full path. It's shared by every card in the deck.",
+          imgPending: (n) => `Enter below the folder that contains “${n}”.`,
+          imgErr:
+            "⚠ Image not found. For a local file, check that it's in the proxy folder below.",
+          imgRemove: "🗑 Remove image",
+          imgSave: "Save",
+          promptDir:
+            "Folder of this deck's proxy images (e.g. C:\\…\\Proxies\\My deck)",
+          imgNotImg: "This file is not an image",
+          imgLinked: (n) => `Image linked: ${n}`,
           tCopied: "Copied",
           tAdded: (n) => `Added: ${n}`,
           tPlus: (n) => `+1 ${n}`,
@@ -1349,23 +1592,25 @@
       });
       const cache = {}; // normName -> EN card
       const frData = {}; // normName -> {img, name} (lazy FR)
+      // window.storage n'existe que dans l'environnement d'artefacts Claude ;
+      // dans un navigateur classique on utilise localStorage.
       async function saveAll() {
+        const v = JSON.stringify({ decks, activeId, lang });
         try {
-          if (window.storage)
-            await window.storage.set(
-              STORE_KEY,
-              JSON.stringify({ decks, activeId, lang }),
-            );
+          if (window.storage) await window.storage.set(STORE_KEY, v);
+          else localStorage.setItem(STORE_KEY, v);
         } catch (e) {}
       }
       async function loadAll() {
         try {
+          let raw = null;
           if (window.storage) {
             const r = await window.storage.get(STORE_KEY);
-            if (r && r.value) {
-              const o = JSON.parse(r.value);
-              if (o.decks && o.decks.length) return o;
-            }
+            raw = r && r.value;
+          } else raw = localStorage.getItem(STORE_KEY);
+          if (raw) {
+            const o = JSON.parse(raw);
+            if (o.decks && o.decks.length) return o;
           }
         } catch (e) {}
         return null;
@@ -1758,7 +2003,8 @@
     <span class="vwrap"><input value="${escAttr(it.variant || "")}" placeholder="${esc(t("variantPh"))}">${groupSel}</span>
     <button class="rm">✕</button>
     <button class="stbox ${it.status || "todo"}" title="${esc(statusTip(it.status || "todo"))}"></button>
-    <label class="foil" title="Foil"><input type="checkbox" ${it.foil ? "checked" : ""}></label>`;
+    <label class="foil" title="Foil"><input type="checkbox" ${it.foil ? "checked" : ""}></label>
+    <button class="pimg" title="${esc(t("imgTip"))}">🖼</button>`;
         const [minus, plus] = r.querySelectorAll(".qty button");
         minus.onclick = () => {
           it.qty--;
@@ -1844,6 +2090,29 @@
           updateStats();
           saveAll();
         };
+        const pi = r.querySelector(".pimg");
+        const paintPimg = () => {
+          pi.classList.toggle("on", !!it.proxyImg);
+          pi.style.backgroundImage = it.proxyImg
+            ? `url("${it.proxyImg.replace(/"/g, "%22")}")`
+            : "";
+        };
+        paintPimg();
+        pi.onclick = () => openImgDlg(it, paintPimg);
+        dropZone(r, (dt) =>
+          dropToUrl(dt, active().proxyDir, (u) => {
+            pushUndo();
+            it.proxyImg = u;
+            paintPimg();
+            saveAll();
+            toast(t("imgLinked")(displayName(it)));
+          }),
+        );
+        pi.addEventListener("mouseenter", (e) => {
+          if (it.proxyImg) showPrevSrc(it.proxyImg, e);
+        });
+        pi.addEventListener("mousemove", movePrev);
+        pi.addEventListener("mouseleave", hidePrev);
         const nm = r.querySelector(".nm");
         if (image) {
           nm.addEventListener("mouseenter", (e) => showPrev(it.name, e));
@@ -1947,6 +2216,11 @@
             if (fd && fd.img && prev.classList.contains("show"))
               prev.src = fd.img;
           });
+      }
+      function showPrevSrc(src, e) {
+        prev.src = src;
+        prev.classList.add("show");
+        movePrev(e);
       }
       function movePrev(e) {
         const w = 236,
@@ -2114,6 +2388,7 @@
             cmd: false,
             status: "todo",
             foil: false,
+            proxyImg: "",
           });
           toast(t("tAdded")(real));
         }
@@ -2232,6 +2507,7 @@
         const d = {
           id: "d" + uidGen() + Date.now(),
           name: s.name + " (copie)",
+          proxyDir: s.proxyDir || "",
           groups: [...(s.groups || [])],
           cards: s.cards.map((c) => ({ ...c })),
         };
@@ -2457,7 +2733,12 @@
       function exportJSON() {
         const d = active();
         return JSON.stringify(
-          { name: d.name, groups: d.groups || [], cards: d.cards },
+          {
+            name: d.name,
+            proxyDir: d.proxyDir || "",
+            groups: d.groups || [],
+            cards: d.cards,
+          },
           null,
           2,
         );
@@ -2496,6 +2777,7 @@
         }
         let name = lang === "fr" ? "Deck importé" : "Imported deck",
           groups = [],
+          proxyDir = "",
           cards = [];
         if (txt[0] === "[" || txt[0] === "{") {
           try {
@@ -2503,6 +2785,7 @@
             const arr = Array.isArray(j) ? j : j.cards || j.deck || [];
             if (j.name) name = j.name;
             if (j.groups) groups = j.groups;
+            if (j.proxyDir) proxyDir = j.proxyDir;
             cards = arr.map((x) => ({
               name: x.name,
               qty: x.qty || 1,
@@ -2511,6 +2794,7 @@
               cmd: !!x.cmd,
               status: x.status || "todo",
               foil: !!x.foil,
+              proxyImg: x.proxyImg || "",
             }));
           } catch (e) {
             toast(t("tBadJson"));
@@ -2569,6 +2853,7 @@
               cmd: isCmd,
               status: "todo",
               foil: isFoil,
+              proxyImg: "",
             });
           }
         }
@@ -2587,7 +2872,13 @@
           } else c.name = cardOf(c.name).name;
         }
         pushUndo();
-        const d = { id: "d" + uidGen() + Date.now(), name, groups, cards };
+        const d = {
+          id: "d" + uidGen() + Date.now(),
+          name,
+          proxyDir,
+          groups,
+          cards,
+        };
         decks.push(d);
         activeId = d.id;
         $("#status").style.display = "none";
@@ -2595,6 +2886,218 @@
         saveAll();
         toast(t("tImported")(name));
       }
+
+      /* ================= image du proxy ================= */
+      const imgDlg = $("#imgDlg"),
+        imgInp = $("#imgInp"),
+        imgDirInp = $("#imgDir"),
+        imgPrevBox = $("#imgPrev");
+      let imgTarget = null,
+        imgDone = null;
+      // chemin Windows / Unix -> URL file:///
+      function toImgUrl(v) {
+        v = v.trim().replace(/^"(.*)"$/, "$1");
+        if (/^[a-z]:[\\/]/i.test(v))
+          return (
+            "file:///" + encodeURI(v.replace(/\\/g, "/")).replace(/#/g, "%23")
+          );
+        if (v.startsWith("/") && !v.startsWith("//"))
+          return "file://" + encodeURI(v).replace(/#/g, "%23");
+        return v;
+      }
+      const cleanDir = (v) =>
+        (v || "")
+          .trim()
+          .replace(/^"(.*)"$/, "$1")
+          .replace(/[\\/]+$/, "");
+      // drag & drop d'image : fichier (dossier du deck + nom) ou URL web
+      const isImgDrag = (e) =>
+        !dragItem &&
+        [...e.dataTransfer.types].some(
+          (x) => x === "Files" || x === "text/uri-list",
+        );
+      function dropToUrl(dt, dir, cb) {
+        const f = dt.files && dt.files[0];
+        if (f && f.type && !f.type.startsWith("image/")) {
+          toast(t("imgNotImg"));
+          return;
+        }
+        const uri = (dt.getData("text/uri-list") || "")
+          .split(/\r?\n/)
+          .find((l) => l && !l.startsWith("#"));
+        if (uri && /^(https?|file):/i.test(uri.trim())) return cb(uri.trim());
+        if (!f) return;
+        const go = (d) => cb(toImgUrl(cleanDir(d) + "/" + f.name));
+        if (dir) return go(dir);
+        askPrompt(t("promptDir"), "", (v) => {
+          v = cleanDir(v);
+          if (!v) return;
+          active().proxyDir = v;
+          saveAll();
+          go(v);
+        });
+      }
+      function dropZone(el, onDrop) {
+        el.addEventListener("dragover", (e) => {
+          if (!isImgDrag(e)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = "copy";
+          el.classList.add("imgdrop");
+        });
+        el.addEventListener("dragleave", (e) => {
+          if (!el.contains(e.relatedTarget)) el.classList.remove("imgdrop");
+        });
+        el.addEventListener("drop", (e) => {
+          el.classList.remove("imgdrop");
+          if (!isImgDrag(e)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onDrop(e.dataTransfer);
+        });
+      }
+      // évite que le navigateur ouvre l'image lâchée hors d'une zone
+      for (const ev of ["dragover", "drop"])
+        addEventListener(ev, (e) => {
+          if ([...e.dataTransfer.types].includes("Files")) e.preventDefault();
+        });
+      const imgStatus = $("#imgStatus"),
+        imgDirBox = $("#imgDirBox"),
+        imgFile = $("#imgFile");
+      let imgPending = null; // nom d'un fichier choisi en attente du dossier
+      function setImgStatus(cls, txt) {
+        imgStatus.className = "istatus" + (cls ? " " + cls : "");
+        imgStatus.textContent = txt || "";
+      }
+      const fileLabel = (u) => {
+        try {
+          return decodeURIComponent(u.split(/[\\/]/).pop().split("?")[0]) || u;
+        } catch (_) {
+          return u;
+        }
+      };
+      function paintImgPrev() {
+        const u = toImgUrl(imgInp.value);
+        imgPrevBox.innerHTML = "";
+        imgPrevBox.classList.toggle("has", !!u);
+        $("#imgRemove").style.visibility =
+          imgTarget && imgTarget.proxyImg ? "visible" : "hidden";
+        imgDirBox.classList.toggle("need", !!imgPending);
+        if (!u) {
+          imgPrevBox.innerHTML = `<div><div class="ico">🖼</div><div class="big">${esc(t("imgDropBig"))}</div><div class="sm">${esc(t("imgDropSm"))}</div></div>`;
+          if (imgPending) setImgStatus("warn", t("imgPending")(imgPending));
+          else setImgStatus("", "");
+          return;
+        }
+        const im = document.createElement("img");
+        im.alt = "";
+        im.onload = () => setImgStatus("ok", "✓ " + fileLabel(u));
+        im.onerror = () => {
+          imgPrevBox.innerHTML = `<div><div class="ico">⚠</div><div class="sm">${esc(t("imgDropSm"))}</div></div>`;
+          setImgStatus("err", t("imgErr"));
+        };
+        im.src = u;
+        const ovl = document.createElement("div");
+        ovl.className = "ovl";
+        ovl.textContent = t("imgReplace");
+        imgPrevBox.append(im, ovl);
+        setImgStatus("", "…");
+      }
+      // fichier local : le navigateur ne donne que son nom -> dossier du deck
+      function useFileName(name) {
+        const dir = cleanDir(imgDirInp.value);
+        if (!dir) {
+          imgPending = name;
+          imgInp.value = "";
+          paintImgPrev();
+          imgDirInp.focus();
+          return;
+        }
+        imgPending = null;
+        imgInp.value = toImgUrl(dir + "/" + name);
+        paintImgPrev();
+      }
+      function openImgDlg(it, done) {
+        imgTarget = it;
+        imgDone = done;
+        imgPending = null;
+        const base = displayName(it),
+          vari = (it.variant || "").trim();
+        $("#imgCard").innerHTML = vari
+          ? `<span class="icard">${esc(vari)}</span> <span class="ibase">↔ ${esc(base)}</span>`
+          : `<span class="icard">${esc(base)}</span>`;
+        imgInp.value = it.proxyImg || "";
+        imgDirInp.value = active().proxyDir || "";
+        paintImgPrev();
+        imgDlg.showModal();
+        setTimeout(() => imgPrevBox.focus(), 30);
+      }
+      function commitImg(v) {
+        if (!imgTarget) return;
+        if (v !== (imgTarget.proxyImg || "")) {
+          pushUndo();
+          imgTarget.proxyImg = v;
+          saveAll();
+          if (imgDone) imgDone();
+        }
+        imgDlg.close();
+      }
+      let imgTimer;
+      imgInp.addEventListener("input", () => {
+        imgPending = null;
+        clearTimeout(imgTimer);
+        imgTimer = setTimeout(paintImgPrev, 250);
+      });
+      imgInp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          $("#imgOk").click();
+        }
+      });
+      // le dossier est un réglage du deck : enregistré dès qu'il change
+      let dirTimer;
+      imgDirInp.addEventListener("input", () => {
+        clearTimeout(dirTimer);
+        dirTimer = setTimeout(() => {
+          const dir = cleanDir(imgDirInp.value);
+          if (dir !== (active().proxyDir || "")) {
+            active().proxyDir = dir;
+            saveAll();
+          }
+          if (imgPending && dir) useFileName(imgPending);
+        }, 400);
+      });
+      imgPrevBox.onclick = () => imgFile.click();
+      imgPrevBox.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          imgFile.click();
+        }
+      });
+      imgFile.onchange = () => {
+        const f = imgFile.files[0];
+        imgFile.value = "";
+        if (!f) return;
+        if (f.type && !f.type.startsWith("image/"))
+          return toast(t("imgNotImg"));
+        useFileName(f.name);
+      };
+      dropZone(imgPrevBox, (dt) => {
+        const f = dt.files && dt.files[0];
+        if (f && f.type && !f.type.startsWith("image/"))
+          return toast(t("imgNotImg"));
+        const uri = (dt.getData("text/uri-list") || "")
+          .split(/\r?\n/)
+          .find((l) => l && !l.startsWith("#"));
+        if (uri && /^(https?|file):/i.test(uri.trim())) {
+          imgPending = null;
+          imgInp.value = uri.trim();
+          paintImgPrev();
+        } else if (f) useFileName(f.name);
+      });
+      $("#imgOk").onclick = () => commitImg(toImgUrl(imgInp.value));
+      $("#imgRemove").onclick = () => commitImg("");
+      $("#imgCancel").onclick = () => imgDlg.close();
 
       /* ================= prompt ================= */
       const pdlg = $("#prompt");
@@ -2679,6 +3182,15 @@
         set("groupsClose", t("close"));
         set("legDlgTitle", t("legTitle"));
         set("legClose", t("close"));
+        set("imgTitle", t("imgTitle"));
+        set("imgOrLink", t("imgOrLink"));
+        imgInp.placeholder = t("imgPh");
+        set("imgDirLbl", t("imgDirLbl"));
+        set("imgDirHelp", t("imgDirHelp"));
+        imgDirInp.placeholder = t("imgDirPh");
+        set("imgRemove", t("imgRemove"));
+        set("imgCancel", t("cancel"));
+        set("imgOk", t("imgSave"));
         set("pCancel", t("cancel"));
         set("pOk", t("ok"));
         [...$("#langseg").children].forEach((b) =>
@@ -2729,6 +3241,7 @@
             if (c.group === undefined) c.group = "";
             if (c.status === undefined) c.status = "todo";
             if (c.foil === undefined) c.foil = false;
+            if (c.proxyImg === undefined) c.proxyImg = "";
           });
         });
         if (!decks.find((d) => d.id === activeId)) activeId = decks[0].id;
