@@ -1621,7 +1621,10 @@
       async function fetchCollection(names) {
         const uniq = [...new Set(names)].filter((n) => !cache[normName(n)]);
         for (let i = 0; i < uniq.length; i += 70) {
-          const batch = uniq.slice(i, i + 70).map((n) => ({ name: n }));
+          // /cards/collection ne trouve pas « Face A // Face B » : on cherche par la face avant
+          const batch = uniq
+            .slice(i, i + 70)
+            .map((n) => ({ name: n.split(" //")[0].trim() }));
           let ok = false;
           try {
             const res = await fetch(
@@ -1638,8 +1641,12 @@
               ok = true;
             }
           } catch (e) {}
-          if (!ok) {
-            for (const n of uniq.slice(i, i + 70)) {
+          // repli carte par carte : requête échouée ou cartes « not_found »
+          const left = ok
+            ? uniq.slice(i, i + 70).filter((n) => !cache[normName(n)])
+            : uniq.slice(i, i + 70);
+          if (left.length) {
+            for (const n of left) {
               try {
                 const r = await fetch(
                   "https://api.scryfall.com/cards/named?exact=" +
