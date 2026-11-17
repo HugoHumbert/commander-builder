@@ -8,13 +8,16 @@
 - `tests/` : tests de non-régression (Node `node:test` + jsdom). Ils chargent le vrai fichier HTML.
   - `helpers.js` : `openApp({ stored, setup, idb })` ouvre l'app avec un faux Scryfall et un état localStorage initial. `idb` est une `Map` qui sert de faux IndexedDB : passer la même `Map` à deux `openApp` simule un rechargement de la page. Contient aussi `deckState()`, `dropEvent()`, `answerPrompt()`, `pressCtrl()`, ainsi que `fakeDir()` et `fakeFile()` qui simulent les handles de fichiers de Chrome.
   - `fixtures/cards.js` : cartes au format Scryfall utilisées par le faux Scryfall.
+- `table-de-jeu-commander.html` : table de jeu multijoueur (voir « Table de jeu » plus bas), elle aussi en un seul fichier. Seule dépendance : PeerJS, chargé depuis un CDN.
+  - `tests/table-helpers.js` : `openTable({ hub, editor, idb, local, setup, query })` ouvre la table ; `makeHub()` renvoie un faux `Peer` en mémoire (le même hub passé à plusieurs `openTable` = même table) ; `loadCore()` charge le moteur de règles seul.
+  - `tests/table-core.test.js` (règles, sans DOM) et `tests/table-ui.test.js` (plateau, menus, decks de l'éditeur, multijoueur).
 - `README.md` : doc utilisateur, en français. À mettre à jour quand une fonctionnalité ou le format JSON change.
 
 ## Commandes
 
 ```sh
 npm install          # une fois : jsdom + prettier
-npm test             # toute la batterie (~15 s)
+npm test             # toute la batterie (~30 s, éditeur + table de jeu)
 node --test tests/proxy-image.test.js   # un seul fichier
 npm run format       # prettier sur tout le projet
 ```
@@ -37,14 +40,26 @@ Pour vérifier la syntaxe du script inline sans lancer les tests, `npm test` suf
   - Un fichier hors des dossiers déclenche `libPending` : la fenêtre 📁 s'ouvre, et l'image est liée dès que le dossier est ajouté.
   - Pour **ajouter un champ de carte**, il faut le gérer à quatre endroits : valeur par défaut dans `addCard`, import JSON **et** texte dans `doImport`, migration des anciens decks dans `init()`. L'export JSON prend la carte entière.
 - Après une mutation : `pushUndo()` **avant** de modifier si l'action doit pouvoir s'annuler, puis `saveAll()`, puis `render()` (ou une mise à jour locale de la ligne + `updateStats()`).
+- `updateStats()` est le seul endroit qui rafraîchit les valeurs **dérivées** affichées hors de la ligne modifiée : total `X / 100`, répartition des couleurs, légalité, et compteur de chaque groupe (`.gcount`, recalculé à partir de `section._items`). Une mise à jour locale (ex. boutons + / −) doit donc toujours se terminer par `updateStats()`, et **tout nouveau compteur affiché doit y être recalculé** : sinon il ne suit que les rendus complets (bug déjà rencontré avec les compteurs de catégorie).
 - Persistance : `window.storage` s'il existe (environnement artefact Claude), sinon `localStorage` (clé `mtg-cmdr-decks`). Les handles de fichier de la sauvegarde rapide sont dans IndexedDB (`mtg-cmdr` / `handles`), un par deck.
 - Scryfall :
   - `/cards/collection` **ne trouve pas** les cartes double face par leur nom complet `A // B`. On cherche par la face avant, puis chaque `not_found` est recherché via `/cards/named`.
   - `normName()` (face avant, en minuscules) est la clé du cache `cache[]`.
 
+## Table de jeu
+
+- Deux scripts dans le fichier : `#core` (objet `Core`, règles pures et déterministes : `Core.apply(state, action)`) et `#ui` (réseau, rendu, interactions). Interface en français seulement, sans `t()`.
+- **Toute modification de la partie passe par `act({ type, … })`**. L'hôte applique l'action puis la diffuse ; les invités l'envoient à l'hôte et ne l'appliquent qu'à son retour. `Core` ne tire donc jamais d'aléa : l'ordre d'un mélange ou le résultat d'un dé est calculé par l'auteur de l'action et transmis dedans.
+- État `S` : `players{}` (`zones` = listes d'ids par zone, `life`, `poison`, `cmd{ idDuCommandant: blessures }`, `ctr{}`, `out`, `online`), `order[]`, `cards{}`, `turn`, `turnNo`, `over`, `log[]`. Le dessus de la bibliothèque est l'indice 0 ; le dessus du cimetière et de l'exil est le dernier élément.
+- Images : `card.img` est une URL, ou une clé `p:<empreinte>` pour une image locale. Les données (`IMG`, JPEG en data URL) voyagent à part de l'état, par messages `img` / `need`. Toujours afficher via `paintImg(el, ref)`.
+- Lien avec l'éditeur : la table lit `localStorage["mtg-cmdr-decks"]` et la base IndexedDB `mtg-cmdr` / `handles` (clés `roots`, `root:<nom>`) via `plib`. Si ces formats changent dans l'éditeur, adapter `editorDecks()`, `entriesOf()` et `plib`.
+- Rendu : `render()` (différé) reconstruit tout dans `paint()`. Les animations comparent les positions avant / après (`snapshot()` → `animate()`), les effets ponctuels (sons, bannière, secousse de la bibliothèque) partent de `fx(action)`.
+- Vérification visuelle : jsdom ne calcule pas la mise en page. Pour un changement de CSS ou de glisser-déposer, piloter un vrai Chromium (puppeteer-core hors dépôt) ; PeerJS et Scryfall réels y fonctionnent.
+
 ## Tests
 
-- Chaque bug corrigé reçoit un test `régression : …` qui échoue sur l'ancienne version.
+- Chaque bug corrigé reçoit un test `régression : …` qui échoue sur l'ancienne version : l'écrire **avant** le correctif et vérifier qu'il échoue.
+- Pour une action de l'interface, vérifier ce que l'utilisateur voit (texte du DOM : ligne, en-tête de groupe, total), pas seulement l'état `active()` : un état juste avec un affichage périmé est un bug.
 - `app.run("expr")` évalue dans la page et renvoie une **copie** des objets. Pour modifier l'état, faire la mutation dans l'expression : `app.run('active().cards[0].variant = "x"')`.
 - Le faux Scryfall (`fakeScryfall` dans `helpers.js`) doit reproduire les particularités réelles de l'API dont dépend le code, par exemple le piège des cartes double face.
 - APIs absentes de jsdom, simulées dans `openApp` ou par test : `showModal`/`close` des `<dialog>`, `DataTransfer` (via `dropEvent`), `showSaveFilePicker`, `showDirectoryPicker`, `showOpenFilePicker`, IndexedDB, presse-papier, `URL.createObjectURL` (qui renvoie `blob:test/<nom du fichier>#n`).

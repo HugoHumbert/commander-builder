@@ -1182,6 +1182,7 @@
           <button class="icob" id="quickSaveBtn">💾</button>
           <button class="icob" id="libBtn">📁</button>
           <button class="icob" id="undoBtn">↶</button>
+          <button class="icob" id="playBtn">▶</button>
         </div>
         <span class="count" id="count">0 / 100</span>
         <span class="legchip" id="legchip"
@@ -1510,6 +1511,7 @@
           imgLibAdd: "Ajouter un dossier…",
           imgLibManage: "Gérer…",
           ttLib: "Dossiers des proxys (images sur ton ordinateur)",
+          ttPlay: "Jouer ce deck sur la table de jeu multijoueur",
           ttLibWarn: (n) =>
             `Dossiers des proxys — ${n} à ré-autoriser pour afficher les images`,
           libTitle: "📁 Dossiers des proxys",
@@ -1669,6 +1671,7 @@
           imgLibAdd: "Add a folder…",
           imgLibManage: "Manage…",
           ttLib: "Proxy folders (images on your computer)",
+          ttPlay: "Play this deck on the multiplayer game table",
           ttLibWarn: (n) =>
             `Proxy folders — ${n} to re-authorize to show the images`,
           libTitle: "📁 Proxy folders",
@@ -2106,6 +2109,7 @@
           const isC = key === "Commander";
           const isCol = collapsed.has(key);
           sec.innerHTML = `<div class="ghead ${isC ? "cmd" : ""}"><span class="chev">${isCol ? "▸" : "▾"}</span><span class="gname ${isC ? "cmd" : ""}">${esc(gl)}</span><span class="gcount">${n}</span></div>`;
+          sec._items = items; // pour recalculer le compteur sans tout redessiner
           sec.querySelector(".ghead").onclick = () => {
             if (collapsed.has(key)) collapsed.delete(key);
             else collapsed.add(key);
@@ -2308,6 +2312,12 @@
         const cEl = $("#count");
         cEl.textContent = `${total} / 100`;
         cEl.className = "count" + (total !== 100 ? " bad" : "");
+        for (const sec of $("#list").querySelectorAll(".group"))
+          if (sec._items)
+            sec.querySelector(".gcount").textContent = sec._items.reduce(
+              (s, i) => s + i.qty,
+              0,
+            );
         const tal = { W: 0, U: 0, B: 0, R: 0, G: 0 };
         for (const it of d.cards) {
           const c = cardOf(it.name);
@@ -2629,6 +2639,14 @@
         saveAll();
       };
       $("#undoBtn").onclick = () => doUndo();
+      // la table de jeu lit ce deck (et ses dossiers de proxys) dans le même stockage
+      $("#playBtn").onclick = async () => {
+        await saveAll();
+        window.open(
+          "table-de-jeu-commander.html?deck=" + encodeURIComponent(active().id),
+          "_blank",
+        );
+      };
 
       /* ================= groupement ================= */
       $("#groupseg").addEventListener("click", (e) => {
@@ -3761,6 +3779,7 @@
         tip("bulkFoil", t("bulkFoilTip"));
         set("chlbl", t("colheadLbl"));
         tip("undoBtn", t("undoTip"));
+        tip("playBtn", t("ttPlay"));
         set("groupsBtnLbl", t("ttGroups"));
         set("customHint", t("dragHint"));
         set("lblGroup", t("grp"));

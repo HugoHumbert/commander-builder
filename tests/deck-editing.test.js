@@ -81,6 +81,37 @@ describe("lignes de cartes", () => {
     assert.equal(app.$("#count").textContent, "3 / 100");
   });
 
+  test("régression : + / − mettent à jour le compteur de la catégorie", () => {
+    const sec = () => app.row("Lightning Bolt").closest(".group");
+    const count = () => sec().querySelector(".gcount").textContent;
+    assert.equal(count(), "2");
+    const [minus, plus] = app
+      .row("Lightning Bolt")
+      .querySelectorAll(".qty button");
+    plus.click();
+    assert.equal(count(), "3");
+    minus.click();
+    minus.click();
+    assert.equal(count(), "1");
+    // les autres catégories ne bougent pas
+    const solSec = app.row("Sol Ring").closest(".group");
+    assert.notEqual(solSec, sec());
+    assert.equal(solSec.querySelector(".gcount").textContent, "1");
+  });
+
+  test("régression : le compteur suit aussi en groupement Custom et par coût", () => {
+    for (const mode of ["custom", "cmc"]) {
+      app.run(`groupBy = "${mode}"; render()`);
+      const plus = app.row("Lightning Bolt").querySelectorAll(".qty button")[1];
+      const count = () =>
+        app.row("Lightning Bolt").closest(".group").querySelector(".gcount")
+          .textContent;
+      const before = +count();
+      plus.click();
+      assert.equal(+count(), before + 1, "groupement " + mode);
+    }
+  });
+
   test("✕ retire la carte", () => {
     app.row("Lightning Bolt").querySelector(".rm").click();
     assert.deepEqual(

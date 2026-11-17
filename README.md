@@ -113,6 +113,41 @@ Les images de tes proxys restent **sur ton ordinateur** : la page les lit direct
 
 ---
 
+## 🎲 Table de jeu multijoueur
+
+`table-de-jeu-commander.html` est une table de jeu en ligne pour jouer tes decks **avec leurs images de proxy**, à la manière de playgroup.gg : chacun voit le plateau de tout le monde, et personne n'applique les règles à ta place (comme autour d'une vraie table).
+
+**Lancer une partie**
+
+1. Dans l'éditeur, clique sur **▶** : la table s'ouvre sur le deck actif. Tu peux aussi ouvrir `table-de-jeu-commander.html` directement.
+2. **Créer une table**, puis clique sur le code (en haut à gauche) pour le copier et l'envoyer aux autres joueurs.
+3. Les autres ouvrent la même page, saisissent le code, cliquent sur **Rejoindre** et chargent leur deck.
+
+La connexion est directe entre les joueurs (pair-à-pair, via PeerJS) : il n'y a pas de serveur de jeu. Celui qui crée la table doit rester connecté ; s'il recharge la page, il peut **reprendre sa table** avec le même code. Chaque joueur a besoin de la page : le plus simple est de l'héberger (GitHub Pages par exemple), sinon chacun ouvre sa copie du fichier.
+
+**Decks et images de proxy**
+
+- La fenêtre **Charger un deck** liste directement les **decks de l'éditeur** (même navigateur, les deux fichiers ouverts depuis le même dossier ou le même site). Sinon, importe l'export JSON ou une liste texte.
+- Les **images de proxy** du deck sont reprises : liens web tels quels, et fichiers des **dossiers de proxys 📁** de l'éditeur. Si Chrome redemande l'accès à un dossier, un bouton **Réautoriser le dossier** apparaît ; si le dossier est inconnu de ce navigateur, **Choisir le dossier** l'ajoute (il est alors aussi connu de l'éditeur).
+- Une image locale est réduite puis **envoyée aux autres joueurs** de la table, pour qu'ils voient tes proxys. Une carte sans proxy affiche l'image Scryfall, avec le nom de variante en étiquette.
+
+**Le plateau**
+
+- Chaque joueur a son **champ de bataille** et ses piles : **zone de commandement**, **bibliothèque** (face cachée), **cimetière** et **exil**. Ta **main** est en bas.
+- **Glisser-déposer** entre toutes les zones (et vers le champ de bataille d'un adversaire pour lui donner le contrôle). Les terrains joués se rangent en bas, le reste en haut.
+- **Clic** sur un permanent : engager / dégager. **Clic** sur la bibliothèque : piocher. **Double-clic** sur une carte en main : la jouer.
+- **Clic droit** partout : carte (marqueurs, face cachée, transformer, copie en jeton, déplacements, donner le contrôle…), bibliothèque (piocher X, mélanger, **chercher une carte / un terrain / un terrain de base**, regarder ou révéler le dessus, meuler, exiler, mulligan), cimetière et exil, main, joueur, champ de bataille (jetons via Scryfall).
+- **Sélection au lasso** sur le champ de bataille pour déplacer ou engager plusieurs cartes.
+- **Survol** d'une carte : aperçu agrandi juste à côté d'elle.
+- **Blessures de commandant** : bouton ⚔ de chaque joueur, ou clic droit sur un commandant. Elles sont comptées **par commandant**, retirent autant de points de vie, et 21 d'un même commandant sont signalées comme mortelles. La **taxe de commandant** s'affiche sur la zone de commandement.
+- Points de vie, poison, compteurs libres (énergie, expérience…), tours, dés, pile ou face, journal et discussion.
+- **Finir la partie** désigne le vainqueur chez tous les joueurs, qui peuvent relancer une partie avec les mêmes decks. **Quitter** retire ton plateau de la table ; un joueur déconnecté est compté « hors ligne ».
+- Animations des cartes et sons discrets (bouton 🔊 pour les couper). Le bouton **?** liste les raccourcis clavier (D piocher, U dégager tout, S mélanger, N tour suivant, T engager, G / E / H / B déplacer la carte survolée…).
+
+> Les informations cachées (mains, bibliothèques) ne sont pas affichées aux autres joueurs, mais la table repose sur la confiance : c'est un outil pour jouer entre amis.
+
+---
+
 ## 🛠️ Technique
 
 - **Vanilla JS** (aucune dépendance, aucun build), un seul fichier HTML.
@@ -122,7 +157,8 @@ Les images de tes proxys restent **sur ton ordinateur** : la page les lit direct
 ### Structure du dépôt
 
 ```txt
-editeur-deck-commander.html   # l'application (tout-en-un)
+editeur-deck-commander.html   # l'éditeur de decks (tout-en-un)
+table-de-jeu-commander.html   # la table de jeu multijoueur (tout-en-un, PeerJS chargé depuis un CDN)
 exemple-import.txt            # exemple d'import au format texte
 exemple-import.json           # exemple d'import au format JSON (avec variantes)
 tests/                        # tests de non-régression (Node + jsdom, hors ligne)
@@ -136,7 +172,7 @@ npm install   # une fois
 npm test
 ```
 
-Les tests chargent le vrai fichier HTML dans jsdom. Les réponses de Scryfall y sont simulées par des données de test, donc aucun accès réseau n'est nécessaire. Ils couvrent l'import et l'export, la légalité, la sauvegarde et le rechargement, l'édition du deck, les images de proxy et la sauvegarde rapide.
+Les tests chargent le vrai fichier HTML dans jsdom. Les réponses de Scryfall y sont simulées par des données de test, donc aucun accès réseau n'est nécessaire. Ils couvrent l'import et l'export, la légalité, la sauvegarde et le rechargement, l'édition du deck, les images de proxy et la sauvegarde rapide, ainsi que la table de jeu (règles, plateau, menus, multijoueur avec un réseau simulé).
 
 ---
 

@@ -1,0 +1,5942 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Table de jeu Commander</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0d0b0c;
+        --panel: #171314;
+        --panel2: #1f191b;
+        --line: #33292c;
+        --ink: #ece6e1;
+        --mute: #9a8f8c;
+        --blood: #a3182a;
+        --blood2: #d43348;
+        --gold: #c9a45c;
+        --ok: #5fae7a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          14px/1.4 Inter,
+          system-ui,
+          sans-serif;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: "Shippori Mincho", serif;
+        margin: 0;
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--blood2);
+      }
+      button.primary {
+        background: var(--blood);
+        border-color: var(--blood2);
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      input,
+      select,
+      textarea {
+        background: #0f0c0d;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 6px 8px;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      kbd {
+        font:
+          11px ui-monospace,
+          monospace;
+        background: #0008;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 0 5px;
+        color: var(--gold);
+      }
+
+      /* Accueil */
+      #lobby {
+        height: 100%;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        overflow: auto;
+        background: radial-gradient(
+          ellipse at 50% 0,
+          #2a1216 0,
+          transparent 60%
+        );
+      }
+      #lobby .box {
+        width: min(480px, 100%);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 24px;
+        display: grid;
+        gap: 14px;
+      }
+      #lobby h1 {
+        font-size: 28px;
+      }
+      #lobby h1 span {
+        color: var(--blood2);
+      }
+      #lobby label {
+        display: grid;
+        gap: 4px;
+        color: var(--mute);
+        font-size: 12px;
+      }
+      #lobby .row {
+        display: flex;
+        gap: 8px;
+      }
+      #lobby .row > * {
+        flex: 1;
+      }
+      #lobby small {
+        color: var(--mute);
+      }
+
+      /* Application */
+      #app {
+        height: 100%;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        grid-template-columns: 1fr auto;
+      }
+      #top {
+        grid-column: 1/3;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        padding: 6px 10px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+      }
+      #top h1 {
+        font-size: 17px;
+        margin-right: 6px;
+      }
+      #top h1 span {
+        color: var(--blood2);
+      }
+      #top .code {
+        font-family: ui-monospace, monospace;
+        letter-spacing: 2px;
+        color: var(--gold);
+        border-style: dashed;
+      }
+      #top .sp {
+        flex: 1;
+      }
+      #pcount {
+        font-weight: 600;
+        font-size: 12px;
+      }
+      #status,
+      #turninfo {
+        color: var(--mute);
+        font-size: 12px;
+      }
+      #turninfo b {
+        color: var(--gold);
+      }
+      #table {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: minmax(0, 30fr) minmax(0, 50fr) auto;
+        gap: 6px;
+        padding: 6px;
+      }
+      #opps {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: 6px;
+        min-height: 0;
+      }
+      #mine {
+        min-height: 0;
+        display: grid;
+      }
+
+      /* Plateau d'un joueur */
+      .board {
+        --pc: var(--gold);
+        display: grid;
+        grid-template-rows: auto 1fr;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        min-height: 0;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .board.active {
+        border-color: var(--gold);
+        box-shadow:
+          0 0 0 1px var(--gold) inset,
+          0 0 18px #c9a45c33;
+      }
+      .board.out {
+        filter: grayscale(0.8) brightness(0.7);
+      }
+      .board.offline .bhead {
+        opacity: 0.6;
+      }
+      .bhead {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 8px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+        background: linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--pc) 22%, transparent),
+          transparent 45%
+        );
+      }
+      .bhead button {
+        padding: 0 7px;
+      }
+      .pname {
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 5px;
+        background: var(--pc);
+      }
+      .life {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .life b {
+        font-size: 16px;
+        margin: 0 5px;
+        cursor: pointer;
+        min-width: 38px;
+        text-align: center;
+      }
+      .life b.low {
+        color: var(--blood2);
+      }
+      .poison {
+        color: var(--ok);
+      }
+      .tag {
+        font-size: 11px;
+        padding: 1px 7px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        white-space: nowrap;
+      }
+      .tag.cmdd {
+        color: var(--gold);
+        cursor: pointer;
+      }
+      .tag.lethal {
+        background: var(--blood);
+        color: #fff;
+        border-color: var(--blood2);
+      }
+      .tag.ctr {
+        cursor: pointer;
+      }
+      .bhead .r {
+        margin-left: auto;
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .handchip b {
+        color: var(--gold);
+      }
+      .bbody {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        min-height: 0;
+        container-type: size;
+      }
+      .bf {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        container-type: size;
+        --cw: min(8cqw, 30cqh);
+        background:
+          radial-gradient(
+            ellipse at 50% 130%,
+            color-mix(in srgb, var(--pc) 26%, transparent) 0,
+            transparent 62%
+          ),
+          repeating-linear-gradient(0deg, #ffffff03 0 2px, transparent 2px 5px);
+      }
+      .bf .card {
+        left: min(calc(var(--x) * 1%), calc(100cqw - var(--cw)));
+        top: min(calc(var(--y) * 1%), calc(100cqh - var(--cw) * 1.4));
+      }
+      .bf.over,
+      #handbar.over,
+      .pile.over .slot {
+        outline: 2px dashed var(--gold);
+        outline-offset: -2px;
+      }
+      .zones {
+        --pw: min(8cqw, 27cqh, 116px);
+        display: grid;
+        grid-template-columns: repeat(2, var(--pw));
+        gap: calc(var(--pw) * 0.08) calc(var(--pw) * 0.14);
+        align-content: center;
+        padding: 0 calc(var(--pw) * 0.16);
+        border-left: 1px solid var(--line);
+        background: #0004;
+      }
+      .pile {
+        width: var(--pw);
+        --cw: var(--pw);
+        display: grid;
+        gap: 7px;
+        justify-items: center;
+      }
+      .pile .slot {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 488/680;
+        border-radius: 5%/3.6%;
+        border: 1px dashed #ffffff22;
+        background: #0005;
+        cursor: pointer;
+      }
+      .pile .slot .card {
+        left: -1px;
+        top: -1px;
+      }
+      .pile .slot .card + .card {
+        left: 18%;
+        top: 6%;
+      }
+      .pile .cap {
+        font-size: clamp(8px, calc(var(--pw) * 0.15), 11px);
+        color: var(--mute);
+        white-space: nowrap;
+        line-height: 1.1;
+        max-width: calc(var(--pw) * 1.25);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pile .n {
+        position: absolute;
+        right: -5px;
+        bottom: -4px;
+        z-index: 3;
+        min-width: 20px;
+        padding: 0 5px;
+        border-radius: 10px;
+        background: #000d;
+        border: 1px solid var(--gold);
+        color: var(--gold);
+        font-size: clamp(9px, calc(var(--pw) * 0.17), 12px);
+        font-weight: 600;
+        text-align: center;
+        pointer-events: none;
+      }
+      .pile .tax {
+        position: absolute;
+        left: -4px;
+        top: -4px;
+        z-index: 3;
+        padding: 0 5px;
+        border-radius: 10px;
+        background: var(--blood);
+        border: 1px solid #fff5;
+        font-size: clamp(8px, calc(var(--pw) * 0.15), 11px);
+        pointer-events: none;
+      }
+      .pile.s1 .card.top {
+        box-shadow:
+          1px 1px 0 #6b4a1e,
+          2px 2px 0 #1a0f07,
+          0 3px 6px #000a;
+      }
+      .pile.s2 .card.top {
+        box-shadow:
+          1px 1px 0 #6b4a1e,
+          2px 2px 0 #1a0f07,
+          3px 3px 0 #6b4a1e,
+          4px 4px 0 #1a0f07,
+          0 5px 8px #000a;
+      }
+      .pile.s3 .card.top {
+        box-shadow:
+          1px 1px 0 #6b4a1e,
+          2px 2px 0 #1a0f07,
+          3px 3px 0 #6b4a1e,
+          4px 4px 0 #1a0f07,
+          5px 5px 0 #6b4a1e,
+          6px 6px 0 #1a0f07,
+          0 7px 10px #000a;
+      }
+      .pile.shuf .card.top {
+        animation: shuf 0.5s;
+      }
+      .empty {
+        display: grid;
+        place-items: center;
+        color: var(--mute);
+        padding: 20px;
+        text-align: center;
+      }
+      #handbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        min-height: 60px;
+        padding: 8px 10px 6px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: visible;
+        --cw: clamp(64px, 7vw, 108px);
+      }
+      #handbar .card {
+        position: relative;
+        flex: 0 0 auto;
+        margin-left: var(--ov, 4px);
+        transition: transform 0.12s;
+      }
+      #handbar .card:first-child {
+        margin-left: 0;
+      }
+      #handbar .card:hover {
+        transform: translateY(-12px);
+        z-index: 5;
+      }
+      #handbar .hint {
+        color: var(--mute);
+        font-size: 12px;
+        align-self: center;
+      }
+
+      /* Cartes */
+      .card {
+        position: absolute;
+        width: var(--cw);
+        aspect-ratio: 488/680;
+        border-radius: 5%/3.6%;
+        background: #241c1e center/cover no-repeat;
+        border: 1px solid #000;
+        box-shadow: 0 2px 6px #000a;
+        touch-action: none;
+        cursor: grab;
+        transition: rotate 0.16s;
+      }
+      .card.tapped {
+        rotate: 90deg;
+      }
+      .card.back {
+        background:
+          radial-gradient(
+            ellipse 30% 22% at 50% 50%,
+            #d9b866 0 55%,
+            #7a5220 56% 97%,
+            transparent 100%
+          ),
+          radial-gradient(
+            ellipse 62% 47% at 50% 50%,
+            #4b2f14 0 97%,
+            transparent 100%
+          ),
+          repeating-linear-gradient(45deg, #3a2410 0 5px, #2e1c0c 5px 10px);
+        border: calc(var(--cw) * 0.05) solid #140c06;
+      }
+      .card.peek {
+        outline: 2px dashed var(--gold);
+        outline-offset: -3px;
+        opacity: 0.8;
+      }
+      .card.token {
+        border-color: var(--gold);
+      }
+      .card.sel {
+        outline: 2px solid #6cc4ff;
+        outline-offset: 1px;
+      }
+      .card.cmdr {
+        box-shadow:
+          0 0 0 1px var(--gold),
+          0 2px 6px #000a;
+      }
+      .card.ping::after {
+        content: "";
+        position: absolute;
+        inset: -6px;
+        border: 3px solid var(--blood2);
+        border-radius: 8px;
+        animation: ping 0.7s 3;
+        pointer-events: none;
+      }
+      .card .txt {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 8%;
+        font-size: calc(var(--cw) / 8.5);
+        line-height: 1.15;
+        text-align: center;
+        background: linear-gradient(#2c2326, #191315);
+        border-radius: inherit;
+        overflow: hidden;
+      }
+      .card .txt span {
+        color: var(--gold);
+        font-weight: 600;
+      }
+      .card .txt i {
+        color: var(--mute);
+        font-size: 0.85em;
+      }
+      .card .lbl {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 1px 3px;
+        font-size: max(8px, calc(var(--cw) / 10));
+        background: #000c;
+        color: var(--gold);
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border-radius: 0 0 4px 4px;
+      }
+      .card .ctrs {
+        position: absolute;
+        left: 2px;
+        top: 20%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+      .card .ctrs span {
+        background: var(--blood);
+        border: 1px solid #fff5;
+        border-radius: 10px;
+        padding: 0 5px;
+        font-size: max(9px, calc(var(--cw) / 8));
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .ghost {
+        position: fixed !important;
+        left: 0;
+        top: 0;
+        margin: 0 !important;
+        pointer-events: none;
+        z-index: 999;
+        rotate: none !important;
+        transition: none !important;
+      }
+      #marquee {
+        position: fixed;
+        border: 1px solid #6cc4ff;
+        background: #6cc4ff22;
+        z-index: 90;
+        pointer-events: none;
+        display: none;
+      }
+      .float {
+        position: fixed;
+        z-index: 120;
+        font-weight: 700;
+        font-size: 18px;
+        pointer-events: none;
+        animation: floatup 1.1s forwards;
+        text-shadow: 0 1px 3px #000;
+      }
+      .float.up {
+        color: var(--ok);
+      }
+      .float.down {
+        color: var(--blood2);
+      }
+      #banner {
+        position: fixed;
+        left: 50%;
+        top: 38%;
+        translate: -50% 0;
+        z-index: 110;
+        padding: 10px 34px;
+        border-radius: 40px;
+        background: #000c;
+        border: 1px solid var(--gold);
+        color: var(--gold);
+        font:
+          800 24px "Shippori Mincho",
+          serif;
+        pointer-events: none;
+        display: none;
+      }
+      #banner.on {
+        display: block;
+        animation: banner 1.6s forwards;
+      }
+      @keyframes shuf {
+        0%,
+        100% {
+          translate: 0 0;
+          rotate: 0deg;
+        }
+        20% {
+          translate: -12% 0;
+          rotate: -5deg;
+        }
+        40% {
+          translate: 12% 0;
+          rotate: 5deg;
+        }
+        60% {
+          translate: -8% 0;
+          rotate: -3deg;
+        }
+        80% {
+          translate: 8% 0;
+          rotate: 3deg;
+        }
+      }
+      @keyframes ping {
+        0% {
+          opacity: 1;
+          scale: 0.9;
+        }
+        100% {
+          opacity: 0;
+          scale: 1.25;
+        }
+      }
+      @keyframes floatup {
+        0% {
+          opacity: 0;
+          translate: 0 6px;
+        }
+        15% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          translate: 0 -34px;
+        }
+      }
+      @keyframes banner {
+        0% {
+          opacity: 0;
+          scale: 0.8;
+        }
+        15%,
+        75% {
+          opacity: 1;
+          scale: 1;
+        }
+        100% {
+          opacity: 0;
+          scale: 1.05;
+        }
+      }
+      @keyframes pop {
+        0% {
+          scale: 1;
+        }
+        40% {
+          scale: 1.35;
+        }
+        100% {
+          scale: 1;
+        }
+      }
+      .life b.pop {
+        animation: pop 0.35s;
+      }
+
+      /* Journal */
+      #logp {
+        width: 250px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        background: var(--panel);
+        border-left: 1px solid var(--line);
+        min-height: 0;
+      }
+      #logp h3 {
+        padding: 8px 10px;
+        font-size: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      #log {
+        overflow: auto;
+        padding: 6px 10px;
+        font-size: 12px;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+      #log p {
+        margin: 0 0 5px;
+        color: var(--mute);
+      }
+      #logp form {
+        display: flex;
+        border-top: 1px solid var(--line);
+      }
+      #logp input {
+        flex: 1;
+        border: 0;
+        border-radius: 0;
+      }
+
+      /* Aperçu, menu, fenêtres */
+      #preview {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: min(330px, 28vw, 46vh);
+        aspect-ratio: 488/680;
+        border-radius: 4.5%/3.3%;
+        background: #000 center/cover no-repeat;
+        box-shadow:
+          0 10px 40px #000,
+          0 0 0 1px #000;
+        pointer-events: none;
+        z-index: 150;
+        display: none;
+        --cw: min(330px, 28vw, 46vh);
+      }
+      #preview .txt {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 8%;
+        font-size: 18px;
+        text-align: center;
+        background: linear-gradient(#2c2326, #191315);
+        border-radius: inherit;
+      }
+      #preview .txt span {
+        color: var(--gold);
+        font-weight: 600;
+      }
+      #preview .txt i {
+        color: var(--mute);
+        font-size: 14px;
+      }
+      #preview .pinfo {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
+        margin-top: 4px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--gold);
+        text-shadow: 0 1px 3px #000;
+      }
+      #menu {
+        position: fixed;
+        z-index: 200;
+        min-width: 220px;
+        max-height: 92vh;
+        overflow: auto;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 4px;
+        display: none;
+        box-shadow: 0 8px 30px #000;
+      }
+      #menu button {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        background: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+      }
+      #menu button:hover {
+        background: var(--blood);
+      }
+      #menu hr {
+        border: 0;
+        border-top: 1px solid var(--line);
+        margin: 4px 0;
+      }
+      #menu .mh {
+        padding: 3px 10px 1px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--mute);
+      }
+      #modal,
+      #ask,
+      #over,
+      #reveal {
+        position: fixed;
+        inset: 0;
+        background: #000b;
+        z-index: 100;
+        display: none;
+        place-items: center;
+        padding: 12px;
+      }
+      #ask {
+        z-index: 210;
+      }
+      #over {
+        z-index: 95;
+      }
+      #reveal {
+        z-index: 105;
+        background: #000a;
+        cursor: pointer;
+      }
+      .win {
+        width: min(980px, 100%);
+        max-height: 92vh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .win.small {
+        width: min(440px, 100%);
+      }
+      .win .mh {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .win .mh h2 {
+        font-size: 18px;
+        flex: 1;
+      }
+      .win .mb {
+        overflow: auto;
+        padding: 14px;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+      .grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        --cw: 124px;
+      }
+      .cell {
+        width: 124px;
+        display: grid;
+        gap: 3px;
+      }
+      .cell .card {
+        position: relative;
+      }
+      .cell .acts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+      }
+      .cell .acts button {
+        padding: 0 5px;
+        font-size: 11px;
+        flex: 1;
+      }
+      .cell small {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--mute);
+        font-size: 11px;
+      }
+      .rowf {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .rowf h4 {
+        margin: 0;
+        font-size: 12px;
+        color: var(--mute);
+        font-weight: 500;
+        min-width: 120px;
+      }
+      .pill {
+        border-radius: 20px;
+        padding: 3px 12px;
+      }
+      .pill.on {
+        background: var(--blood);
+        border-color: var(--blood2);
+      }
+      .pill b {
+        color: var(--gold);
+        font-weight: 500;
+      }
+      .warnbox {
+        border: 1px solid var(--gold);
+        border-radius: 8px;
+        padding: 8px 10px;
+        color: var(--gold);
+        display: grid;
+        gap: 6px;
+      }
+      .dl {
+        display: grid;
+        gap: 4px;
+      }
+      .dl .r {
+        display: grid;
+        grid-template-columns: 34px 1fr 26px minmax(90px, 200px) auto;
+        gap: 6px;
+        align-items: center;
+        font-size: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 2px 0;
+      }
+      .dl .th {
+        width: 34px;
+        aspect-ratio: 488/680;
+        background: #241c1e center/cover;
+        border-radius: 3px;
+      }
+      .dl .th.miss {
+        outline: 2px solid var(--blood2);
+      }
+      .dl .v {
+        color: var(--gold);
+      }
+      .cdrow {
+        display: grid;
+        grid-template-columns: 44px 1fr auto auto auto;
+        gap: 10px;
+        align-items: center;
+      }
+      .cdrow .th {
+        width: 44px;
+        aspect-ratio: 488/680;
+        background: #241c1e center/cover;
+        border-radius: 3px;
+      }
+      .cdrow b {
+        font-size: 18px;
+        min-width: 52px;
+        text-align: center;
+      }
+      .cdrow b.lethal {
+        color: var(--blood2);
+      }
+      .score {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 4px 16px;
+      }
+      .score .w {
+        color: var(--gold);
+        font-weight: 600;
+      }
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+      #reveal .grid {
+        --cw: min(240px, 26vw);
+        justify-content: center;
+      }
+      #reveal .cell {
+        width: min(240px, 26vw);
+      }
+      #reveal h2 {
+        text-align: center;
+        margin-bottom: 14px;
+        text-shadow: 0 2px 6px #000;
+      }
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        background: var(--blood);
+        padding: 8px 16px;
+        border-radius: 20px;
+        z-index: 300;
+        display: none;
+        max-width: 90vw;
+      }
+      @media (max-width: 800px) {
+        #logp {
+          display: none;
+        }
+        #preview {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="lobby">
+      <div class="box">
+        <h1>Table de jeu <span>Commander</span></h1>
+        <label
+          >Ton pseudo<input id="lname" maxlength="20" placeholder="Pseudo"
+        /></label>
+        <button class="primary" id="lhost">Créer une table</button>
+        <button id="lresume" hidden></button>
+        <div class="row">
+          <input
+            id="lcode"
+            maxlength="6"
+            placeholder="Code de la table"
+            style="text-transform: uppercase"
+          /><button id="ljoin">Rejoindre</button>
+        </div>
+        <small
+          >Table manuelle en pair-à-pair, comme autour d'une vraie table :
+          personne n'applique les règles à ta place. Celui qui crée la table
+          doit rester connecté. Chacun charge son deck une fois à table. Outil
+          non officiel, usage personnel ; images de cartes fournies par
+          Scryfall.</small
+        >
+      </div>
+    </div>
+
+    <div id="app" hidden>
+      <header id="top">
+        <h1>Table <span>Commander</span></h1>
+        <button class="code" id="bcode" title="Copier l'invitation"></button>
+        <span id="pcount"></span>
+        <span id="status"></span>
+        <span id="turninfo"></span>
+        <span class="sp"></span>
+        <button id="bdeck" class="primary">Charger un deck</button>
+        <button id="buntap" title="Dégager tous mes permanents (U)">
+          Dégager tout
+        </button>
+        <button id="btoken">Jeton</button>
+        <button id="bdice">Dés</button>
+        <button id="bturn" title="Passer le tour (N)">Tour suivant</button>
+        <button id="bend">Finir la partie</button>
+        <button id="bsound" title="Sons"></button>
+        <button id="bhelp" title="Raccourcis">?</button>
+        <button id="blog">Journal</button>
+        <button id="bleave">Quitter</button>
+      </header>
+      <main id="table">
+        <section id="opps"></section>
+        <section id="mine"></section>
+        <section id="handbar" data-drop="hand"></section>
+      </main>
+      <aside id="logp">
+        <h3>Journal</h3>
+        <div id="log"></div>
+        <form id="chat">
+          <input id="chatin" placeholder="Message…" maxlength="200" />
+        </form>
+      </aside>
+    </div>
+
+    <div id="preview"></div>
+    <div id="marquee"></div>
+    <div id="banner"></div>
+    <div id="over"></div>
+    <div id="modal"></div>
+    <div id="reveal"></div>
+    <div id="menu"></div>
+    <div id="ask"></div>
+    <div id="toast"></div>
+    <input type="file" id="dirinp" webkitdirectory hidden />
+
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+    <script id="core">
+      /* Règles d'état de la table : fonctions pures, sans DOM, identiques chez tous les joueurs.
+   Tout aléa (ordre de mélange, dé) est tiré par l'auteur de l'action et transmis dedans. */
+      const Core = (function () {
+        "use strict";
+        const PUBLIC = { battlefield: 1, graveyard: 1, exile: 1, command: 1 };
+        const ZN = {
+          library: "bibliothèque",
+          hand: "main",
+          battlefield: "champ de bataille",
+          graveyard: "cimetière",
+          exile: "exil",
+          command: "zone de commandement",
+        };
+        const START_LIFE = 40,
+          CMD_LETHAL = 21;
+        function newState() {
+          return {
+            players: {},
+            order: [],
+            cards: {},
+            turn: null,
+            turnNo: 0,
+            over: null,
+            log: [],
+          };
+        }
+        function newZones() {
+          return {
+            library: [],
+            hand: [],
+            battlefield: [],
+            graveyard: [],
+            exile: [],
+            command: [],
+          };
+        }
+        function say(s, a, m) {
+          s.log.push({ p: a.by || null, m: m, t: a.ts || 0 });
+          if (s.log.length > 400) s.log.splice(0, s.log.length - 400);
+        }
+        function pl(n, one, many) {
+          return n + " " + (n > 1 ? many || one + "s" : one);
+        }
+        function detach(s, c) {
+          const p = s.players[c.ctrl];
+          if (!p) return;
+          const z = p.zones[c.zone];
+          const i = z ? z.indexOf(c.id) : -1;
+          if (i >= 0) z.splice(i, 1);
+        }
+        function clean(c) {
+          c.tapped = false;
+          c.counters = {};
+          c.faceDown = false;
+          c.side = 0;
+        }
+        // Hors du champ de bataille, une carte revient toujours à son propriétaire et un jeton disparaît.
+        function place(s, c, pid, zone, pos) {
+          detach(s, c);
+          if (c.token && zone !== "battlefield") {
+            delete s.cards[c.id];
+            return false;
+          }
+          if (zone !== "battlefield") {
+            clean(c);
+            if (s.players[c.owner]) pid = c.owner;
+          }
+          const p = s.players[pid];
+          if (!p) {
+            delete s.cards[c.id];
+            return false;
+          }
+          c.ctrl = pid;
+          c.zone = zone;
+          const z = p.zones[zone];
+          if (typeof pos === "number")
+            z.splice(Math.max(0, Math.min(z.length, pos)), 0, c.id);
+          else if (zone === "library" && pos !== "bottom") z.unshift(c.id);
+          else z.push(c.id);
+          return true;
+        }
+        function setLibrary(p, order) {
+          const have = p.zones.library.slice();
+          const set = new Set(have);
+          const out = [];
+          (order || []).forEach((id) => {
+            if (set.has(id)) {
+              out.push(id);
+              set.delete(id);
+            }
+          });
+          have.forEach((id) => {
+            if (set.has(id)) out.push(id);
+          });
+          p.zones.library = out;
+        }
+        function draw(s, p, n) {
+          let k = 0;
+          for (let i = 0; i < n && p.zones.library.length; i++) {
+            place(s, s.cards[p.zones.library[0]], p.id, "hand");
+            k++;
+          }
+          return k;
+        }
+        function mkCard(d, pid) {
+          return {
+            id: String(d.id),
+            owner: pid,
+            ctrl: pid,
+            name: String(d.name || "Carte").slice(0, 150),
+            label: String(d.label || "").slice(0, 80),
+            img: d.img || "",
+            img2: d.img2 || "",
+            pt: d.pt || "",
+            tl: d.tl || "",
+            cmd: !!d.cmd,
+            token: !!d.token,
+            tapped: false,
+            faceDown: false,
+            side: 0,
+            counters: {},
+            casts: 0,
+            x: d.x || 0,
+            y: d.y || 0,
+            zone: "library",
+          };
+        }
+        function clamp(v, a, b) {
+          v = +v;
+          if (!isFinite(v)) v = a;
+          return Math.max(a, Math.min(b, v));
+        }
+        function shown(c) {
+          return c.faceDown ? "une carte face cachée" : c.name;
+        }
+        function nextTurn(s, from) {
+          const o = s.order,
+            i = o.indexOf(from);
+          for (let k = 1; k <= o.length; k++) {
+            const id = o[(i + k + o.length) % o.length];
+            if (!s.players[id].out) return id;
+          }
+          return s.players[from] ? from : null;
+        }
+        function resetPlayer(s, p, order) {
+          Object.keys(s.cards).forEach((id) => {
+            const c = s.cards[id];
+            if (c.owner !== p.id) return;
+            detach(s, c);
+            if (c.token) {
+              delete s.cards[id];
+              return;
+            }
+            clean(c);
+            c.casts = 0;
+            c.ctrl = p.id;
+            c.zone = c.cmd ? "command" : "library";
+            p.zones[c.zone].push(c.id);
+          });
+          setLibrary(p, order);
+          p.life = START_LIFE;
+          p.poison = 0;
+          p.cmd = {};
+          p.ctr = {};
+          p.out = false;
+          draw(s, p, 7);
+        }
+        function toFront(s, c) {
+          const p = s.players[c.ctrl];
+          if (!p) return;
+          const z = p.zones.battlefield,
+            i = z.indexOf(c.id);
+          if (i >= 0) {
+            z.splice(i, 1);
+            z.push(c.id);
+          }
+        }
+        function setPos(c, x, y) {
+          c.x = clamp(x, 0, 95);
+          c.y = clamp(y, 0, 90);
+        }
+        // Déplace une carte ; renvoie null si rien n'a bougé, sinon de quoi rédiger le journal.
+        function doMove(s, cid, to, o) {
+          const c = s.cards[cid];
+          if (!c || !to || !ZN[to.zone]) return null;
+          const r = {
+            name: c.name,
+            from: c.zone,
+            fromCtrl: c.ctrl,
+            wasDown: c.faceDown,
+          };
+          if (!place(s, c, to.pid, to.zone, to.pos)) {
+            r.gone = true;
+            return r;
+          }
+          if (c.zone === "battlefield") {
+            if (o && o.x != null) setPos(c, o.x, o.y);
+            if (r.from !== "battlefield") {
+              c.faceDown = !!(o && o.faceDown);
+              c.tapped = !!(o && o.tapped);
+              if (c.cmd && r.from === "command") c.casts = (c.casts || 0) + 1;
+            }
+          }
+          r.c = c;
+          r.shown =
+            (PUBLIC[r.from] && !r.wasDown) || (PUBLIC[c.zone] && !c.faceDown);
+          return r;
+        }
+        function where(zone, pos) {
+          return (
+            ZN[zone] +
+            (zone === "library"
+              ? pos === "bottom"
+                ? " (dessous)"
+                : " (dessus)"
+              : "")
+          );
+        }
+
+        function apply(s, a) {
+          const me = s.players[a.by];
+          const who = me ? me.name : "Quelqu'un";
+          switch (a.type) {
+            case "join": {
+              const d = a.player;
+              if (!d || !d.id) break;
+              Object.keys(s.cards).forEach((id) => {
+                const c = s.cards[id];
+                if (c.owner === d.id) {
+                  detach(s, c);
+                  delete s.cards[id];
+                }
+              });
+              let p = s.players[d.id];
+              if (!p) {
+                p = s.players[d.id] = { id: d.id, zones: newZones() };
+                s.order.push(d.id);
+                if (!s.turn) {
+                  s.turn = d.id;
+                  s.turnNo = 1;
+                }
+              }
+              p.name = String(d.name || "Joueur").slice(0, 20);
+              p.color = d.color || "#c9a45c";
+              p.deck = String(d.deck || "").slice(0, 60);
+              p.online = true;
+              (a.cards || []).forEach((x) => {
+                const c = mkCard(x, d.id);
+                s.cards[c.id] = c;
+              });
+              resetPlayer(s, p, a.order);
+              say(
+                s,
+                a,
+                p.name +
+                  " s'installe avec « " +
+                  (p.deck || "un deck") +
+                  " » et pioche 7 cartes.",
+              );
+              break;
+            }
+            case "leave": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              Object.keys(s.cards).forEach((id) => {
+                const c = s.cards[id];
+                if (!c) return;
+                if (c.owner === p.id) {
+                  detach(s, c);
+                  delete s.cards[id];
+                } else if (c.ctrl === p.id) place(s, c, c.owner, "battlefield");
+              });
+              const next = s.turn === p.id ? nextTurn(s, p.id) : s.turn;
+              delete s.players[p.id];
+              s.order = s.order.filter((id) => id !== p.id);
+              s.turn =
+                next === p.id || !s.players[next] ? s.order[0] || null : next;
+              say(
+                s,
+                a,
+                p.name +
+                  (a.by === p.id
+                    ? " quitte la table."
+                    : " est retiré de la table."),
+              );
+              break;
+            }
+            case "reset": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              resetPlayer(s, p, a.order);
+              say(
+                s,
+                a,
+                p.name + " recommence avec son deck et pioche 7 cartes.",
+              );
+              break;
+            }
+            case "endGame": {
+              const w = s.players[a.winner];
+              s.over = { winner: w ? w.id : null, ts: a.ts || 0 };
+              say(
+                s,
+                a,
+                who +
+                  " termine la partie. " +
+                  (w
+                    ? "Victoire de " + w.name + " !"
+                    : "Pas de vainqueur désigné."),
+              );
+              break;
+            }
+            case "newGame": {
+              s.order.forEach((id) =>
+                resetPlayer(s, s.players[id], (a.orders || {})[id]),
+              );
+              s.over = null;
+              s.turnNo = s.order.length ? 1 : 0;
+              s.turn = s.players[a.first] ? a.first : s.order[0] || null;
+              say(
+                s,
+                a,
+                who +
+                  " lance une nouvelle partie. " +
+                  (s.turn ? s.players[s.turn].name + " commence." : ""),
+              );
+              break;
+            }
+            case "online": {
+              const p = s.players[a.pid];
+              if (p) p.online = !!a.v;
+              break;
+            }
+            case "concede": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              p.out = a.v !== false;
+              say(
+                s,
+                a,
+                p.name + (p.out ? " est éliminé." : " revient dans la partie."),
+              );
+              if (p.out && s.turn === p.id) {
+                const n = nextTurn(s, p.id);
+                if (n && n !== p.id) {
+                  s.turn = n;
+                  s.turnNo++;
+                  say(
+                    s,
+                    a,
+                    "Tour " + s.turnNo + " : " + s.players[n].name + ".",
+                  );
+                }
+              }
+              break;
+            }
+            case "move": {
+              const r = doMove(s, a.cid, a.to, a);
+              if (!r) break;
+              if (r.gone) {
+                say(s, a, who + " retire le jeton " + r.name + ".");
+                break;
+              }
+              const c = r.c;
+              if (r.from === "battlefield" && c.zone === "battlefield") {
+                if (r.fromCtrl !== c.ctrl)
+                  say(
+                    s,
+                    a,
+                    s.players[c.ctrl].name +
+                      " prend le contrôle de " +
+                      shown(c) +
+                      ".",
+                  );
+              } else if (!(
+                r.from === c.zone &&
+                r.fromCtrl === c.ctrl &&
+                c.zone === "hand"
+              )) {
+                say(
+                  s,
+                  a,
+                  who +
+                    " déplace " +
+                    (r.shown ? r.name : "une carte") +
+                    " : " +
+                    ZN[r.from] +
+                    " → " +
+                    where(c.zone, a.to.pos) +
+                    ".",
+                );
+              }
+              break;
+            }
+            case "moveMany": {
+              if (!a.to || !ZN[a.to.zone]) break;
+              const names = [];
+              let n = 0;
+              (a.cids || []).forEach((id) => {
+                const r = doMove(s, id, a.to, null);
+                if (r) {
+                  n++;
+                  if (r.gone || r.shown) names.push(r.name);
+                }
+              });
+              if (n)
+                say(
+                  s,
+                  a,
+                  who +
+                    " déplace " +
+                    pl(n, "carte") +
+                    " → " +
+                    where(a.to.zone, a.to.pos) +
+                    (names.length ? " : " + names.join(", ") : "") +
+                    ".",
+                );
+              break;
+            }
+            case "zoneAll": {
+              const p = s.players[a.pid];
+              if (!p || !p.zones[a.from] || !ZN[a.to] || a.from === a.to) break;
+              const ids = p.zones[a.from].slice();
+              if (!ids.length) break;
+              ids.forEach((id) =>
+                doMove(s, id, { pid: p.id, zone: a.to, pos: "bottom" }, null),
+              );
+              if (a.order) setLibrary(p, a.order);
+              say(
+                s,
+                a,
+                p.name +
+                  " déplace " +
+                  pl(ids.length, "carte") +
+                  " : " +
+                  ZN[a.from] +
+                  " → " +
+                  ZN[a.to] +
+                  (a.order ? ", puis mélange" : "") +
+                  ".",
+              );
+              break;
+            }
+            case "pos": {
+              const c = s.cards[a.cid];
+              if (c && c.zone === "battlefield") {
+                setPos(c, a.x, a.y);
+                toFront(s, c);
+              }
+              break;
+            }
+            case "posMany": {
+              (a.items || []).forEach((it) => {
+                const c = s.cards[it.cid];
+                if (c && c.zone === "battlefield") setPos(c, it.x, it.y);
+              });
+              break;
+            }
+            case "tap": {
+              (a.cids || []).forEach((id) => {
+                const c = s.cards[id];
+                if (c && c.zone === "battlefield")
+                  c.tapped = a.v == null ? !c.tapped : !!a.v;
+              });
+              break;
+            }
+            case "untapAll": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              p.zones.battlefield.forEach((id) => {
+                if (s.cards[id]) s.cards[id].tapped = false;
+              });
+              say(s, a, p.name + " dégage ses permanents.");
+              break;
+            }
+            case "draw": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              const k = draw(s, p, a.n || 1);
+              say(s, a, p.name + " pioche " + pl(k, "carte") + ".");
+              break;
+            }
+            case "mill": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              const names = [],
+                to = a.to === "exile" ? "exile" : "graveyard";
+              for (let i = 0; i < (a.n || 1) && p.zones.library.length; i++) {
+                const c = s.cards[p.zones.library[0]];
+                names.push(c.name);
+                place(s, c, p.id, to);
+              }
+              say(
+                s,
+                a,
+                p.name +
+                  (to === "exile" ? " exile " : " meule ") +
+                  pl(names.length, "carte") +
+                  " du dessus : " +
+                  names.join(", ") +
+                  ".",
+              );
+              break;
+            }
+            case "shuffle": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              setLibrary(p, a.order);
+              say(s, a, p.name + " mélange sa bibliothèque.");
+              break;
+            }
+            case "mulligan": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              p.zones.hand
+                .slice()
+                .forEach((id) => place(s, s.cards[id], p.id, "library"));
+              setLibrary(p, a.order);
+              const k = draw(s, p, a.n == null ? 7 : a.n);
+              say(
+                s,
+                a,
+                p.name + " fait un mulligan et pioche " + pl(k, "carte") + ".",
+              );
+              break;
+            }
+            case "counter": {
+              const c = s.cards[a.cid];
+              if (!c || c.zone !== "battlefield") break;
+              const k = String(a.k).slice(0, 16),
+                d = a.d | 0;
+              if (!d) break;
+              c.counters[k] = (c.counters[k] || 0) + d;
+              if (c.counters[k] <= 0) delete c.counters[k];
+              say(
+                s,
+                a,
+                who +
+                  (d > 0 ? " ajoute " : " retire ") +
+                  pl(Math.abs(d), "marqueur") +
+                  " " +
+                  k +
+                  " sur " +
+                  shown(c) +
+                  ".",
+              );
+              break;
+            }
+            case "life": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              const before = p.life;
+              p.life =
+                a.set != null
+                  ? clamp(a.set, -999, 9999) | 0
+                  : p.life + (a.d | 0);
+              const d = p.life - before;
+              say(
+                s,
+                a,
+                p.name +
+                  " : " +
+                  (d >= 0 ? "+" : "") +
+                  d +
+                  " PV (" +
+                  p.life +
+                  ").",
+              );
+              break;
+            }
+            case "poison": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              p.poison = Math.max(0, p.poison + (a.d | 0));
+              say(s, a, p.name + " : " + pl(p.poison, "marqueur") + " poison.");
+              break;
+            }
+            case "pctr": {
+              const p = s.players[a.pid];
+              if (!p) break;
+              const k = String(a.k).slice(0, 16);
+              p.ctr = p.ctr || {};
+              p.ctr[k] = Math.max(0, (p.ctr[k] || 0) + (a.d | 0));
+              say(s, a, p.name + " : " + k + " " + p.ctr[k] + ".");
+              if (!p.ctr[k]) delete p.ctr[k];
+              break;
+            }
+            // Blessures de commandant : comptées par commandant (donc par partenaire), 21 du même = défaite.
+            case "cmd": {
+              const p = s.players[a.pid],
+                k = String(a.cid);
+              if (!p) break;
+              const c = s.cards[k];
+              const v = Math.max(0, (p.cmd[k] || 0) + (a.d | 0)),
+                diff = v - (p.cmd[k] || 0);
+              if (!diff) break;
+              p.cmd[k] = v;
+              if (!v) delete p.cmd[k];
+              p.life -= diff;
+              say(
+                s,
+                a,
+                p.name +
+                  " : " +
+                  pl(v, "blessure") +
+                  " de commandant de " +
+                  (c ? c.name : "?") +
+                  " (" +
+                  p.life +
+                  " PV)." +
+                  (v >= CMD_LETHAL ? " Mortel !" : ""),
+              );
+              break;
+            }
+            case "tax": {
+              const c = s.cards[a.cid];
+              if (!c || !c.cmd) break;
+              c.casts = Math.max(0, (c.casts || 0) + (a.d | 0));
+              say(
+                s,
+                a,
+                "Taxe de commandant de " + c.name + " : +" + c.casts * 2 + ".",
+              );
+              break;
+            }
+            case "token": {
+              const p = s.players[a.pid];
+              if (!p || !a.card) break;
+              const d = a.card;
+              d.token = true;
+              const c = mkCard(d, p.id);
+              c.zone = "battlefield";
+              setPos(c, d.x, d.y);
+              s.cards[c.id] = c;
+              p.zones.battlefield.push(c.id);
+              say(
+                s,
+                a,
+                p.name +
+                  " crée un jeton " +
+                  c.name +
+                  (c.pt ? " " + c.pt : "") +
+                  ".",
+              );
+              break;
+            }
+            case "face": {
+              const c = s.cards[a.cid];
+              if (!c || c.zone !== "battlefield") break;
+              c.faceDown = !c.faceDown;
+              say(
+                s,
+                a,
+                who +
+                  (c.faceDown
+                    ? " retourne une carte face cachée."
+                    : " révèle " + c.name + "."),
+              );
+              break;
+            }
+            case "transform": {
+              const c = s.cards[a.cid];
+              if (!c || !c.img2) break;
+              c.side = c.side ? 0 : 1;
+              say(s, a, who + " transforme " + c.name + ".");
+              break;
+            }
+            case "turn": {
+              const pid = s.players[a.pid] ? a.pid : nextTurn(s, s.turn);
+              if (!pid) break;
+              s.turn = pid;
+              s.turnNo = a.first ? 1 : (s.turnNo || 0) + 1;
+              say(s, a, "Tour " + s.turnNo + " : " + s.players[pid].name + ".");
+              break;
+            }
+            case "reveal": {
+              const names = (a.cids || [])
+                .map((id) => s.cards[id] && s.cards[id].name)
+                .filter(Boolean);
+              if (!names.length) break;
+              say(
+                s,
+                a,
+                who +
+                  " révèle " +
+                  (a.what ? a.what + " : " : "") +
+                  names.join(", ") +
+                  ".",
+              );
+              break;
+            }
+            case "ping":
+              break;
+            case "note": {
+              say(s, a, String(a.text || "").slice(0, 400));
+              break;
+            }
+            case "chat": {
+              say(s, a, who + " : " + String(a.text || "").slice(0, 200));
+              break;
+            }
+          }
+          return s;
+        }
+        return {
+          newState: newState,
+          apply: apply,
+          nextTurn: nextTurn,
+          CMD_LETHAL: CMD_LETHAL,
+          START_LIFE: START_LIFE,
+        };
+      })();
+      if (typeof module !== "undefined") module.exports = Core;
+    </script>
+
+    <script id="ui">
+      "use strict";
+      const PREFIX = "cmdtable-v2-";
+      const COLORS = [
+        "#d43348",
+        "#c9a45c",
+        "#5f8fd4",
+        "#5fae7a",
+        "#b06fd0",
+        "#e08a3c",
+        "#4fc2c2",
+        "#d46fa0",
+      ];
+      const CAP = {
+        command: "Commandement",
+        library: "Bibliothèque",
+        graveyard: "Cimetière",
+        exile: "Exil",
+        hand: "Main",
+      };
+      const EASE = "cubic-bezier(.2,.8,.2,1)";
+      const $ = (s) => document.querySelector(s),
+        $$ = (s) => Array.from(document.querySelectorAll(s));
+      let S = Core.newState(),
+        myId = "",
+        myName = "",
+        code = "",
+        isHost = false,
+        peer = null,
+        hostConn = null,
+        conns = [];
+      let raf = 0,
+        modalFill = null,
+        left = false,
+        ended = false,
+        retry = 0,
+        retryT = 0,
+        lastPong = 0,
+        saveT = 0,
+        logSig = "",
+        overSeen = 0,
+        dropFrom = null,
+        askedDeck = false;
+      const sel = new Set(),
+        prev = new Map();
+      const fxq = {
+        shuf: new Set(),
+        pop: new Set(),
+        ping: new Map(),
+        floats: [],
+      };
+
+      function h(tag, attrs) {
+        const e = document.createElement(tag);
+        for (const k in attrs || {}) {
+          const v = attrs[k];
+          if (v == null || v === false) continue;
+          if (k === "class") e.className = v;
+          else if (k === "style") e.style.cssText = v;
+          else if (k.slice(0, 2) === "on") e.addEventListener(k.slice(2), v);
+          else e.setAttribute(k, v === true ? "" : v);
+        }
+        for (let i = 2; i < arguments.length; i++)
+          [arguments[i]].flat(Infinity).forEach((kid) => {
+            if (kid == null || kid === false) return;
+            e.append(kid.nodeType ? kid : document.createTextNode(kid));
+          });
+        return e;
+      }
+      const uid = () =>
+        Math.random().toString(36).slice(2, 10) +
+        Date.now().toString(36).slice(-3);
+      const rnd = (n) => Math.floor(Math.random() * n);
+      function shuffled(a) {
+        a = a.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = rnd(i + 1);
+          const t = a[i];
+          a[i] = a[j];
+          a[j] = t;
+        }
+        return a;
+      }
+      function toast(m) {
+        const t = $("#toast");
+        t.textContent = m;
+        t.style.display = "block";
+        clearTimeout(toast.t);
+        toast.t = setTimeout(() => (t.style.display = "none"), 3600);
+      }
+      function store(k, v) {
+        try {
+          if (v === undefined) return JSON.parse(localStorage.getItem(k));
+          if (v === null) localStorage.removeItem(k);
+          else localStorage.setItem(k, JSON.stringify(v));
+          return true;
+        } catch (e) {
+          return null;
+        }
+      }
+      function setBg(e, url) {
+        e.style.backgroundImage =
+          'url("' + String(url).replace(/["\s()]/g, encodeURIComponent) + '")';
+      }
+      const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
+      const me = () => S.players[myId];
+      const loc = (c) => c.ctrl + ":" + c.zone;
+      const pname = (id) => (S.players[id] || {}).name || "?";
+
+      /* ---------- Stockage local (IndexedDB) ---------- */
+      // « mtg-cmdr / handles » est la base de l'éditeur de decks : on y lit (et complète) ses dossiers de proxys.
+      function kv(dbName, storeName) {
+        let dbp = null;
+        const db = () =>
+          dbp ||
+          (dbp = new Promise((res, rej) => {
+            const r = indexedDB.open(dbName, 1);
+            r.onupgradeneeded = () => r.result.createObjectStore(storeName);
+            r.onsuccess = () => res(r.result);
+            r.onerror = () => rej(r.error);
+          }));
+        const req = async (mode, fn) => {
+          const s = (await db())
+            .transaction(storeName, mode)
+            .objectStore(storeName);
+          return new Promise((res, rej) => {
+            const q = fn(s);
+            q.onsuccess = () => res(q.result);
+            q.onerror = () => rej(q.error);
+          });
+        };
+        return {
+          get: (k) => req("readonly", (s) => s.get(k)).catch(() => null),
+          set: (k, v) => req("readwrite", (s) => s.put(v, k)).catch(() => null),
+        };
+      }
+      const edb = kv("mtg-cmdr", "handles"),
+        imgdb = kv("cmdtable", "img");
+
+      /* ---------- Images proxy partagées ----------
+   Une image locale est réduite en JPEG, rangée sous une clé « p:<empreinte> » et envoyée aux autres
+   joueurs à part de l'état de la table : les cartes ne portent que la clé. */
+      const IMG = new Map(),
+        imgWait = new Set();
+      let needQ = new Set(),
+        needT = 0;
+      function hashKey(d) {
+        let a = 0x811c9dc5,
+          b = 5381;
+        for (let i = 0; i < d.length; i++) {
+          const c = d.charCodeAt(i);
+          a = Math.imul(a ^ c, 16777619);
+          b = (Math.imul(b, 33) ^ c) | 0;
+        }
+        return (
+          "p:" +
+          (a >>> 0).toString(36) +
+          (b >>> 0).toString(36) +
+          d.length.toString(36)
+        );
+      }
+      function putImg(k, d, persist) {
+        if (!k || !d || IMG.has(k)) return;
+        IMG.set(k, d);
+        if (persist) imgdb.set(k, d);
+        $$('[data-wait="' + k + '"]').forEach((e) => {
+          setBg(e, d);
+          e.removeAttribute("data-wait");
+          const t = e.querySelector(":scope > .txt");
+          if (t) t.remove();
+        });
+      }
+      function wantImg(k) {
+        if (imgWait.has(k)) return;
+        imgWait.add(k);
+        imgdb.get(k).then((d) => {
+          if (d) return putImg(k, d);
+          needQ.add(k);
+          clearTimeout(needT);
+          needT = setTimeout(flushNeed, 150);
+        });
+      }
+      function flushNeed() {
+        const ks = Array.from(needQ).filter((k) => !IMG.has(k));
+        needQ = new Set();
+        if (ks.length && !isHost && hostConn && hostConn.open)
+          hostConn.send({ t: "need", ks: ks });
+      }
+      function paintImg(e, ref) {
+        if (!ref) return false;
+        if (ref.slice(0, 2) !== "p:") {
+          setBg(e, ref);
+          return true;
+        }
+        const d = IMG.get(ref);
+        if (d) {
+          setBg(e, d);
+          return true;
+        }
+        e.dataset.wait = ref;
+        wantImg(ref);
+        return false;
+      }
+      function sendImg(k) {
+        const d = IMG.get(k);
+        if (!d) return;
+        const m = { t: "img", k: k, d: d };
+        if (isHost) bcast(m);
+        else if (hostConn && hostConn.open) hostConn.send(m);
+      }
+      function shrink(file) {
+        return new Promise((res, rej) => {
+          const im = new Image();
+          im.onload = () => {
+            const c = document.createElement("canvas");
+            c.width = 488;
+            c.height = 680;
+            c.getContext("2d").drawImage(im, 0, 0, 488, 680);
+            URL.revokeObjectURL(im.src);
+            res(c.toDataURL("image/jpeg", 0.85));
+          };
+          im.onerror = rej;
+          im.src = URL.createObjectURL(file);
+        });
+      }
+
+      /* ---------- Dossiers de proxys de l'éditeur (refs « lib:Dossier/chemin ») ---------- */
+      const plib = {
+        roots: [],
+        alias: {},
+        parse(r) {
+          const s = r.slice(4),
+            i = s.indexOf("/");
+          return i < 0 ? null : { root: s.slice(0, i), path: s.slice(i + 1) };
+        },
+        find: (name) =>
+          plib.roots.find((r) => r.name === (plib.alias[name] || name)),
+        ready: (r) => !!r && (r.handle ? r.perm === "granted" : !!r.files),
+        async load() {
+          const keep = plib.roots.filter((r) => !r.handle),
+            out = [];
+          for (const name of (await edb.get("roots")) || []) {
+            const old = plib.roots.find((r) => r.name === name && r.handle);
+            const handle = old ? old.handle : await edb.get("root:" + name);
+            if (!handle) continue;
+            let perm = "prompt";
+            try {
+              perm = await handle.queryPermission({ mode: "read" });
+            } catch (e) {}
+            out.push({ name: name, handle: handle, perm: perm, files: null });
+          }
+          plib.roots.forEach((r) => {
+            if (r.handle && !out.some((o) => o.name === r.name)) out.push(r);
+          });
+          plib.roots = out.concat(
+            keep.filter((r) => !out.some((o) => o.name === r.name)),
+          );
+        },
+        async authorize(name) {
+          const r = plib.find(name);
+          if (!r || !r.handle) return false;
+          try {
+            r.perm = await r.handle.requestPermission({ mode: "read" });
+          } catch (e) {}
+          return r.perm === "granted";
+        },
+        add(root, wanted) {
+          plib.roots = plib.roots
+            .filter((r) => r.name !== root.name)
+            .concat(root);
+          if (wanted && wanted !== root.name) plib.alias[wanted] = root.name;
+        },
+        // Choix d'un dossier ; il est aussi enregistré pour l'éditeur (même base) quand le navigateur le permet.
+        async pick(wanted) {
+          if (window.showDirectoryPicker) {
+            let handle;
+            try {
+              handle = await window.showDirectoryPicker({
+                id: "proxys",
+                mode: "read",
+              });
+            } catch (e) {
+              return false;
+            }
+            plib.add(
+              {
+                name: handle.name,
+                handle: handle,
+                perm: "granted",
+                files: null,
+              },
+              wanted,
+            );
+            await edb.set("root:" + handle.name, handle);
+            const names = (await edb.get("roots")) || [];
+            if (names.indexOf(handle.name) < 0)
+              await edb.set("roots", names.concat(handle.name));
+            return true;
+          }
+          return new Promise((res) => {
+            const inp = $("#dirinp");
+            inp.onchange = () => {
+              const fs = Array.from(inp.files);
+              inp.value = "";
+              if (!fs.length) return res(false);
+              const files = new Map();
+              fs.forEach((f) => {
+                if (!f.type || f.type.indexOf("image/") === 0)
+                  files.set(
+                    f.webkitRelativePath.split("/").slice(1).join("/"),
+                    f,
+                  );
+              });
+              plib.add(
+                {
+                  name: fs[0].webkitRelativePath.split("/")[0],
+                  handle: null,
+                  perm: "granted",
+                  files: files,
+                },
+                wanted,
+              );
+              res(true);
+            };
+            inp.click();
+          });
+        },
+        async file(ref) {
+          const p = plib.parse(ref),
+            r = p && plib.find(p.root);
+          if (!plib.ready(r)) return null;
+          if (!r.handle) return r.files.get(p.path) || null;
+          try {
+            const segs = p.path.split("/");
+            let d = r.handle;
+            for (const s of segs.slice(0, -1))
+              d = await d.getDirectoryHandle(s);
+            return await (
+              await d.getFileHandle(segs[segs.length - 1])
+            ).getFile();
+          } catch (e) {
+            return null;
+          }
+        },
+        async fromFileUrl(u) {
+          let segs;
+          try {
+            segs = decodeURIComponent(u.replace(/^file:\/*/i, "")).split("/");
+          } catch (e) {
+            return null;
+          }
+          const low = segs.map((s) => s.toLowerCase());
+          for (const r of plib.roots) {
+            if (!plib.ready(r)) continue;
+            const i = low.lastIndexOf(r.name.toLowerCase());
+            if (i < 0) continue;
+            const ref = "lib:" + r.name + "/" + segs.slice(i + 1).join("/");
+            if (await plib.file(ref)) return ref;
+          }
+          return null;
+        },
+      };
+      // État d'une image proxy : none | url | data | file | perm (dossier à réautoriser) | noroot (dossier inconnu) | missing
+      async function resolveCustom(ref) {
+        if (!ref) return { st: "none" };
+        if (/^data:/.test(ref)) return { st: "data", url: ref };
+        if (/^p:/.test(ref)) {
+          const d = IMG.get(ref) || (await imgdb.get(ref));
+          return d ? { st: "data", url: d, key: ref } : { st: "missing" };
+        }
+        if (/^https?:/i.test(ref)) return { st: "url", url: ref };
+        if (/^file:/i.test(ref)) {
+          const r2 = await plib.fromFileUrl(ref);
+          if (!r2) return { st: "missing", legacy: true };
+          ref = r2;
+        }
+        if (ref.slice(0, 4) === "lib:") {
+          const p = plib.parse(ref);
+          if (!p) return { st: "missing" };
+          const r = plib.find(p.root);
+          if (!r) return { st: "noroot", root: p.root };
+          if (!plib.ready(r)) return { st: "perm", root: p.root };
+          const f = await plib.file(ref);
+          return f ? { st: "file", file: f } : { st: "missing", root: p.root };
+        }
+        return { st: "missing" };
+      }
+
+      /* ---------- Sons (synthétisés, discrets) ---------- */
+      let AC = null,
+        muted = store("cmdtable-muted") === true;
+      function tone(a, f, t, dur, type, vol, f2) {
+        const o = a.createOscillator(),
+          g = a.createGain();
+        o.type = type || "sine";
+        o.frequency.setValueAtTime(f, t);
+        if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(a.destination);
+        o.start(t);
+        o.stop(t + dur + 0.02);
+      }
+      function hiss(a, t, dur, vol, freq) {
+        const n = Math.max(1, Math.floor(a.sampleRate * dur)),
+          buf = a.createBuffer(1, n, a.sampleRate),
+          d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+        const s = a.createBufferSource(),
+          f = a.createBiquadFilter(),
+          g = a.createGain();
+        s.buffer = buf;
+        f.type = "bandpass";
+        f.frequency.value = freq;
+        f.Q.value = 0.9;
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        s.connect(f).connect(g).connect(a.destination);
+        s.start(t);
+      }
+      function sfx(name) {
+        if (muted) return;
+        try {
+          AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+          if (AC.state === "suspended") AC.resume();
+          if (AC.state !== "running") return;
+          const a = AC,
+            t = a.currentTime;
+          if (name === "draw") {
+            hiss(a, t, 0.1, 0.07, 2600);
+          } else if (name === "place") {
+            hiss(a, t, 0.06, 0.08, 900);
+            tone(a, 130, t, 0.07, "sine", 0.06, 70);
+          } else if (name === "tap") {
+            tone(a, 480, t, 0.04, "triangle", 0.05, 320);
+          } else if (name === "flip") {
+            hiss(a, t, 0.05, 0.06, 1500);
+            hiss(a, t + 0.07, 0.05, 0.05, 2200);
+          } else if (name === "shuffle") {
+            for (let i = 0; i < 7; i++)
+              hiss(a, t + i * 0.055, 0.045, 0.06, 1600 + Math.random() * 1200);
+          } else if (name === "up") {
+            tone(a, 520, t, 0.09, "sine", 0.05, 700);
+          } else if (name === "down") {
+            tone(a, 420, t, 0.11, "sine", 0.05, 280);
+          } else if (name === "tick") {
+            tone(a, 900, t, 0.03, "sine", 0.035);
+          } else if (name === "turn") {
+            tone(a, 660, t, 0.14, "sine", 0.05);
+            tone(a, 880, t + 0.11, 0.22, "sine", 0.05);
+          } else if (name === "ping") {
+            tone(a, 1250, t, 0.09, "sine", 0.05);
+            tone(a, 1250, t + 0.14, 0.09, "sine", 0.04);
+          } else if (name === "dice") {
+            for (let i = 0; i < 6; i++)
+              tone(
+                a,
+                260 + Math.random() * 500,
+                t + i * 0.045,
+                0.03,
+                "square",
+                0.018,
+              );
+          } else if (name === "end") {
+            [392, 494, 587, 784].forEach((f, i) =>
+              tone(a, f, t + i * 0.12, 0.5, "sine", 0.045),
+            );
+          }
+        } catch (e) {}
+      }
+
+      /* ---------- Réseau (pair-à-pair, l'hôte fait autorité sur l'ordre des actions) ---------- */
+      function setStatus(t) {
+        $("#status").textContent = t;
+      }
+      function bcast(msg, except) {
+        conns.forEach((c) => {
+          if (c !== except && c.open)
+            try {
+              c.send(msg);
+            } catch (e) {}
+        });
+      }
+      function applyAct(a) {
+        Core.apply(S, a);
+        fx(a);
+        render();
+      }
+      function act(a) {
+        a.by = myId;
+        a.ts = Date.now();
+        if (isHost) hostApply(a);
+        else if (hostConn && hostConn.open) hostConn.send({ t: "act", a: a });
+        else toast("Pas connecté à la table.");
+      }
+      function hostApply(a) {
+        applyAct(a);
+        bcast({ t: "act", a: a });
+        clearTimeout(saveT);
+        saveT = setTimeout(saveHost, 800);
+      }
+      function saveHost() {
+        if (isHost && !left)
+          store("cmdtable-save", { code: code, t: Date.now(), s: S });
+      }
+      function newCode() {
+        return Array.from(
+          { length: 6 },
+          () => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[rnd(31)],
+        ).join("");
+      }
+      function startHost(resume) {
+        const sv = resume ? store("cmdtable-save") : null;
+        isHost = true;
+        code = sv ? sv.code : newCode();
+        if (sv) {
+          S = sv.s;
+          S.order.forEach((id) => {
+            S.players[id].online = false;
+          });
+        }
+        enterApp();
+        if (me()) me().online = true;
+        if (typeof Peer === "undefined") {
+          setStatus("Hors ligne : mode solo");
+          return;
+        }
+        openPeer();
+      }
+      function openPeer() {
+        setStatus("Ouverture de la table…");
+        const p = (peer = new Peer(PREFIX + code));
+        p.on("open", () => setStatus("Table ouverte"));
+        p.on("connection", (c) => {
+          c.on("open", () => {
+            conns.push(c);
+            c.last = Date.now();
+            c.send({ t: "state", s: S, have: Array.from(IMG.keys()) });
+          });
+          c.on("data", (d) => hostData(c, d));
+          c.on("close", () => dropConn(c));
+          c.on("error", () => dropConn(c));
+        });
+        p.on("disconnected", () => {
+          if (left || peer !== p) return;
+          setStatus("Serveur de rendez-vous perdu, reconnexion…");
+          try {
+            p.reconnect();
+          } catch (e) {}
+        });
+        p.on("error", (e) => {
+          if (left || peer !== p) return;
+          if (e.type === "unavailable-id") {
+            setStatus("Code de table encore réservé, nouvel essai…");
+            try {
+              p.destroy();
+            } catch (x) {}
+            setTimeout(() => {
+              if (!left && peer === p) openPeer();
+            }, 3000);
+          } else
+            setStatus(
+              "Réseau : " +
+                (e.type || e.message || "erreur") +
+                " (jeu local possible)",
+            );
+        });
+      }
+      function hostData(c, d) {
+        if (!d || c.dead) return;
+        c.last = Date.now();
+        if (d.t === "hello") {
+          c.pid = d.pid;
+          if (S.players[d.pid] && !S.players[d.pid].online)
+            hostApply({
+              type: "online",
+              pid: d.pid,
+              v: true,
+              by: d.pid,
+              ts: Date.now(),
+            });
+        } else if (d.t === "act" && d.a) {
+          if (d.a.type === "join" && d.a.player) c.pid = d.a.player.id;
+          hostApply(d.a);
+        } else if (d.t === "img") {
+          if (d.k && d.d && !IMG.has(d.k)) {
+            putImg(d.k, d.d);
+            bcast({ t: "img", k: d.k, d: d.d }, c);
+          }
+        } else if (d.t === "need")
+          (d.ks || []).forEach((k) => {
+            const v = IMG.get(k);
+            if (v) c.send({ t: "img", k: k, d: v });
+          });
+        else if (d.t === "ping") c.send({ t: "pong" });
+        else if (d.t === "bye") dropConn(c);
+      }
+      // Un joueur dont la connexion tombe reste à table, marqué hors ligne : le compteur de joueurs suit.
+      function dropConn(c) {
+        if (c.dead) return;
+        c.dead = true;
+        conns = conns.filter((x) => x !== c);
+        try {
+          c.close();
+        } catch (e) {}
+        if (
+          c.pid &&
+          S.players[c.pid] &&
+          S.players[c.pid].online &&
+          !conns.some((x) => x.pid === c.pid)
+        )
+          hostApply({
+            type: "online",
+            pid: c.pid,
+            v: false,
+            by: c.pid,
+            ts: Date.now(),
+          });
+        render();
+      }
+      function startJoin(c) {
+        if (typeof Peer === "undefined") {
+          toast("Bibliothèque réseau indisponible : vérifie ta connexion.");
+          return;
+        }
+        isHost = false;
+        code = c;
+        enterApp();
+        connectHost();
+      }
+      function connectHost() {
+        if (left || ended) return;
+        setStatus(retry ? "Reconnexion à la table…" : "Connexion à la table…");
+        if (peer)
+          try {
+            peer.destroy();
+          } catch (e) {}
+        const p = (peer = new Peer());
+        p.on("open", () => {
+          const hc = (hostConn = p.connect(PREFIX + code, { reliable: true }));
+          hc.on("open", () => {
+            retry = 0;
+            lastPong = Date.now();
+            setStatus("Connecté");
+            hc.send({ t: "hello", pid: myId });
+          });
+          hc.on("data", clientData);
+          hc.on("close", () => lostHost(p));
+          hc.on("error", () => lostHost(p));
+        });
+        p.on("error", (e) => {
+          if (peer !== p) return;
+          setStatus(
+            e.type === "peer-unavailable"
+              ? "Table introuvable pour l'instant : vérifie le code (nouvel essai…)"
+              : "Réseau : " + (e.type || "erreur"),
+          );
+          lostHost(p, true);
+        });
+      }
+      function lostHost(p, quiet) {
+        if (left || ended || peer !== p || retryT) return;
+        if (!quiet) setStatus("Connexion à l'hôte perdue, reconnexion…");
+        retryT = setTimeout(
+          () => {
+            retryT = 0;
+            connectHost();
+          },
+          Math.min(15000, 2000 + 2000 * retry++),
+        );
+      }
+      function clientData(d) {
+        if (!d) return;
+        lastPong = Date.now();
+        if (d.t === "state") {
+          S = d.s;
+          imgWait.clear();
+          prev.clear();
+          render();
+          const have = new Set(d.have || []),
+            mineKeys = new Set();
+          Object.keys(S.cards).forEach((id) => {
+            const c = S.cards[id];
+            if (c.owner === myId && /^p:/.test(c.img) && !have.has(c.img))
+              mineKeys.add(c.img);
+          });
+          mineKeys.forEach((k) => {
+            const v = IMG.get(k);
+            if (v) sendImg(k);
+            else
+              imgdb.get(k).then((x) => {
+                if (x) {
+                  putImg(k, x);
+                  sendImg(k);
+                }
+              });
+          });
+          if (!me() && !askedDeck) {
+            askedDeck = true;
+            openDeck(wantDeck);
+          }
+        } else if (d.t === "act") applyAct(d.a);
+        else if (d.t === "img") putImg(d.k, d.d);
+        else if (d.t === "end") {
+          ended = true;
+          setStatus("Table fermée par l'hôte");
+          toast("L'hôte a fermé la table.");
+          try {
+            peer.destroy();
+          } catch (e) {}
+        }
+      }
+      setInterval(() => {
+        const now = Date.now();
+        if (isHost)
+          conns.slice().forEach((c) => {
+            if (now - c.last > 16000) dropConn(c);
+          });
+        else if (hostConn && hostConn.open && !left && !ended) {
+          try {
+            hostConn.send({ t: "ping" });
+          } catch (e) {}
+          if (now - lastPong > 16000) {
+            const p = peer;
+            try {
+              hostConn.close();
+            } catch (e) {}
+            lostHost(p);
+          }
+        }
+      }, 4000);
+      function enterApp() {
+        left = false;
+        ended = false;
+        retry = 0;
+        const ids = store("cmdtable-ids") || {};
+        myId = ids[code] || uid();
+        ids[code] = myId;
+        store("cmdtable-ids", ids);
+        try {
+          history.replaceState(null, "", "#" + code);
+        } catch (e) {}
+        $("#lobby").hidden = true;
+        $("#app").hidden = false;
+        $("#bcode").textContent = code;
+        render();
+        if (isHost) {
+          saveHost();
+          if (!me() && !askedDeck) {
+            askedDeck = true;
+            openDeck(wantDeck);
+          }
+        }
+      }
+      function backToLobby() {
+        left = true;
+        clearTimeout(retryT);
+        retryT = 0;
+        clearTimeout(saveT);
+        const p = peer;
+        peer = null;
+        hostConn = null;
+        conns = [];
+        setTimeout(() => {
+          try {
+            if (p) p.destroy();
+          } catch (e) {}
+        }, 200);
+        S = Core.newState();
+        sel.clear();
+        prev.clear();
+        isHost = false;
+        askedDeck = false;
+        overSeen = 0;
+        logSig = "";
+        closeModal();
+        $("#over").style.display = "none";
+        hidePreview();
+        try {
+          history.replaceState(null, "", location.pathname + location.search);
+        } catch (e) {}
+        $("#app").hidden = true;
+        $("#lobby").hidden = false;
+        showResume();
+      }
+      async function leaveTable() {
+        if (
+          !(await confirmBox(
+            isHost
+              ? "Tu es l'hôte : quitter ferme la table pour tout le monde. Continuer ?"
+              : "Quitter la table ? Ton plateau sera retiré de la partie.",
+            "Quitter",
+          ))
+        )
+          return;
+        if (isHost) {
+          bcast({ t: "end" });
+          store("cmdtable-save", null);
+        } else if (hostConn && hostConn.open) {
+          if (me()) act({ type: "leave", pid: myId });
+          try {
+            hostConn.send({ t: "bye" });
+          } catch (e) {}
+        }
+        backToLobby();
+      }
+
+      /* ---------- Effets : sons et animations déclenchés par une action ---------- */
+      function fx(a) {
+        switch (a.type) {
+          case "draw":
+            sfx("draw");
+            break;
+          case "move":
+          case "moveMany":
+          case "token":
+          case "mill":
+            sfx("place");
+            break;
+          case "zoneAll":
+            if (a.order) fxq.shuf.add(a.pid);
+            sfx(a.order ? "shuffle" : "place");
+            break;
+          case "tap":
+          case "untapAll":
+            sfx("tap");
+            break;
+          case "shuffle":
+          case "mulligan":
+          case "reset":
+            fxq.shuf.add(a.pid);
+            sfx("shuffle");
+            break;
+          case "join":
+            sfx("shuffle");
+            break;
+          case "newGame":
+            S.order.forEach((id) => fxq.shuf.add(id));
+            sfx("shuffle");
+            banner("Nouvelle partie");
+            break;
+          case "life":
+            if (a.d) fxq.floats.push({ pid: a.pid, d: a.d | 0 });
+            fxq.pop.add(a.pid);
+            sfx(a.d < 0 ? "down" : "up");
+            break;
+          case "cmd":
+            if (a.d) fxq.floats.push({ pid: a.pid, d: -(a.d | 0) });
+            fxq.pop.add(a.pid);
+            sfx(a.d > 0 ? "down" : "up");
+            break;
+          case "poison":
+          case "pctr":
+          case "counter":
+          case "tax":
+            sfx("tick");
+            break;
+          case "turn":
+            sfx("turn");
+            if (S.turn)
+              banner(
+                S.turn === myId ? "À toi de jouer" : "Tour de " + pname(S.turn),
+              );
+            break;
+          case "concede":
+            sfx("tick");
+            break;
+          case "reveal":
+            sfx("flip");
+            showReveal(a);
+            break;
+          case "ping":
+            fxq.ping.set(a.cid, Date.now() + 2100);
+            sfx("ping");
+            break;
+          case "face":
+          case "transform":
+            sfx("flip");
+            break;
+          case "note":
+            if (a.dice) sfx("dice");
+            break;
+          case "chat":
+            if (a.by !== myId) sfx("tick");
+            break;
+          case "endGame":
+            sfx("end");
+            break;
+        }
+      }
+      function banner(text) {
+        const b = $("#banner");
+        b.textContent = text;
+        b.classList.remove("on");
+        void b.offsetWidth;
+        b.classList.add("on");
+      }
+      function showReveal(a) {
+        if (a.by === myId) return;
+        const cs = (a.cids || []).map((id) => S.cards[id]).filter(Boolean);
+        if (!cs.length) return;
+        const r = $("#reveal");
+        r.replaceChildren(
+          h(
+            "div",
+            {},
+            h("h2", {}, pname(a.by) + " révèle" + (a.what ? " " + a.what : "")),
+            h(
+              "div",
+              { class: "grid" },
+              cs
+                .slice(0, 12)
+                .map((c) =>
+                  h(
+                    "div",
+                    { class: "cell" },
+                    cardEl(c, { peek: true, face: true }),
+                    h("small", {}, c.name),
+                  ),
+                ),
+            ),
+          ),
+        );
+        r.style.display = "grid";
+        clearTimeout(showReveal.t);
+        showReveal.t = setTimeout(() => {
+          r.style.display = "none";
+        }, 7000);
+      }
+
+      /* ---------- Rendu ---------- */
+      function render() {
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          paint();
+        });
+      }
+      function txtEl(c) {
+        return h(
+          "div",
+          { class: "txt" },
+          h("b", {}, c.name),
+          c.tl ? h("i", {}, c.tl) : null,
+          c.pt ? h("span", {}, c.pt) : null,
+        );
+      }
+      function cardEl(c, o) {
+        o = o || {};
+        const hidden = o.back || (c.faceDown && !o.peek);
+        const e = h("div", {
+          class:
+            "card" +
+            (c.tapped && o.bf ? " tapped" : "") +
+            (hidden ? " back" : "") +
+            (c.token ? " token" : "") +
+            (c.faceDown && o.peek && !hidden && !o.face ? " peek" : "") +
+            (o.bf && sel.has(c.id) ? " sel" : "") +
+            (c.cmd && !hidden ? " cmdr" : "") +
+            ((fxq.ping.get(c.id) || 0) > Date.now() ? " ping" : ""),
+          "data-cid": c.id,
+        });
+        if (!hidden) {
+          if (!paintImg(e, c.side && c.img2 ? c.img2 : c.img))
+            e.append(txtEl(c));
+          if (c.label) e.append(h("div", { class: "lbl" }, c.label));
+        }
+        const ks = Object.keys(c.counters || {});
+        if (ks.length && o.bf)
+          e.append(
+            h(
+              "div",
+              { class: "ctrs" },
+              ks.map((k) =>
+                h(
+                  "span",
+                  { "data-ctr": k, title: "Clic : +1 · clic droit : −1" },
+                  k + " " + c.counters[k],
+                ),
+              ),
+            ),
+          );
+        if (o.bf) {
+          e.style.setProperty("--x", c.x);
+          e.style.setProperty("--y", c.y);
+        }
+        return e;
+      }
+      function pileEl(p, zone, mine) {
+        const ids = p.zones[zone],
+          n = ids.length,
+          slot = h("div", { class: "slot" });
+        let cls = "pile " + zone;
+        if (zone === "library") {
+          if (n) {
+            const e = cardEl(S.cards[ids[0]], { back: true });
+            e.classList.add("top");
+            slot.append(e);
+          }
+          if (fxq.shuf.has(p.id)) cls += " shuf";
+        } else if (zone === "command")
+          ids.slice(0, 3).forEach((id) => slot.append(cardEl(S.cards[id], {})));
+        else if (n) {
+          const e = cardEl(S.cards[ids[n - 1]], {});
+          e.classList.add("top");
+          slot.append(e);
+        }
+        if (zone !== "command")
+          cls += " s" + (n > 60 ? 3 : n > 25 ? 2 : n > 3 ? 1 : 0);
+        if (zone === "command") {
+          const tax = Object.keys(S.cards)
+            .map((id) => S.cards[id])
+            .filter((c) => c.cmd && c.owner === p.id && c.casts > 0);
+          if (tax.length)
+            slot.append(
+              h(
+                "span",
+                { class: "tax", title: "Taxe de commandant" },
+                tax.map((c) => "+" + c.casts * 2).join(" "),
+              ),
+            );
+          if (n > 1) slot.append(h("span", { class: "n" }, n));
+        } else if (n) slot.append(h("span", { class: "n" }, n));
+        return h(
+          "div",
+          {
+            class: cls,
+            "data-pile": p.id + ":" + zone,
+            "data-drop": mine ? zone : null,
+            title: CAP[zone] + " de " + p.name + " : " + n + " carte(s)",
+          },
+          slot,
+          h("span", { class: "cap" }, CAP[zone]),
+        );
+      }
+      function boardEl(p, mine) {
+        const z = p.zones;
+        const pm = (type, d, t) =>
+          h(
+            "button",
+            {
+              onclick: (e) =>
+                act({ type: type, pid: p.id, d: e.shiftKey ? d * 5 : d }),
+              title: "Maj : ×5",
+            },
+            t,
+          );
+        const cmdTags = Object.keys(p.cmd || {})
+          .filter((k) => p.cmd[k] > 0)
+          .map((k) =>
+            h(
+              "span",
+              {
+                class:
+                  "tag cmdd" + (p.cmd[k] >= Core.CMD_LETHAL ? " lethal" : ""),
+                "data-cmdd": p.id,
+                title: "Blessures de commandant reçues",
+              },
+              "⚔ " +
+                (S.cards[k] ? S.cards[k].name.split(",")[0] : "?") +
+                " " +
+                p.cmd[k],
+            ),
+          );
+        const ctrTags = Object.keys(p.ctr || {}).map((k) =>
+          h(
+            "span",
+            {
+              class: "tag ctr",
+              "data-pctr": k,
+              "data-pid": p.id,
+              title: mine ? "Clic : +1 · clic droit : −1" : "",
+            },
+            k + " " + p.ctr[k],
+          ),
+        );
+        const head = h(
+          "div",
+          { class: "bhead", "data-head": p.id },
+          h(
+            "span",
+            { class: "pname" },
+            h("i", { class: "dot" }),
+            p.name +
+              (p.out ? " ☠" : "") +
+              (p.online ? "" : " (hors ligne)") +
+              (S.turn === p.id ? " · son tour" : ""),
+          ),
+          h(
+            "span",
+            { class: "life", "data-life": p.id },
+            mine ? pm("life", -1, "−") : null,
+            h(
+              "b",
+              {
+                class:
+                  (p.life <= 10 ? "low" : "") +
+                  (fxq.pop.has(p.id) ? " pop" : ""),
+                "data-setlife": mine ? "1" : null,
+                title: mine
+                  ? "Clic : fixer les points de vie"
+                  : "Points de vie",
+              },
+              "♥ " + p.life,
+            ),
+            mine ? pm("life", 1, "+") : null,
+          ),
+          mine || p.poison
+            ? h(
+                "span",
+                { class: "poison" },
+                mine ? pm("poison", -1, "−") : null,
+                " ☠ " + p.poison + " ",
+                mine ? pm("poison", 1, "+") : null,
+              )
+            : null,
+          ctrTags,
+          cmdTags,
+          h(
+            "span",
+            { class: "r" },
+            mine
+              ? null
+              : h(
+                  "span",
+                  {
+                    class: "tag handchip",
+                    "data-pile": p.id + ":hand",
+                    title: "Cartes en main",
+                  },
+                  "Main ",
+                  h("b", {}, z.hand.length),
+                ),
+            h(
+              "button",
+              { "data-cmdd": p.id, title: "Blessures de commandant" },
+              "⚔",
+            ),
+            h("button", { "data-more": p.id, title: "Options du joueur" }, "⋯"),
+          ),
+        );
+        const bf = h("div", {
+          class: "bf",
+          "data-bf": p.id,
+          "data-drop": me() ? "battlefield" : null,
+        });
+        z.battlefield.forEach((id) => {
+          const c = S.cards[id];
+          if (c) bf.append(cardEl(c, { bf: true, peek: c.ctrl === myId }));
+        });
+        return h(
+          "section",
+          {
+            class:
+              "board" +
+              (mine ? " me" : "") +
+              (S.turn === p.id ? " active" : "") +
+              (p.out ? " out" : "") +
+              (p.online ? "" : " offline"),
+            style: "--pc:" + p.color,
+            "data-board": p.id,
+          },
+          head,
+          h(
+            "div",
+            { class: "bbody" },
+            bf,
+            h(
+              "div",
+              { class: "zones" },
+              pileEl(p, "command", mine),
+              pileEl(p, "library", mine),
+              pileEl(p, "graveyard", mine),
+              pileEl(p, "exile", mine),
+            ),
+          ),
+        );
+      }
+      function paint() {
+        const before = snapshot(),
+          m = me();
+        const opps = $("#opps");
+        opps.replaceChildren();
+        S.order
+          .filter((id) => id !== myId)
+          .forEach((id) => opps.append(boardEl(S.players[id], false)));
+        if (!opps.children.length)
+          opps.append(
+            h(
+              "div",
+              { class: "empty board" },
+              "Aucun autre joueur à table. Partage le code " +
+                code +
+                " : chacun ouvre cette page, clique sur « Rejoindre » puis charge son deck.",
+            ),
+          );
+        $("#mine").replaceChildren(
+          m
+            ? boardEl(m, true)
+            : h(
+                "div",
+                { class: "empty board" },
+                "Tu es spectateur. Clique sur « Charger un deck » pour t'installer à la table.",
+              ),
+        );
+        const hb = $("#handbar");
+        hb.replaceChildren();
+        hb.dataset.pile = myId + ":hand";
+        if (m) {
+          m.zones.hand.forEach((id) => {
+            const c = S.cards[id];
+            if (c) hb.append(cardEl(c, { peek: true }));
+          });
+          const n = hb.children.length,
+            cw = n ? hb.firstChild.offsetWidth : 0,
+            avail = hb.clientWidth - 24;
+          hb.style.setProperty(
+            "--ov",
+            (n > 1 && cw && n * (cw + 4) > avail
+              ? Math.max(-cw * 0.82, (avail - n * cw) / (n - 1))
+              : 4) + "px",
+          );
+          if (!n)
+            hb.append(
+              h(
+                "span",
+                { class: "hint" },
+                "Main vide. Clique sur ta bibliothèque pour piocher ; clic droit dessus pour plus d'options.",
+              ),
+            );
+        }
+        const on = S.order.filter((id) => S.players[id].online).length,
+          off = S.order.length - on;
+        $("#pcount").textContent =
+          on +
+          " joueur" +
+          (on > 1 ? "s" : "") +
+          " à table" +
+          (off ? " · " + off + " hors ligne" : "");
+        const ti = $("#turninfo");
+        ti.replaceChildren();
+        if (S.turn && S.players[S.turn])
+          ti.append("Tour " + S.turnNo + " · ", h("b", {}, pname(S.turn)));
+        $("#bsound").textContent = muted ? "🔇" : "🔊";
+        ["#buntap", "#btoken", "#bturn", "#bend"].forEach((s) => {
+          $(s).disabled = !m;
+        });
+        const sig =
+          S.log.length + ":" + (S.log.length ? S.log[S.log.length - 1].t : 0);
+        if (sig !== logSig) {
+          logSig = sig;
+          const lg = $("#log");
+          lg.replaceChildren.apply(
+            lg,
+            S.log.slice(-150).map((l) => h("p", {}, l.m)),
+          );
+          lg.scrollTop = lg.scrollHeight;
+        }
+        paintOver();
+        if (modalFill) modalFill();
+        Array.from(sel).forEach((id) => {
+          const c = S.cards[id];
+          if (!c || c.ctrl !== myId || c.zone !== "battlefield") sel.delete(id);
+        });
+        animate(before);
+        fxq.floats.splice(0).forEach((f) => {
+          const el = $('[data-life="' + f.pid + '"]');
+          if (!el || !f.d) return;
+          const r = el.getBoundingClientRect();
+          const s = h(
+            "div",
+            {
+              class: "float " + (f.d > 0 ? "up" : "down"),
+              style:
+                "left:" +
+                (r.left + r.width / 2 - 8) +
+                "px;top:" +
+                (r.bottom - 4) +
+                "px",
+            },
+            (f.d > 0 ? "+" : "") + f.d,
+          );
+          document.body.append(s);
+          setTimeout(() => s.remove(), 1150);
+        });
+        fxq.shuf.clear();
+        fxq.pop.clear();
+        prev.clear();
+        Object.keys(S.cards).forEach((id) => {
+          const c = S.cards[id];
+          prev.set(id, { loc: loc(c), tapped: c.tapped });
+        });
+        if (hover && !hover.isConnected) {
+          const again =
+            hover.dataset.cid &&
+            $('.card[data-cid="' + hover.dataset.cid + '"]:hover');
+          if (again) hover = again;
+          else hidePreview();
+        }
+      }
+      function paintOver() {
+        const o = $("#over");
+        if (!S.over || overSeen === S.over.ts) {
+          o.style.display = "none";
+          return;
+        }
+        const w = S.players[S.over.winner];
+        o.replaceChildren(
+          h(
+            "div",
+            { class: "win small" },
+            h("div", { class: "mh" }, h("h2", {}, "Partie terminée")),
+            h(
+              "div",
+              { class: "mb" },
+              h(
+                "div",
+                { style: "font-size:17px" },
+                w
+                  ? "🏆 Victoire de " + w.name + " !"
+                  : "Pas de vainqueur désigné.",
+              ),
+              h(
+                "div",
+                { class: "score" },
+                S.order.map((id) => {
+                  const p = S.players[id];
+                  return [
+                    h(
+                      "span",
+                      { class: id === S.over.winner ? "w" : "" },
+                      p.name + (p.out ? " ☠" : ""),
+                    ),
+                    h("span", {}, "♥ " + p.life),
+                    h("span", {}, p.deck),
+                  ];
+                }),
+              ),
+              h(
+                "small",
+                { style: "color:var(--mute)" },
+                "Partie en " + S.turnNo + " tour(s).",
+              ),
+              h(
+                "div",
+                { class: "rowf" },
+                h(
+                  "button",
+                  { class: "primary", id: "onew", onclick: newGame },
+                  "Nouvelle partie",
+                ),
+                h(
+                  "button",
+                  {
+                    id: "ostay",
+                    onclick: () => {
+                      overSeen = S.over.ts;
+                      paintOver();
+                    },
+                  },
+                  "Voir la table",
+                ),
+                h("button", { onclick: leaveTable }, "Quitter la table"),
+              ),
+            ),
+          ),
+        );
+        o.style.display = "grid";
+      }
+      function newGame() {
+        const orders = {};
+        S.order.forEach((id) => {
+          orders[id] = shuffled(
+            Object.keys(S.cards).filter(
+              (k) =>
+                S.cards[k].owner === id && !S.cards[k].cmd && !S.cards[k].token,
+            ),
+          );
+        });
+        act({
+          type: "newGame",
+          orders: orders,
+          first: S.order[rnd(S.order.length)],
+        });
+      }
+
+      /* ---------- Animations de déplacement (FLIP) ---------- */
+      const isLibBack = (el) =>
+        el.classList.contains("back") && !!el.closest(".pile.library");
+      function rectOf(el, keep) {
+        const r = el.getBoundingClientRect();
+        return {
+          cx: r.left + r.width / 2,
+          cy: r.top + r.height / 2,
+          w: el.offsetWidth || r.width,
+          h: el.offsetHeight || r.height,
+          el: keep ? el : null,
+        };
+      }
+      function pileRects() {
+        const m = new Map();
+        $$("#table [data-pile]").forEach((el) =>
+          m.set(el.dataset.pile, rectOf(el.querySelector(".slot") || el)),
+        );
+        return m;
+      }
+      function snapshot() {
+        if (!document.body.animate || document.hidden || !prev.size)
+          return null;
+        const cards = new Map();
+        $$("#table .card[data-cid]").forEach((el) => {
+          if (!isLibBack(el)) cards.set(el.dataset.cid, rectOf(el, true));
+        });
+        return { cards: cards, piles: pileRects() };
+      }
+      function fly(g, o, t) {
+        g.className =
+          g.className.replace(/\b(tapped|sel|ping|top)\b/g, "") + " ghost";
+        g.removeAttribute("data-cid");
+        g.style.cssText +=
+          ";width:" +
+          o.w +
+          "px;--cw:" +
+          o.w +
+          "px;left:" +
+          (o.cx - o.w / 2) +
+          "px;top:" +
+          (o.cy - o.h / 2) +
+          "px;opacity:1";
+        document.body.append(g);
+        const an = g.animate(
+          t
+            ? {
+                translate: [
+                  "0px 0px",
+                  t.cx - o.cx + "px " + (t.cy - o.cy) + "px",
+                ],
+                scale: [1, t.w / o.w],
+                opacity: [1, 1, 0.3],
+              }
+            : { scale: [1, 0.5], opacity: [1, 0] },
+          { duration: 300, easing: EASE },
+        );
+        an.onfinish = an.oncancel = () => g.remove();
+      }
+      function animate(b) {
+        const df = dropFrom;
+        dropFrom = null;
+        if (!b) return;
+        const after = pileRects(),
+          seen = new Set(),
+          jobs = [];
+        $$("#table .card[data-cid]").forEach((el) => {
+          if (isLibBack(el)) return;
+          const id = el.dataset.cid,
+            c = S.cards[id];
+          seen.add(id);
+          if (!c) return;
+          const pv = prev.get(id),
+            here = loc(c);
+          let o =
+            df && df.ids.indexOf(id) >= 0
+              ? df.cid === id
+                ? df
+                : null
+              : b.cards.get(id);
+          if (!o && pv && pv.loc !== here && !(df && df.ids.indexOf(id) >= 0))
+            o = b.piles.get(pv.loc);
+          if (!o) {
+            if (!pv)
+              jobs.push(() =>
+                el.animate(
+                  { scale: [0.4, 1], opacity: [0, 1] },
+                  { duration: 220, easing: EASE },
+                ),
+              );
+            return;
+          }
+          const r = rectOf(el),
+            dx = o.cx - r.cx,
+            dy = o.cy - r.cy,
+            sc = r.w ? o.w / r.w : 1;
+          if (Math.abs(dx) > 1 || Math.abs(dy) > 1 || Math.abs(sc - 1) > 0.03)
+            jobs.push(() => {
+              el.style.zIndex = 50;
+              el.animate(
+                {
+                  translate: [dx + "px " + dy + "px", "0px 0px"],
+                  scale: [sc, 1],
+                },
+                { duration: 280, easing: EASE },
+              ).onfinish = () => {
+                el.style.zIndex = "";
+              };
+            });
+          if (
+            pv &&
+            pv.loc === here &&
+            pv.tapped !== c.tapped &&
+            c.zone === "battlefield"
+          )
+            jobs.push(() =>
+              el.animate(
+                {
+                  rotate: [
+                    pv.tapped ? "90deg" : "0deg",
+                    c.tapped ? "90deg" : "0deg",
+                  ],
+                },
+                { duration: 170, easing: "ease-out" },
+              ),
+            );
+        });
+        b.cards.forEach((o, id) => {
+          if (seen.has(id) || !o.el) return;
+          const c = S.cards[id],
+            pv = prev.get(id);
+          if (c && pv && pv.loc === loc(c)) return;
+          const from = df && df.cid === id ? df : o;
+          jobs.push(() =>
+            fly(o.el.cloneNode(true), from, c ? after.get(loc(c)) : null),
+          );
+        });
+        let k = 0;
+        Object.keys(S.cards).forEach((id) => {
+          const c = S.cards[id],
+            pv = prev.get(id);
+          if (!pv || seen.has(id) || b.cards.has(id) || pv.loc === loc(c))
+            return;
+          const from = b.piles.get(pv.loc),
+            to = after.get(loc(c));
+          if (from && to && k++ < 5)
+            jobs.push(() => fly(h("div", { class: "card back" }), from, to));
+        });
+        if (jobs.length <= 40) jobs.forEach((f) => f());
+      }
+
+      /* ---------- Aperçu agrandi, placé contre la carte survolée ---------- */
+      let hover = null,
+        pvT = 0;
+      function hidePreview() {
+        hover = null;
+        clearTimeout(pvT);
+        $("#preview").style.display = "none";
+      }
+      function showPreview(el) {
+        const pv = $("#preview"),
+          c = el.isConnected ? S.cards[el.dataset.cid] : null;
+        if (!c || el.classList.contains("back")) {
+          pv.style.display = "none";
+          return;
+        }
+        pv.replaceChildren();
+        pv.style.backgroundImage = "";
+        pv.removeAttribute("data-wait");
+        if (!paintImg(pv, c.side && c.img2 ? c.img2 : c.img))
+          pv.append(txtEl(c));
+        const info = [c.label]
+          .concat(
+            Object.keys(c.counters || {}).map((k) => k + " ×" + c.counters[k]),
+          )
+          .filter(Boolean)
+          .join(" · ");
+        if (info) pv.append(h("div", { class: "pinfo" }, info));
+        pv.style.display = "block";
+        const r = el.getBoundingClientRect(),
+          w = pv.offsetWidth,
+          hh = pv.offsetHeight + (info ? 22 : 0),
+          gap = 10;
+        let x, y;
+        if (el.closest("#handbar") && r.top - hh - gap > 4) {
+          x = r.left + r.width / 2 - w / 2;
+          y = r.top - hh - gap;
+        } else {
+          x = r.right + gap;
+          if (x + w > innerWidth - 4 && r.left - gap - w >= 4)
+            x = r.left - gap - w;
+          y = r.top + r.height / 2 - hh / 2;
+        }
+        pv.style.left = clampN(x, 4, Math.max(4, innerWidth - w - 4)) + "px";
+        pv.style.top = clampN(y, 4, Math.max(4, innerHeight - hh - 4)) + "px";
+      }
+      document.addEventListener("mouseover", (e) => {
+        const el = e.target.closest
+          ? e.target.closest(".card[data-cid]")
+          : null;
+        if (
+          !el ||
+          (drag && drag.moved) ||
+          $("#menu").style.display === "block"
+        ) {
+          hidePreview();
+          return;
+        }
+        if (el === hover) return;
+        hover = el;
+        clearTimeout(pvT);
+        pvT = setTimeout(() => {
+          if (hover === el) showPreview(el);
+        }, 140);
+      });
+
+      /* ---------- Glisser-déposer, clics, sélection au lasso, appui long ---------- */
+      let drag = null,
+        marq = null;
+      function clearSel() {
+        if (!sel.size) return;
+        sel.clear();
+        $$(".card.sel").forEach((e) => e.classList.remove("sel"));
+      }
+      function cardNode(id) {
+        return $('#table .card[data-cid="' + id + '"]');
+      }
+      document.addEventListener("pointerdown", (e) => {
+        const t = e.target;
+        if (!t.closest) return;
+        if (!t.closest("#menu")) closeMenu();
+        if (e.button !== 0 || t.closest("[data-ctr]")) return;
+        const el = t.closest(".card[data-cid]");
+        if (!el) {
+          if (t.closest("#modal,#ask,#over,#reveal,#top,#logp,.bhead,#menu"))
+            return;
+          if (!e.shiftKey) clearSel();
+          if (t.classList.contains("bf") && t.dataset.bf === myId)
+            marq = { x: e.clientX, y: e.clientY, on: false };
+          return;
+        }
+        if (el.closest("#modal,#reveal")) return;
+        const c = S.cards[el.dataset.cid];
+        if (!c) return;
+        const mod = e.ctrlKey || e.metaKey || e.shiftKey;
+        if (!sel.has(c.id) && !mod) clearSel();
+        drag = {
+          c: c,
+          el: el,
+          x: e.clientX,
+          y: e.clientY,
+          moved: false,
+          mine: c.ctrl === myId,
+          pile: el.closest("[data-pile]:not(#handbar)"),
+          mod: mod,
+          group: [c.id],
+        };
+        if (e.pointerType === "touch")
+          drag.lp = setTimeout(() => {
+            if (drag && !drag.moved) {
+              const d = drag;
+              drag = null;
+              ctx(d.el, d.x, d.y);
+            }
+          }, 550);
+      });
+      document.addEventListener("pointermove", (e) => {
+        if (marq) {
+          if (
+            !marq.on &&
+            Math.hypot(e.clientX - marq.x, e.clientY - marq.y) < 6
+          )
+            return;
+          marq.on = true;
+          const m = $("#marquee");
+          m.style.cssText =
+            "display:block;left:" +
+            Math.min(e.clientX, marq.x) +
+            "px;top:" +
+            Math.min(e.clientY, marq.y) +
+            "px;width:" +
+            Math.abs(e.clientX - marq.x) +
+            "px;height:" +
+            Math.abs(e.clientY - marq.y) +
+            "px";
+          return;
+        }
+        if (!drag || !drag.mine) return;
+        if (!drag.moved) {
+          if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 7) return;
+          drag.moved = true;
+          clearTimeout(drag.lp);
+          hidePreview();
+          const r = drag.el.getBoundingClientRect();
+          drag.w = drag.el.offsetWidth || r.width;
+          drag.hh = drag.el.offsetHeight || r.height;
+          drag.ox = clampN(
+            e.clientX - (r.left + r.width / 2) + drag.w / 2,
+            0,
+            drag.w,
+          );
+          drag.oy = clampN(
+            e.clientY - (r.top + r.height / 2) + drag.hh / 2,
+            0,
+            drag.hh,
+          );
+          const g = drag.el.cloneNode(true);
+          g.classList.remove("tapped", "sel", "top");
+          g.classList.add("ghost");
+          g.style.width = drag.w + "px";
+          g.style.setProperty("--cw", drag.w + "px");
+          document.body.append(g);
+          drag.ghost = g;
+          if (
+            sel.has(drag.c.id) &&
+            sel.size > 1 &&
+            drag.c.zone === "battlefield"
+          )
+            drag.group = Array.from(sel);
+          drag.group.forEach((id) => {
+            const x = cardNode(id);
+            if (x) x.style.opacity = ".3";
+          });
+        }
+        drag.ghost.style.transform =
+          "translate(" +
+          (e.clientX - drag.ox) +
+          "px," +
+          (e.clientY - drag.oy) +
+          "px)";
+        $$(".over").forEach((x) => x.classList.remove("over"));
+        const t = document.elementFromPoint(e.clientX, e.clientY);
+        const dz = t && t.closest("[data-drop]");
+        if (dz) dz.classList.add("over");
+      });
+      function moveTo(ids, zone, pos) {
+        const to = { pid: myId, zone: zone, pos: pos };
+        if (ids.length > 1) act({ type: "moveMany", cids: ids, to: to });
+        else act({ type: "move", cid: ids[0], to: to });
+      }
+      function libDrop(ids, x, y) {
+        showMenu(
+          [
+            { h: "Remettre dans la bibliothèque" },
+            ["Dessus", () => moveTo(ids, "library", "top")],
+            ["Dessous", () => moveTo(ids, "library", "bottom")],
+            [
+              "Mélanger dedans",
+              () => {
+                moveTo(ids, "library", "top");
+                act({
+                  type: "shuffle",
+                  pid: myId,
+                  order: shuffled(me().zones.library.concat(ids)),
+                });
+              },
+            ],
+          ],
+          x,
+          y,
+        );
+      }
+      document.addEventListener("pointerup", (e) => {
+        if (marq) {
+          const q = marq;
+          marq = null;
+          $("#marquee").style.display = "none";
+          if (!q.on) return;
+          const x1 = Math.min(q.x, e.clientX),
+            x2 = Math.max(q.x, e.clientX),
+            y1 = Math.min(q.y, e.clientY),
+            y2 = Math.max(q.y, e.clientY);
+          $$('.bf[data-bf="' + myId + '"] .card[data-cid]').forEach((el) => {
+            const r = el.getBoundingClientRect();
+            if (r.right > x1 && r.left < x2 && r.bottom > y1 && r.top < y2)
+              sel.add(el.dataset.cid);
+          });
+          render();
+          return;
+        }
+        if (!drag) return;
+        const d = drag;
+        drag = null;
+        clearTimeout(d.lp);
+        $$(".over").forEach((x) => x.classList.remove("over"));
+        if (!d.moved) {
+          clickCard(d);
+          return;
+        }
+        const gr = d.ghost.getBoundingClientRect();
+        d.ghost.remove();
+        const restore = () =>
+          d.group.forEach((id) => {
+            const x = cardNode(id);
+            if (x) x.style.opacity = "";
+          });
+        const t = document.elementFromPoint(e.clientX, e.clientY),
+          dz = t && t.closest("[data-drop]");
+        if (!dz) {
+          restore();
+          return;
+        }
+        dropFrom = {
+          cid: d.c.id,
+          ids: d.group,
+          cx: gr.left + gr.width / 2,
+          cy: gr.top + gr.height / 2,
+          w: d.w,
+          h: d.hh,
+        };
+        const zone = dz.dataset.drop,
+          c = d.c,
+          many = d.group.length > 1;
+        if (zone === "battlefield") {
+          const pid = dz.dataset.bf,
+            r = dz.getBoundingClientRect();
+          const x = clampN(
+              ((e.clientX - d.ox - r.left) / r.width) * 100,
+              0,
+              100 - (d.w / r.width) * 100,
+            ),
+            y = clampN(
+              ((e.clientY - d.oy - r.top) / r.height) * 100,
+              0,
+              100 - (d.hh / r.height) * 100,
+            );
+          if (c.zone === "battlefield" && pid === c.ctrl) {
+            if (many)
+              act({
+                type: "posMany",
+                items: d.group.map((id) => ({
+                  cid: id,
+                  x: S.cards[id].x + x - c.x,
+                  y: S.cards[id].y + y - c.y,
+                })),
+              });
+            else act({ type: "pos", cid: c.id, x: x, y: y });
+          } else
+            d.group.forEach((id, i) =>
+              act({
+                type: "move",
+                cid: id,
+                to: { pid: pid, zone: "battlefield" },
+                x: x + i * 2,
+                y: y + i * 2,
+              }),
+            );
+        } else if (zone === "hand") {
+          if (c.zone !== "hand") moveTo(d.group, "hand");
+          else {
+            const idx = $$("#handbar .card[data-cid]").filter(
+              (el) =>
+                el !== d.el &&
+                ((r) => r.left + r.width / 2 < e.clientX)(
+                  el.getBoundingClientRect(),
+                ),
+            ).length;
+            act({
+              type: "move",
+              cid: c.id,
+              to: { pid: myId, zone: "hand", pos: idx },
+            });
+          }
+        } else if (zone === c.zone) restore();
+        else if (zone === "library") {
+          restore();
+          libDrop(d.group, e.clientX, e.clientY);
+        } else moveTo(d.group, zone);
+      });
+      document.addEventListener("pointercancel", () => {
+        marq = null;
+        $("#marquee").style.display = "none";
+        if (drag) {
+          clearTimeout(drag.lp);
+          if (drag.ghost) drag.ghost.remove();
+          drag.group.forEach((id) => {
+            const x = cardNode(id);
+            if (x) x.style.opacity = "";
+          });
+          drag = null;
+        }
+      });
+      function clickCard(d) {
+        const c = d.c;
+        if (d.pile) {
+          const a = d.pile.dataset.pile.split(":");
+          pileClick(a[0], a[1]);
+          return;
+        }
+        if (!d.mine || c.zone !== "battlefield") return;
+        if (d.mod) {
+          if (sel.has(c.id)) sel.delete(c.id);
+          else sel.add(c.id);
+          render();
+          return;
+        }
+        if (sel.has(c.id) && sel.size > 1)
+          act({ type: "tap", cids: Array.from(sel), v: !c.tapped });
+        else act({ type: "tap", cids: [c.id] });
+      }
+      function pileClick(pid, zone) {
+        if (zone === "library") {
+          if (pid === myId) act({ type: "draw", pid: myId, n: 1 });
+          else toast("La bibliothèque des autres joueurs est cachée.");
+        } else if (zone === "hand")
+          toast("La main des autres joueurs est cachée.");
+        else openViewer({ pid: pid, zone: zone });
+      }
+      document.addEventListener("dblclick", (e) => {
+        const el = e.target.closest("#handbar .card[data-cid]");
+        if (el) playCard(S.cards[el.dataset.cid]);
+      });
+      document.addEventListener("click", (e) => {
+        const t = e.target;
+        if (!t.closest) return;
+        const ctr = t.closest("[data-ctr]");
+        if (ctr) {
+          const c = S.cards[ctr.closest(".card").dataset.cid];
+          if (c && c.ctrl === myId)
+            act({ type: "counter", cid: c.id, k: ctr.dataset.ctr, d: 1 });
+          return;
+        }
+        const pc = t.closest("[data-pctr]");
+        if (pc) {
+          if (pc.dataset.pid === myId)
+            act({ type: "pctr", pid: myId, k: pc.dataset.pctr, d: 1 });
+          return;
+        }
+        if (t.closest("[data-setlife]")) {
+          setLife();
+          return;
+        }
+        const cd = t.closest("[data-cmdd]");
+        if (cd) {
+          openCmdDmg(cd.dataset.cmdd);
+          return;
+        }
+        const more = t.closest("[data-more]");
+        if (more) {
+          const r = more.getBoundingClientRect();
+          openPlayerMenu(more.dataset.more, r.left, r.bottom + 2);
+          return;
+        }
+        const pile = t.closest("[data-pile]");
+        if (pile && pile.id !== "handbar" && !t.closest(".card")) {
+          const a = pile.dataset.pile.split(":");
+          pileClick(a[0], a[1]);
+        }
+      });
+      const BASICS =
+        /^(snow-covered )?(plains|island|swamp|mountain|forest|wastes)$/i;
+      const isLand = (c) => /\bland\b/i.test(c.tl || "") || BASICS.test(c.name);
+      // Emplacement libre : les terrains se rangent en bas, le reste en haut.
+      function freeSpot(c, used) {
+        const m = me(),
+          taken = (
+            m
+              ? m.zones.battlefield.map((id) => S.cards[id]).filter(Boolean)
+              : []
+          ).concat(used || []),
+          rows = c && isLand(c) ? [56, 42] : [5, 24];
+        let p = null;
+        for (const y of rows) {
+          for (let i = 0; i < 11 && !p; i++) {
+            const x = 1.5 + i * 8.9;
+            if (
+              !taken.some(
+                (t) => Math.abs(t.x - x) < 5 && Math.abs(t.y - y) < 12,
+              )
+            )
+              p = { x: x, y: y };
+          }
+          if (p) break;
+        }
+        p = p || { x: 2 + rnd(80), y: rows[0] + rnd(12) };
+        if (used) used.push(p);
+        return p;
+      }
+      function playCard(c, faceDown) {
+        if (!c || !me()) return;
+        const p = freeSpot(faceDown ? null : c);
+        act({
+          type: "move",
+          cid: c.id,
+          to: { pid: myId, zone: "battlefield" },
+          x: p.x,
+          y: p.y,
+          faceDown: !!faceDown,
+        });
+      }
+
+      /* ---------- Menus contextuels ---------- */
+      function closeMenu() {
+        $("#menu").style.display = "none";
+      }
+      // items : [libellé, action, raccourci] | '-' | { h: titre } | null
+      function showMenu(items, x, y) {
+        const m = $("#menu");
+        m.replaceChildren();
+        hidePreview();
+        items.forEach((it) => {
+          if (!it) return;
+          if (it === "-") m.append(h("hr"));
+          else if (it.h) m.append(h("div", { class: "mh" }, it.h));
+          else
+            m.append(
+              h(
+                "button",
+                {
+                  onclick: () => {
+                    closeMenu();
+                    it[1]();
+                  },
+                },
+                h("span", {}, it[0]),
+                it[2] ? h("kbd", {}, it[2]) : null,
+              ),
+            );
+        });
+        if (!m.children.length) return;
+        m.style.display = "block";
+        m.style.left =
+          Math.max(4, Math.min(x, innerWidth - m.offsetWidth - 6)) + "px";
+        m.style.top =
+          Math.max(4, Math.min(y, innerHeight - m.offsetHeight - 6)) + "px";
+      }
+      function askBox(label, def, o) {
+        o = o || {};
+        return new Promise((res) => {
+          const box = $("#ask");
+          if (box._done) box._done(o.confirm ? false : null);
+          const inp = o.confirm
+            ? null
+            : h("input", {
+                value: def == null ? "" : def,
+                style: "width:100%",
+              });
+          const done = (v) => {
+            box._done = null;
+            box.style.display = "none";
+            box.replaceChildren();
+            res(v);
+          };
+          const ok = () => done(o.confirm ? true : inp.value.trim());
+          box._done = done;
+          box.replaceChildren(
+            h(
+              "div",
+              { class: "win small" },
+              h(
+                "div",
+                { class: "mb" },
+                h("div", {}, label),
+                inp,
+                h(
+                  "div",
+                  { class: "rowf", style: "justify-content:flex-end" },
+                  h(
+                    "button",
+                    {
+                      id: "askno",
+                      onclick: () => done(o.confirm ? false : null),
+                    },
+                    "Annuler",
+                  ),
+                  h(
+                    "button",
+                    { class: "primary", id: "askok", onclick: ok },
+                    o.ok || "OK",
+                  ),
+                ),
+              ),
+            ),
+          );
+          box.style.display = "grid";
+          if (inp) {
+            inp.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") ok();
+            });
+            inp.focus();
+            inp.select();
+          } else $("#askok").focus();
+        });
+      }
+      const confirmBox = (text, ok) =>
+        askBox(text, null, { confirm: true, ok: ok });
+      async function askN(label, def) {
+        const v = await askBox(label, def);
+        if (v == null) return null;
+        const n = parseInt(v, 10);
+        return n > 0 ? n : null;
+      }
+      async function setLife() {
+        const m = me();
+        if (!m) return;
+        const v = await askBox("Points de vie", m.life);
+        if (v == null || v === "" || isNaN(parseInt(v, 10))) return;
+        act({ type: "life", pid: myId, set: parseInt(v, 10) });
+      }
+      function cloneOf(c, at) {
+        return {
+          id: uid(),
+          name: c.name,
+          img: c.side && c.img2 ? c.img2 : c.img,
+          label: c.label,
+          pt: c.pt,
+          tl: c.tl,
+          x: at.x,
+          y: at.y,
+        };
+      }
+      function openCardMenu(c, x, y) {
+        const m = me(),
+          others = S.order.filter((id) => id !== myId);
+        if (c.ctrl !== myId) {
+          const hidden =
+            c.faceDown || c.zone === "library" || c.zone === "hand";
+          showMenu(
+            [
+              [
+                "Pointer cette carte",
+                () => act({ type: "ping", cid: c.id }),
+                "P",
+              ],
+              m && c.zone === "battlefield"
+                ? [
+                    "Prendre le contrôle",
+                    () => {
+                      const p = freeSpot(c);
+                      act({
+                        type: "move",
+                        cid: c.id,
+                        to: { pid: myId, zone: "battlefield" },
+                        x: p.x,
+                        y: p.y,
+                      });
+                    },
+                  ]
+                : null,
+              m && c.zone === "battlefield" && !hidden
+                ? [
+                    "Créer une copie (jeton) chez moi",
+                    () =>
+                      act({
+                        type: "token",
+                        pid: myId,
+                        card: cloneOf(c, freeSpot(c)),
+                      }),
+                  ]
+                : null,
+              m && c.cmd && !hidden ? "-" : null,
+              m && c.cmd && !hidden
+                ? [
+                    "Je subis 1 blessure de ce commandant",
+                    () => act({ type: "cmd", pid: myId, cid: c.id, d: 1 }),
+                  ]
+                : null,
+              m && c.cmd && !hidden
+                ? [
+                    "Je subis X blessures de ce commandant…",
+                    async () => {
+                      const n = await askN(
+                        "Blessures de commandant subies (" + c.name + ")",
+                        3,
+                      );
+                      if (n) act({ type: "cmd", pid: myId, cid: c.id, d: n });
+                    },
+                  ]
+                : null,
+            ],
+            x,
+            y,
+          );
+          return;
+        }
+        const group =
+          c.zone === "battlefield" && sel.has(c.id) && sel.size > 1
+            ? Array.from(sel)
+            : null;
+        if (group) {
+          showMenu(
+            [
+              { h: group.length + " cartes sélectionnées" },
+              [
+                "Engager",
+                () => act({ type: "tap", cids: group, v: true }),
+                "T",
+              ],
+              ["Dégager", () => act({ type: "tap", cids: group, v: false })],
+              "-",
+              ["Vers la main", () => moveTo(group, "hand"), "H"],
+              ["Vers le cimetière", () => moveTo(group, "graveyard"), "G"],
+              ["Vers l'exil", () => moveTo(group, "exile"), "E"],
+              [
+                "Dessus de la bibliothèque",
+                () => moveTo(group, "library", "top"),
+              ],
+              [
+                "Dessous de la bibliothèque",
+                () => moveTo(group, "library", "bottom"),
+                "B",
+              ],
+              "-",
+              [
+                "Désélectionner",
+                () => {
+                  clearSel();
+                },
+              ],
+            ],
+            x,
+            y,
+          );
+          return;
+        }
+        const mv = (zone, pos) => () => moveTo([c.id], zone, pos);
+        const ct = (k, d) => () =>
+          act({ type: "counter", cid: c.id, k: k, d: d });
+        const moves = [
+          c.zone !== "hand" ? ["Vers la main", mv("hand"), "H"] : null,
+          c.zone !== "graveyard"
+            ? [
+                c.zone === "hand"
+                  ? "Défausser (cimetière)"
+                  : "Vers le cimetière",
+                mv("graveyard"),
+                "G",
+              ]
+            : null,
+          c.zone !== "exile" ? ["Vers l'exil", mv("exile"), "E"] : null,
+          ["Dessus de la bibliothèque", mv("library", "top")],
+          ["Dessous de la bibliothèque", mv("library", "bottom"), "B"],
+          c.cmd && c.zone !== "command"
+            ? ["Vers la zone de commandement", mv("command")]
+            : null,
+        ];
+        const cmdItems = !c.cmd
+          ? []
+          : [{ h: "Commandant" }].concat(
+              c.zone === "battlefield"
+                ? others.map((id) => [
+                    "Infliger 1 blessure de commandant à " + pname(id),
+                    () => act({ type: "cmd", pid: id, cid: c.id, d: 1 }),
+                  ])
+                : [],
+              c.zone === "battlefield" && others.length
+                ? [
+                    [
+                      "Infliger X blessures de commandant…",
+                      async () => {
+                        const n = await askN(
+                          "Blessures de commandant infligées par " + c.name,
+                          3,
+                        );
+                        if (!n) return;
+                        if (others.length === 1)
+                          return act({
+                            type: "cmd",
+                            pid: others[0],
+                            cid: c.id,
+                            d: n,
+                          });
+                        showMenu(
+                          [{ h: n + " blessures à…" }].concat(
+                            others.map((id) => [
+                              pname(id),
+                              () =>
+                                act({ type: "cmd", pid: id, cid: c.id, d: n }),
+                            ]),
+                          ),
+                          x,
+                          y,
+                        );
+                      },
+                    ],
+                  ]
+                : [],
+              [
+                [
+                  "Taxe de commandant : +2 (actuelle : +" +
+                    (c.casts || 0) * 2 +
+                    ")",
+                  () => act({ type: "tax", cid: c.id, d: 1 }),
+                ],
+                c.casts
+                  ? [
+                      "Taxe de commandant : −2",
+                      () => act({ type: "tax", cid: c.id, d: -1 }),
+                    ]
+                  : null,
+                "-",
+              ],
+            );
+        let items;
+        if (c.zone === "battlefield") {
+          const has = (k) => (c.counters || {})[k] > 0;
+          items = [
+            [
+              c.tapped ? "Dégager" : "Engager",
+              () => act({ type: "tap", cids: [c.id] }),
+              "T",
+            ],
+            [
+              "Pointer cette carte",
+              () => act({ type: "ping", cid: c.id }),
+              "P",
+            ],
+            "-",
+            { h: "Marqueurs" },
+            ["+1/+1 : ajouter", ct("+1/+1", 1), "+"],
+            has("+1/+1") ? ["+1/+1 : retirer", ct("+1/+1", -1), "−"] : null,
+            ["-1/-1 : ajouter", ct("-1/-1", 1)],
+            has("-1/-1") ? ["-1/-1 : retirer", ct("-1/-1", -1)] : null,
+            [
+              "Autre marqueur…",
+              async () => {
+                const k = await askBox(
+                  "Nom du marqueur (ex. loyauté, charge, étourdissement)",
+                  "loyauté",
+                );
+                if (!k) return;
+                const n = parseInt(
+                  await askBox(
+                    "Quantité à ajouter (négatif pour retirer)",
+                    "1",
+                  ),
+                  10,
+                );
+                if (n) act({ type: "counter", cid: c.id, k: k, d: n });
+              },
+            ],
+            "-",
+            [
+              c.faceDown ? "Retourner face visible" : "Retourner face cachée",
+              () => act({ type: "face", cid: c.id }),
+              "F",
+            ],
+            c.img2
+              ? [
+                  "Transformer (autre face)",
+                  () => act({ type: "transform", cid: c.id }),
+                ]
+              : null,
+            [
+              "Créer une copie (jeton)",
+              () =>
+                act({
+                  type: "token",
+                  pid: myId,
+                  card: cloneOf(c, {
+                    x: Math.min(90, c.x + 3),
+                    y: Math.min(85, c.y + 4),
+                  }),
+                }),
+            ],
+            "-",
+          ].concat(
+            cmdItems,
+            [{ h: "Déplacer" }],
+            moves,
+            others.length ? ["-"] : [],
+            others.map((id) => [
+              "Donner le contrôle à " + pname(id),
+              () =>
+                act({
+                  type: "move",
+                  cid: c.id,
+                  to: { pid: id, zone: "battlefield" },
+                  x: 40,
+                  y: 30,
+                }),
+            ]),
+          );
+        } else if (c.zone === "hand") {
+          items = [
+            [
+              "Jouer sur le champ de bataille",
+              () => playCard(c),
+              "double-clic",
+            ],
+            ["Jouer face cachée", () => playCard(c, true)],
+            [
+              "Révéler à la table",
+              () =>
+                act({
+                  type: "reveal",
+                  cids: [c.id],
+                  what: "une carte de sa main",
+                }),
+            ],
+            "-",
+          ].concat(moves);
+        } else {
+          items = [
+            ["Mettre sur le champ de bataille", () => playCard(c)],
+            c.zone === "library"
+              ? [
+                  "Révéler à la table",
+                  () =>
+                    act({
+                      type: "reveal",
+                      cids: [c.id],
+                      what: "une carte de sa bibliothèque",
+                    }),
+                ]
+              : null,
+            "-",
+          ].concat(cmdItems, moves);
+        }
+        showMenu(items, x, y);
+      }
+      const libOrder = () => shuffled(me().zones.library);
+      function openLibMenu(x, y) {
+        const m = me();
+        if (!m) return;
+        const top = () => me().zones.library[0];
+        const search = (type, what) => () => {
+          act({
+            type: "note",
+            text: myName + " cherche " + what + " dans sa bibliothèque.",
+          });
+          openViewer({ pid: myId, zone: "library", search: true, type: type });
+        };
+        showMenu(
+          [
+            [
+              "Piocher une carte",
+              () => act({ type: "draw", pid: myId, n: 1 }),
+              "D",
+            ],
+            [
+              "Piocher X cartes…",
+              async () => {
+                const n = await askN("Combien de cartes piocher ?", 2);
+                if (n) act({ type: "draw", pid: myId, n: n });
+              },
+            ],
+            "-",
+            { h: "Chercher (tuteur)" },
+            ["Chercher une carte…", search("", "une carte")],
+            ["Chercher un terrain…", search("land", "un terrain")],
+            [
+              "Chercher un terrain de base…",
+              search("basic", "un terrain de base"),
+            ],
+            "-",
+            { h: "Dessus de la bibliothèque" },
+            [
+              "Regarder les X cartes du dessus…",
+              async () => {
+                const n = await askN("Combien de cartes regarder ?", 3);
+                if (n) {
+                  act({
+                    type: "note",
+                    text:
+                      myName +
+                      " regarde les " +
+                      n +
+                      " cartes du dessus de sa bibliothèque.",
+                  });
+                  openViewer({ pid: myId, zone: "library", n: n });
+                }
+              },
+            ],
+            [
+              "Révéler la carte du dessus",
+              () => {
+                if (top())
+                  act({
+                    type: "reveal",
+                    cids: [top()],
+                    what: "la carte du dessus de sa bibliothèque",
+                  });
+              },
+            ],
+            [
+              "Jouer la carte du dessus",
+              () => {
+                if (top()) playCard(S.cards[top()]);
+              },
+            ],
+            [
+              "Mettre la carte du dessus en dessous",
+              () => {
+                if (top()) moveTo([top()], "library", "bottom");
+              },
+            ],
+            [
+              "Meuler X cartes…",
+              async () => {
+                const n = await askN(
+                  "Combien de cartes mettre au cimetière ?",
+                  1,
+                );
+                if (n) act({ type: "mill", pid: myId, n: n });
+              },
+            ],
+            [
+              "Exiler X cartes du dessus…",
+              async () => {
+                const n = await askN("Combien de cartes exiler ?", 1);
+                if (n) act({ type: "mill", pid: myId, n: n, to: "exile" });
+              },
+            ],
+            "-",
+            [
+              "Mélanger",
+              () => act({ type: "shuffle", pid: myId, order: libOrder() }),
+              "S",
+            ],
+            ["Mulligan…", mulligan],
+          ],
+          x,
+          y,
+        );
+      }
+      async function mulligan() {
+        const m = me();
+        if (!m) return;
+        const n = await askN("Mulligan : nombre de cartes à piocher", 7);
+        if (n)
+          act({
+            type: "mulligan",
+            pid: myId,
+            n: n,
+            order: shuffled(m.zones.library.concat(m.zones.hand)),
+          });
+      }
+      function openHandMenu(x, y) {
+        const m = me();
+        if (!m) return;
+        showMenu(
+          [
+            [
+              "Révéler ma main à la table",
+              () =>
+                act({
+                  type: "reveal",
+                  cids: me().zones.hand.slice(),
+                  what: "sa main",
+                }),
+            ],
+            [
+              "Défausser une carte au hasard",
+              () => {
+                const hd = me().zones.hand;
+                if (hd.length) moveTo([hd[rnd(hd.length)]], "graveyard");
+              },
+            ],
+            [
+              "Défausser toute ma main",
+              () =>
+                act({
+                  type: "zoneAll",
+                  pid: myId,
+                  from: "hand",
+                  to: "graveyard",
+                }),
+            ],
+            ["Mulligan…", mulligan],
+          ],
+          x,
+          y,
+        );
+      }
+      function openPileMenu(pid, zone, x, y) {
+        const p = S.players[pid];
+        if (!p) return;
+        const mine = pid === myId,
+          ids = p.zones[zone] || [],
+          n = ids.length;
+        if (zone === "library") {
+          if (mine) openLibMenu(x, y);
+          return;
+        }
+        if (zone === "hand") return;
+        const items = [
+          [
+            "Voir : " +
+              CAP[zone].toLowerCase() +
+              " de " +
+              p.name +
+              " (" +
+              n +
+              ")",
+            () => openViewer({ pid: pid, zone: zone }),
+          ],
+        ];
+        if (mine && n && zone !== "command") {
+          const top = S.cards[ids[n - 1]],
+            other = zone === "graveyard" ? "exile" : "graveyard";
+          items.push(
+            "-",
+            { h: "Carte du dessus : " + top.name },
+            ["Vers la main", () => moveTo([top.id], "hand")],
+            ["Sur le champ de bataille", () => playCard(top)],
+            [
+              other === "exile" ? "Vers l'exil" : "Vers le cimetière",
+              () => moveTo([top.id], other),
+            ],
+            [
+              "Dessus de la bibliothèque",
+              () => moveTo([top.id], "library", "top"),
+            ],
+            "-",
+            [
+              "Tout remettre dans la bibliothèque et mélanger",
+              () =>
+                act({
+                  type: "zoneAll",
+                  pid: myId,
+                  from: zone,
+                  to: "library",
+                  order: shuffled(me().zones.library.concat(ids)),
+                }),
+            ],
+            [
+              other === "exile" ? "Tout exiler" : "Tout mettre au cimetière",
+              () => act({ type: "zoneAll", pid: myId, from: zone, to: other }),
+            ],
+          );
+        }
+        showMenu(items, x, y);
+      }
+      function openPlayerMenu(pid, x, y) {
+        const p = S.players[pid];
+        if (!p) return;
+        const mine = pid === myId;
+        const pc = (k, d) => () => act({ type: "pctr", pid: myId, k: k, d: d });
+        showMenu(
+          [
+            { h: p.name + (p.deck ? " · " + p.deck : "") },
+            ["Blessures de commandant…", () => openCmdDmg(pid)],
+            S.turn !== pid
+              ? [
+                  mine ? "C'est mon tour" : "C'est son tour",
+                  () => act({ type: "turn", pid: pid }),
+                ]
+              : null,
+            mine ? "-" : null,
+            mine ? ["Fixer mes points de vie…", setLife] : null,
+            mine ? ["Compteur énergie +1", pc("énergie", 1)] : null,
+            mine ? ["Compteur expérience +1", pc("expérience", 1)] : null,
+            mine
+              ? [
+                  "Autre compteur…",
+                  async () => {
+                    const k = await askBox(
+                      "Nom du compteur (ex. tickets, rad)",
+                      "",
+                    );
+                    if (k) act({ type: "pctr", pid: myId, k: k, d: 1 });
+                  },
+                ]
+              : null,
+            mine ? "-" : null,
+            mine
+              ? [
+                  "Révéler ma main",
+                  () =>
+                    act({
+                      type: "reveal",
+                      cids: me().zones.hand.slice(),
+                      what: "sa main",
+                    }),
+                ]
+              : null,
+            mine ? ["Mulligan…", mulligan] : null,
+            mine
+              ? [
+                  "Recommencer avec mon deck",
+                  async () => {
+                    if (
+                      await confirmBox(
+                        "Recommencer avec ton deck ? Tes cartes retournent dans la bibliothèque et tes points de vie reviennent à 40.",
+                      )
+                    )
+                      act({
+                        type: "reset",
+                        pid: myId,
+                        order: shuffled(
+                          Object.keys(S.cards).filter(
+                            (id) =>
+                              S.cards[id].owner === myId &&
+                              !S.cards[id].cmd &&
+                              !S.cards[id].token,
+                          ),
+                        ),
+                      });
+                  },
+                ]
+              : null,
+            mine
+              ? [
+                  p.out
+                    ? "Revenir dans la partie"
+                    : "Concéder (je suis éliminé)",
+                  () => act({ type: "concede", pid: myId, v: !p.out }),
+                ]
+              : null,
+            !mine && isHost ? "-" : null,
+            !mine && isHost
+              ? [
+                  "Retirer " + p.name + " de la table",
+                  async () => {
+                    if (
+                      await confirmBox(
+                        "Retirer " +
+                          p.name +
+                          " et toutes ses cartes de la table ?",
+                        "Retirer",
+                      )
+                    )
+                      act({ type: "leave", pid: pid });
+                  },
+                ]
+              : null,
+          ],
+          x,
+          y,
+        );
+      }
+      function ctx(t, x, y) {
+        if (!t.closest || t.closest("input,textarea,#log,#lobby")) return false;
+        const ctr = t.closest("[data-ctr]"),
+          cardE = t.closest(".card[data-cid]"),
+          pile = t.closest("[data-pile]"),
+          head = t.closest("[data-head]"),
+          bf = t.closest(".bf"),
+          pc = t.closest("[data-pctr]");
+        const pz = pile ? pile.dataset.pile.split(":") : null;
+        if (ctr && cardE) {
+          const c = S.cards[cardE.dataset.cid];
+          if (c && c.ctrl === myId)
+            act({ type: "counter", cid: c.id, k: ctr.dataset.ctr, d: -1 });
+        } else if (pc) {
+          if (pc.dataset.pid === myId)
+            act({ type: "pctr", pid: myId, k: pc.dataset.pctr, d: -1 });
+        } else if (
+          pile &&
+          pile.id !== "handbar" &&
+          !(cardE && pz[1] === "command")
+        )
+          openPileMenu(pz[0], pz[1], x, y);
+        else if (cardE) {
+          const c = S.cards[cardE.dataset.cid];
+          if (c) openCardMenu(c, x, y);
+        } else if (pile) openHandMenu(x, y);
+        else if (head) openPlayerMenu(head.dataset.head, x, y);
+        else if (bf && bf.dataset.bf === myId)
+          showMenu(
+            [
+              ["Créer un jeton…", openToken],
+              [
+                "Dégager tous mes permanents",
+                () => act({ type: "untapAll", pid: myId }),
+                "U",
+              ],
+              [
+                "Tout sélectionner",
+                () => {
+                  me().zones.battlefield.forEach((id) => sel.add(id));
+                  render();
+                },
+              ],
+            ],
+            x,
+            y,
+          );
+        return true;
+      }
+      document.addEventListener("contextmenu", (e) => {
+        if (!$("#app").hidden && ctx(e.target, e.clientX, e.clientY))
+          e.preventDefault();
+      });
+
+      /* ---------- Raccourcis clavier ---------- */
+      function targets(any) {
+        if (sel.size && !any) return Array.from(sel);
+        const c =
+          hover &&
+          hover.isConnected &&
+          !hover.classList.contains("back") &&
+          !hover.closest("#modal,#reveal")
+            ? S.cards[hover.dataset.cid]
+            : null;
+        return c && (any || c.ctrl === myId) ? [c.id] : [];
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const a = $("#ask");
+          if (a._done) a.querySelector("#askno").click();
+          else if ($("#menu").style.display === "block") closeMenu();
+          else if ($("#reveal").style.display === "grid")
+            $("#reveal").style.display = "none";
+          else if ($("#modal").style.display === "grid") closeModal();
+          else clearSel();
+          return;
+        }
+        if (
+          e.ctrlKey ||
+          e.metaKey ||
+          e.altKey ||
+          $("#app").hidden ||
+          (e.target.closest && e.target.closest("input,textarea,select"))
+        )
+          return;
+        if ($("#ask")._done || $("#modal").style.display === "grid") return;
+        const m = me(),
+          k = e.key.toLowerCase();
+        if (!m) return;
+        const ids = targets(),
+          onBf = ids.filter((id) => S.cards[id].zone === "battlefield");
+        if (k === "d") act({ type: "draw", pid: myId, n: 1 });
+        else if (k === "u") act({ type: "untapAll", pid: myId });
+        else if (k === "s")
+          act({ type: "shuffle", pid: myId, order: libOrder() });
+        else if (k === "n") act({ type: "turn" });
+        else if (k === "?") openHelp();
+        else if (k === "p") {
+          const t = targets(true);
+          if (t.length) act({ type: "ping", cid: t[0] });
+        } else if (k === "t" && onBf.length)
+          act({ type: "tap", cids: onBf, v: !S.cards[onBf[0]].tapped });
+        else if (k === "f" && onBf.length) act({ type: "face", cid: onBf[0] });
+        else if ((k === "+" || k === "=") && onBf.length)
+          onBf.forEach((id) =>
+            act({ type: "counter", cid: id, k: "+1/+1", d: 1 }),
+          );
+        else if (k === "-" && onBf.length)
+          onBf.forEach((id) => {
+            if (S.cards[id].counters["+1/+1"])
+              act({ type: "counter", cid: id, k: "+1/+1", d: -1 });
+          });
+        else if (ids.length && "gehb".indexOf(k) >= 0 && k.length === 1) {
+          const zone = { g: "graveyard", e: "exile", h: "hand", b: "library" }[
+              k
+            ],
+            go = ids.filter(
+              (id) =>
+                S.cards[id].zone !== zone && S.cards[id].zone !== "library",
+            );
+          if (go.length) {
+            hidePreview();
+            moveTo(go, zone, k === "b" ? "bottom" : undefined);
+          }
+        } else return;
+        e.preventDefault();
+      });
+      function openHelp() {
+        const rows = [
+          ["Clic sur une carte du champ de bataille", "Engager / dégager"],
+          ["Double-clic sur une carte en main", "La jouer"],
+          [
+            "Glisser-déposer",
+            "Déplacer entre les zones, vers un adversaire pour donner le contrôle",
+          ],
+          [
+            "Clic droit",
+            "Menu de la carte, de la pile, du joueur ou du champ de bataille",
+          ],
+          [
+            "Glisser sur le champ de bataille vide",
+            "Sélection au lasso (Ctrl+clic : ajouter une carte)",
+          ],
+          ["Clic sur la bibliothèque", "Piocher"],
+          ["D", "Piocher"],
+          ["U", "Dégager tous mes permanents"],
+          ["S", "Mélanger ma bibliothèque"],
+          ["N", "Tour suivant"],
+          ["T", "Engager la carte survolée / la sélection"],
+          ["F", "Retourner face cachée"],
+          [
+            "G · E · H · B",
+            "Carte survolée vers cimetière · exil · main · dessous de bibliothèque",
+          ],
+          ["+ · −", "Marqueur +1/+1"],
+          ["P", "Pointer la carte survolée pour toute la table"],
+          ["Maj + clic sur ± des PV", "±5"],
+          ["Échap", "Fermer / désélectionner"],
+        ];
+        openModal(
+          "Aide et raccourcis",
+          h(
+            "div",
+            { class: "score", style: "grid-template-columns:auto 1fr" },
+            rows.map((r) => [
+              h("span", {}, r[0].length < 14 ? h("kbd", {}, r[0]) : r[0]),
+              h("span", { style: "color:var(--mute)" }, r[1]),
+            ]),
+          ),
+          { small: true },
+        );
+      }
+
+      /* ---------- Fenêtres ---------- */
+      function openModal(title, body, o) {
+        o = o || {};
+        closeModal();
+        const m = $("#modal");
+        m._close = o.onClose || null;
+        modalFill = o.fill || null;
+        m.replaceChildren(
+          h(
+            "div",
+            { class: "win" + (o.small ? " small" : "") },
+            h(
+              "div",
+              { class: "mh" },
+              h("h2", {}, title),
+              h("button", { id: "mclose", onclick: closeModal }, "Fermer"),
+            ),
+            h("div", { class: "mb" }, body),
+          ),
+        );
+        m.style.display = "grid";
+        if (modalFill) modalFill();
+      }
+      function closeModal() {
+        const m = $("#modal");
+        const f = m._close;
+        m._close = null;
+        modalFill = null;
+        m.style.display = "none";
+        m.replaceChildren();
+        hidePreview();
+        if (f) f();
+      }
+      const TYPES = [
+        ["", "Tout"],
+        ["land", "Terrains"],
+        ["basic", "Terrains de base"],
+        ["creature", "Créatures"],
+        ["artifact", "Artefacts"],
+        ["enchantment", "Enchantements"],
+        ["instant", "Éphémères"],
+        ["sorcery", "Rituels"],
+        ["planeswalker", "Planeswalkers"],
+      ];
+      function isType(c, t) {
+        if (!t) return true;
+        const tl = (c.tl || "").toLowerCase();
+        if (t === "land") return isLand(c);
+        if (t === "basic")
+          return (tl.indexOf("basic") >= 0 && isLand(c)) || BASICS.test(c.name);
+        return tl.split(" // ")[0].indexOf(t) >= 0;
+      }
+      // v : { pid, zone, n (N cartes du dessus), search (tuteur : mélange à la fermeture), type, filter }
+      function openViewer(v) {
+        const p = S.players[v.pid];
+        if (!p) return;
+        const mine = v.pid === myId;
+        v.type = v.type || "";
+        const body = [],
+          pills = h("div", { class: "rowf", id: "vtypes" });
+        const drawPills = () =>
+          pills.replaceChildren.apply(
+            pills,
+            TYPES.map((t) =>
+              h(
+                "button",
+                {
+                  class: "pill" + (v.type === t[0] ? " on" : ""),
+                  "data-type": t[0],
+                  onclick: () => {
+                    v.type = t[0];
+                    drawPills();
+                    fillViewer(v);
+                  },
+                },
+                t[1],
+              ),
+            ),
+          );
+        if (!v.n) {
+          if (v.search) v.shuffle = true;
+          body.push(
+            h(
+              "div",
+              { class: "rowf" },
+              h("input", {
+                id: "vfilter",
+                placeholder: "Filtrer par nom ou type…",
+                oninput: (e) => {
+                  v.filter = e.target.value.toLowerCase();
+                  fillViewer(v);
+                },
+              }),
+              v.search
+                ? h(
+                    "label",
+                    {},
+                    h("input", {
+                      type: "checkbox",
+                      checked: true,
+                      onchange: (e) => {
+                        v.shuffle = e.target.checked;
+                      },
+                    }),
+                    " Mélanger en fermant",
+                  )
+                : null,
+            ),
+          );
+          if (v.zone !== "command") {
+            drawPills();
+            body.push(pills);
+          }
+        }
+        body.push(h("div", { class: "grid", id: "vgrid" }));
+        openModal(
+          CAP[v.zone] +
+            " de " +
+            p.name +
+            (v.n ? " (" + v.n + " du dessus)" : ""),
+          body,
+          {
+            fill: () => fillViewer(v),
+            onClose: () => {
+              if (v.search && v.shuffle && me())
+                act({ type: "shuffle", pid: myId, order: libOrder() });
+            },
+          },
+        );
+        if (mine && !v.n && $("#vfilter")) $("#vfilter").focus();
+      }
+      function fillViewer(v) {
+        const g = $("#vgrid");
+        if (!g) return;
+        const p = S.players[v.pid];
+        if (!p) return;
+        let ids = p.zones[v.zone].slice();
+        if (v.n) {
+          v.ids = v.ids || ids.slice(0, v.n);
+          ids = v.ids.filter(
+            (id) =>
+              S.cards[id] &&
+              S.cards[id].zone === "library" &&
+              S.cards[id].ctrl === v.pid,
+          );
+        } else if (v.zone === "graveyard" || v.zone === "exile") ids.reverse();
+        const mine = v.pid === myId,
+          f = v.filter || "";
+        g.replaceChildren();
+        ids.forEach((id) => {
+          const c = S.cards[id];
+          if (
+            !c ||
+            !isType(c, v.type) ||
+            (f &&
+              (c.name + " " + c.label + " " + c.tl).toLowerCase().indexOf(f) <
+                0)
+          )
+            return;
+          const mv = (zone, pos, t, tip) =>
+            zone === v.zone && !pos
+              ? null
+              : h(
+                  "button",
+                  {
+                    title: tip,
+                    "data-to": zone + (pos ? ":" + pos : ""),
+                    onclick: () =>
+                      zone === "battlefield"
+                        ? playCard(c)
+                        : moveTo([c.id], zone, pos),
+                  },
+                  t,
+                );
+          g.append(
+            h(
+              "div",
+              { class: "cell" },
+              cardEl(c, { peek: true, face: true }),
+              h(
+                "small",
+                { title: c.name + (c.tl ? " — " + c.tl : "") },
+                c.name,
+              ),
+              mine
+                ? h(
+                    "div",
+                    { class: "acts" },
+                    mv("hand", null, "Main", "Vers la main"),
+                    mv(
+                      "battlefield",
+                      null,
+                      "Champ",
+                      "Vers le champ de bataille",
+                    ),
+                    mv("graveyard", null, "Cim.", "Vers le cimetière"),
+                    mv("exile", null, "Exil", "Vers l'exil"),
+                    mv("library", "top", "↑", "Dessus de la bibliothèque"),
+                    mv("library", "bottom", "↓", "Dessous de la bibliothèque"),
+                    v.zone === "library"
+                      ? h(
+                          "button",
+                          {
+                            title: "Révéler à la table",
+                            onclick: () =>
+                              act({
+                                type: "reveal",
+                                cids: [c.id],
+                                what: "une carte de sa bibliothèque",
+                              }),
+                          },
+                          "👁",
+                        )
+                      : null,
+                  )
+                : null,
+            ),
+          );
+        });
+        if (!g.children.length)
+          g.append(h("span", { class: "hint" }, "Aucune carte."));
+      }
+      function openCmdDmg(pid) {
+        let cur = S.players[pid] ? pid : myId;
+        const box = h("div", { style: "display:grid;gap:10px", id: "cdbox" });
+        const fill = () => {
+          if (!S.players[cur]) cur = S.order[0];
+          const p = S.players[cur];
+          if (!p) {
+            box.replaceChildren("Aucun joueur à table.");
+            return;
+          }
+          const cmds = Object.keys(S.cards)
+            .map((id) => S.cards[id])
+            .filter((c) => c.cmd && c.owner !== cur);
+          Object.keys(p.cmd || {}).forEach((k) => {
+            if (!cmds.some((c) => c.id === k))
+              cmds.push({ id: k, name: "Commandant parti", owner: "" });
+          });
+          const btn = (c, d, t) =>
+            h(
+              "button",
+              {
+                "data-cd": c.id + ":" + d,
+                onclick: (e) =>
+                  act({
+                    type: "cmd",
+                    pid: cur,
+                    cid: c.id,
+                    d: e.shiftKey ? d * 5 : d,
+                  }),
+              },
+              t,
+            );
+          box.replaceChildren(
+            h(
+              "div",
+              { class: "rowf" },
+              S.order.map((id) =>
+                h(
+                  "button",
+                  {
+                    class: "pill" + (id === cur ? " on" : ""),
+                    onclick: () => {
+                      cur = id;
+                      fill();
+                    },
+                  },
+                  S.players[id].name,
+                ),
+              ),
+            ),
+            h(
+              "div",
+              {},
+              "Blessures de commandant reçues par ",
+              h("b", {}, p.name),
+              " (♥ " + p.life + ")",
+            ),
+            cmds.length
+              ? h(
+                  "div",
+                  { style: "display:grid;gap:8px" },
+                  cmds.map((c) => {
+                    const n = (p.cmd || {})[c.id] || 0,
+                      th = h("div", { class: "th" });
+                    if (c.img) paintImg(th, c.img);
+                    return h(
+                      "div",
+                      { class: "cdrow" },
+                      th,
+                      h(
+                        "span",
+                        {},
+                        c.name,
+                        c.owner
+                          ? h(
+                              "small",
+                              { style: "color:var(--mute)" },
+                              " · " + pname(c.owner),
+                            )
+                          : null,
+                      ),
+                      btn(c, -1, "−"),
+                      h(
+                        "b",
+                        { class: n >= Core.CMD_LETHAL ? "lethal" : "" },
+                        n + " / " + Core.CMD_LETHAL,
+                      ),
+                      btn(c, 1, "+"),
+                    );
+                  }),
+                )
+              : h(
+                  "span",
+                  { style: "color:var(--mute)" },
+                  "Aucun commandant adverse à table.",
+                ),
+            h(
+              "small",
+              { style: "color:var(--mute)" },
+              "Chaque blessure retire aussi 1 PV (Maj : ×5). 21 blessures infligées par un même commandant éliminent le joueur, quel que soit son total de points de vie.",
+            ),
+          );
+        };
+        openModal("Blessures de commandant", box, { fill: fill, small: true });
+      }
+      function openToken() {
+        if (!me()) {
+          toast("Charge un deck d'abord.");
+          return;
+        }
+        const res = h("div", { class: "grid" }),
+          q = h("input", {
+            placeholder: "Nom du jeton (en anglais : Zombie, Treasure…)",
+            style: "flex:1",
+          }),
+          qty = h("input", {
+            type: "number",
+            value: 1,
+            min: 1,
+            max: 30,
+            style: "width:70px",
+          });
+        const make = (d) => {
+          const n = clampN(parseInt(qty.value, 10) || 1, 1, 30),
+            used = [];
+          for (let i = 0; i < n; i++) {
+            const p = freeSpot(d, used);
+            act({
+              type: "token",
+              pid: myId,
+              card: Object.assign({ id: uid(), x: p.x, y: p.y }, d),
+            });
+          }
+          closeModal();
+        };
+        const search = async () => {
+          res.replaceChildren("Recherche…");
+          try {
+            const r = await fetch(
+              "https://api.scryfall.com/cards/search?unique=art&q=" +
+                encodeURIComponent("t:token " + q.value),
+            );
+            const j = await r.json();
+            res.replaceChildren();
+            (j.data || []).slice(0, 24).forEach((d) => {
+              const img = (
+                d.image_uris ||
+                (d.card_faces && d.card_faces[0].image_uris) ||
+                {}
+              ).normal;
+              if (!img) return;
+              const pt = d.power != null ? d.power + "/" + d.toughness : "";
+              const e = h(
+                "div",
+                {
+                  class: "cell",
+                  onclick: () =>
+                    make({
+                      name: d.name,
+                      img: img,
+                      pt: pt,
+                      tl: d.type_line || "",
+                    }),
+                },
+                h("div", {
+                  class: "card",
+                  style: "position:relative;cursor:pointer",
+                }),
+                h("small", {}, d.name + (pt ? " " + pt : "")),
+              );
+              setBg(e.firstChild, img);
+              res.append(e);
+            });
+            if (!res.children.length)
+              res.append(
+                "Aucun jeton trouvé : utilise le jeton libre ci-dessous.",
+              );
+          } catch (e) {
+            res.replaceChildren(
+              "Scryfall injoignable : utilise le jeton libre ci-dessous.",
+            );
+          }
+        };
+        const cn = h("input", { placeholder: "Nom libre", id: "tkname" }),
+          cpt = h("input", {
+            placeholder: "F/E (ex. 2/2)",
+            style: "width:110px",
+          });
+        openModal("Créer un jeton", [
+          h(
+            "div",
+            { class: "rowf" },
+            q,
+            h("button", { class: "primary", onclick: search }, "Chercher"),
+            "Quantité",
+            qty,
+          ),
+          h(
+            "div",
+            { class: "rowf" },
+            [
+              "Treasure",
+              "Food",
+              "Clue",
+              "Blood",
+              "Soldier",
+              "Zombie",
+              "Spirit",
+              "Goblin",
+              "Saproling",
+              "Thopter",
+            ].map((n) =>
+              h(
+                "button",
+                {
+                  class: "pill",
+                  onclick: () => {
+                    q.value = n;
+                    search();
+                  },
+                },
+                n,
+              ),
+            ),
+          ),
+          res,
+          h(
+            "div",
+            { class: "rowf" },
+            "Jeton libre :",
+            cn,
+            cpt,
+            h(
+              "button",
+              {
+                id: "tkfree",
+                onclick: () => {
+                  if (cn.value.trim())
+                    make({ name: cn.value.trim(), pt: cpt.value.trim() });
+                },
+              },
+              "Créer",
+            ),
+          ),
+        ]);
+        q.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") search();
+        });
+        q.focus();
+      }
+      function openEnd() {
+        if (!S.order.length) return;
+        const alive = S.order.filter((id) => !S.players[id].out);
+        const pick = h(
+          "select",
+          { id: "endwin" },
+          h("option", { value: "" }, "Pas de vainqueur / égalité"),
+          S.order.map((id) =>
+            h(
+              "option",
+              { value: id, selected: alive.length === 1 && alive[0] === id },
+              S.players[id].name,
+            ),
+          ),
+        );
+        openModal(
+          "Finir la partie",
+          [
+            h(
+              "div",
+              {},
+              "Désigne le vainqueur : le résultat s'affiche chez tous les joueurs, qui peuvent ensuite relancer une partie avec les mêmes decks.",
+            ),
+            h("label", {}, "Vainqueur ", pick),
+            h(
+              "div",
+              { class: "rowf" },
+              h(
+                "button",
+                {
+                  class: "primary",
+                  id: "endok",
+                  onclick: () => {
+                    const w = pick.value || null;
+                    closeModal();
+                    act({ type: "endGame", winner: w });
+                  },
+                },
+                "Terminer la partie",
+              ),
+            ),
+          ],
+          { small: true },
+        );
+      }
+
+      /* ---------- Chargement de deck ---------- */
+      function entriesOf(d) {
+        return (d.cards || [])
+          .filter((c) => c && c.name)
+          .map((c) => ({
+            name: String(c.name),
+            qty: Math.max(1, c.qty | 0 || 1),
+            variant: c.variant || "",
+            cmd: !!c.cmd,
+            custom: c.proxyImg || c.custom || c.proxy || c.image || "",
+          }));
+      }
+      function parseDeck(text) {
+        text = String(text || "").trim();
+        const out = [];
+        if (text[0] === "{") {
+          try {
+            const j = JSON.parse(text);
+            return { name: j.name || "", entries: entriesOf(j) };
+          } catch (e) {}
+        }
+        let cmdSection = false;
+        text.split(/\r?\n/).forEach((line) => {
+          line = line.trim();
+          if (!line || line.slice(0, 2) === "//" || line[0] === "#") return;
+          const m = line.match(/^(\d+)x?\s+(.+)$/i);
+          if (!m) {
+            cmdSection = /^commander|^commandant/i.test(line);
+            return;
+          }
+          let rest = m[2],
+            variant = "",
+            cmd = cmdSection;
+          const vs = rest.split(/\s{2,}\/\/\s{2,}/);
+          if (vs.length > 1) {
+            rest = vs[0];
+            variant = vs[1].trim();
+          }
+          if (/\[[^\]]*commander[^\]]*\]/i.test(rest)) cmd = true;
+          rest = rest
+            .replace(/\[[^\]]*\]/g, "")
+            .replace(/\^[^^]*\^/g, "")
+            .replace(/\*[^*]*\*/g, "")
+            .replace(/\s\([A-Za-z0-9]{2,6}\)(\s+\S+)?\s*$/, "")
+            .trim();
+          if (rest)
+            out.push({
+              name: rest,
+              qty: parseInt(m[1], 10) || 1,
+              variant: variant,
+              cmd: cmd,
+              custom: "",
+            });
+        });
+        return { name: "", entries: out };
+      }
+      // Decks de l'éditeur : même navigateur, même stockage (clé « mtg-cmdr-decks »).
+      function editorDecks() {
+        try {
+          const o = JSON.parse(localStorage.getItem("mtg-cmdr-decks"));
+          return (o && o.decks) || [];
+        } catch (e) {
+          return [];
+        }
+      }
+      const front = (n) => n.split(" // ")[0].toLowerCase();
+      async function fetchCards(entries, onProgress) {
+        const names = Array.from(new Set(entries.map((e) => front(e.name)))),
+          map = {};
+        const put = (d) => {
+          const f = d.card_faces || [],
+            f0 = f[0] || {},
+            iu = d.image_uris || f0.image_uris || {};
+          const v = {
+            img: iu.normal || "",
+            img2:
+              !d.image_uris && f[1] && f[1].image_uris
+                ? f[1].image_uris.normal || ""
+                : "",
+            tl: d.type_line || f0.type_line || "",
+            pt:
+              d.power != null
+                ? d.power + "/" + d.toughness
+                : f0.power != null
+                  ? f0.power + "/" + f0.toughness
+                  : "",
+          };
+          map[front(d.name)] = v;
+          return v;
+        };
+        // /cards/collection ne trouve pas toujours les cartes double face : repli sur /cards/named.
+        for (let i = 0; i < names.length; i += 75) {
+          try {
+            const r = await fetch("https://api.scryfall.com/cards/collection", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                identifiers: names.slice(i, i + 75).map((n) => ({ name: n })),
+              }),
+            });
+            const j = await r.json();
+            (j.data || []).forEach(put);
+            for (const nf of j.not_found || []) {
+              try {
+                const r2 = await fetch(
+                  "https://api.scryfall.com/cards/named?fuzzy=" +
+                    encodeURIComponent(nf.name),
+                );
+                if (r2.ok) map[nf.name.toLowerCase()] = put(await r2.json());
+              } catch (e) {}
+              await new Promise((res) => setTimeout(res, 90));
+            }
+          } catch (e) {}
+          if (onProgress)
+            onProgress(Math.min(names.length, i + 75), names.length);
+          await new Promise((res) => setTimeout(res, 110));
+        }
+        entries.forEach((e) => {
+          const v = map[front(e.name)];
+          e.img = v ? v.img : "";
+          e.img2 = v ? v.img2 : "";
+          e.tl = v ? v.tl : "";
+          e.pt = v ? v.pt : "";
+          e.found = !!v;
+        });
+      }
+      let wantDeck = null;
+      function openDeck(preId) {
+        const saved = store("cmdtable-decks") || {},
+          eds = editorDecks();
+        let prep = null,
+          busy = false;
+        const dn = h("input", {
+            placeholder: "Nom du deck",
+            style: "flex:1",
+            id: "dname",
+          }),
+          info = h("small", { id: "dinfo", style: "color:var(--mute)" }),
+          warn = h("div", { id: "dwarn" }),
+          list = h("div", { class: "dl", id: "dlist" });
+        const ta = h("textarea", {
+          id: "dtext",
+          placeholder:
+            "Colle ici ta liste : « 1 Nom de carte » par ligne, format Archidekt, ou l'export JSON de l'éditeur de decks.",
+        });
+        const paste = h(
+          "div",
+          { hidden: true, style: "display:grid;gap:6px" },
+          ta,
+          h(
+            "div",
+            {},
+            h(
+              "button",
+              {
+                id: "dparse",
+                onclick: () => {
+                  const p = parseDeck(ta.value);
+                  if (!p.entries.length)
+                    return toast("Aucune carte reconnue dans la liste.");
+                  load(p.name || dn.value, p.entries);
+                },
+              },
+              "Analyser la liste",
+            ),
+          ),
+        );
+        const file = h("input", {
+          type: "file",
+          accept: ".txt,.json,.dek",
+          id: "dfile",
+          onchange: async () => {
+            const f = file.files[0];
+            if (!f) return;
+            const p = parseDeck(await f.text());
+            if (!p.entries.length)
+              return toast("Aucune carte reconnue dans ce fichier.");
+            load(p.name || f.name.replace(/\.[^.]+$/, ""), p.entries);
+          },
+        });
+        const thumb = (th, en) => {
+          const r = en.res || { st: "none" };
+          th.style.backgroundImage = "";
+          th.classList.toggle(
+            "miss",
+            !!en.custom && "perm noroot missing".indexOf(r.st) >= 0,
+          );
+          if (r.st === "file") {
+            r.thumb = r.thumb || URL.createObjectURL(r.file);
+            setBg(th, r.thumb);
+          } else if (r.url) setBg(th, r.url);
+          else if (en.img) setBg(th, en.img);
+        };
+        const summary = () => {
+          const es = prep.entries,
+            total = es.reduce((n, e) => n + e.qty, 0),
+            ncmd = es.filter((e) => e.cmd).length,
+            px = es.filter((e) => e.custom),
+            bad = px.filter(
+              (e) => "perm noroot missing".indexOf(e.res.st) >= 0,
+            );
+          info.textContent =
+            total +
+            " cartes · " +
+            ncmd +
+            " commandant(s) · " +
+            (px.length - bad.length) +
+            " image(s) proxy prête(s)" +
+            (bad.length ? " · " + bad.length + " indisponible(s)" : "") +
+            ". Coche la case d'une carte pour la désigner commandant.";
+          const perm = Array.from(
+              new Set(
+                bad.filter((e) => e.res.st === "perm").map((e) => e.res.root),
+              ),
+            ),
+            noroot = Array.from(
+              new Set(
+                bad.filter((e) => e.res.st === "noroot").map((e) => e.res.root),
+              ),
+            );
+          const legacy = bad.some((e) => e.res.legacy),
+            nf = es.filter((e) => !e.found).length;
+          warn.replaceChildren();
+          if (perm.length || noroot.length || legacy)
+            warn.append(
+              h(
+                "div",
+                { class: "warnbox" },
+                h(
+                  "span",
+                  {},
+                  bad.length +
+                    " image(s) proxy de l'éditeur ne sont pas encore lisibles. Sans elles, ces cartes afficheront l'image Scryfall.",
+                ),
+                h(
+                  "div",
+                  { class: "rowf" },
+                  perm.map((n) =>
+                    h(
+                      "button",
+                      {
+                        class: "primary",
+                        "data-auth": n,
+                        onclick: async () => {
+                          await plib.authorize(n);
+                          refresh();
+                        },
+                      },
+                      "Réautoriser le dossier « " + n + " »",
+                    ),
+                  ),
+                  noroot.map((n) =>
+                    h(
+                      "button",
+                      {
+                        class: "primary",
+                        "data-addroot": n,
+                        onclick: async () => {
+                          if (await plib.pick(n)) refresh();
+                        },
+                      },
+                      "Choisir le dossier « " + n + " »…",
+                    ),
+                  ),
+                  legacy
+                    ? h(
+                        "button",
+                        {
+                          "data-addroot": "",
+                          onclick: async () => {
+                            if (await plib.pick()) refresh();
+                          },
+                        },
+                        "Ajouter un dossier de proxys…",
+                      )
+                    : null,
+                ),
+              ),
+            );
+          if (nf)
+            warn.append(
+              h(
+                "small",
+                { style: "color:var(--gold)" },
+                nf +
+                  " carte(s) introuvable(s) sur Scryfall : elles seront jouables avec leur nom seul.",
+              ),
+            );
+        };
+        const drawList = () => {
+          list.replaceChildren();
+          prep.entries.forEach((en) => {
+            const th = h("div", { class: "th" });
+            thumb(th, en);
+            const url = h("input", {
+              placeholder: "URL d'image proxy",
+              value: /^https?:/i.test(en.custom) ? en.custom : "",
+              onchange: async () => {
+                en.custom = url.value.trim();
+                en.res = await resolveCustom(en.custom);
+                thumb(th, en);
+                summary();
+              },
+            });
+            const up = h("input", {
+              type: "file",
+              accept: "image/*",
+              style: "width:92px",
+              onchange: async () => {
+                if (!up.files[0]) return;
+                try {
+                  en.custom = await shrink(up.files[0]);
+                  en.res = { st: "data", url: en.custom };
+                  url.value = "";
+                  thumb(th, en);
+                  summary();
+                } catch (e) {
+                  toast("Image illisible.");
+                }
+              },
+            });
+            list.append(
+              h(
+                "div",
+                { class: "r", "data-name": en.name },
+                th,
+                h(
+                  "span",
+                  {},
+                  en.qty +
+                    "× " +
+                    en.name +
+                    (en.found ? "" : " (introuvable sur Scryfall)"),
+                  en.variant
+                    ? h("span", { class: "v" }, "  " + en.variant)
+                    : null,
+                ),
+                h("input", {
+                  type: "checkbox",
+                  title: "Commandant",
+                  checked: en.cmd,
+                  onchange: (e) => {
+                    en.cmd = e.target.checked;
+                    summary();
+                  },
+                }),
+                url,
+                up,
+              ),
+            );
+          });
+        };
+        const refresh = async () => {
+          if (!prep) return;
+          for (const en of prep.entries)
+            en.res = await resolveCustom(en.custom);
+          drawList();
+          summary();
+          goBtn.disabled = false;
+        };
+        const load = async (name, entries) => {
+          prep = null;
+          goBtn.disabled = true;
+          list.replaceChildren();
+          warn.replaceChildren();
+          dn.value = name || dn.value;
+          info.textContent = "Récupération des cartes sur Scryfall…";
+          await fetchCards(entries, (a, b) => {
+            info.textContent = "Cartes : " + a + " / " + b;
+          });
+          await plib.load();
+          prep = { entries: entries };
+          await refresh();
+        };
+        const go = async () => {
+          if (!prep || busy) return;
+          busy = true;
+          goBtn.disabled = true;
+          const name = dn.value.trim() || "Deck",
+            todo = prep.entries.filter(
+              (en) => en.res.st === "file" || en.res.st === "data",
+            ),
+            keys = [];
+          let i = 0;
+          for (const en of prep.entries) {
+            const r = en.res;
+            en.final = "";
+            if (r.st === "url") en.final = r.url;
+            else if (r.st === "file" || r.st === "data") {
+              info.textContent =
+                "Préparation des images proxy : " + ++i + " / " + todo.length;
+              try {
+                if (!r.key) {
+                  const d = r.st === "file" ? await shrink(r.file) : r.url;
+                  r.key = hashKey(d);
+                  putImg(r.key, d, true);
+                } else if (!IMG.has(r.key)) putImg(r.key, r.url, true);
+                en.final = r.key;
+                keys.push(r.key);
+              } catch (e) {}
+            }
+          }
+          const cards = [];
+          prep.entries.forEach((en) => {
+            for (let k = 0; k < en.qty; k++)
+              cards.push({
+                id: uid(),
+                name: en.name,
+                img: en.final || en.img,
+                img2: en.final ? "" : en.img2,
+                label: en.final ? "" : en.variant,
+                tl: en.tl,
+                pt: en.pt,
+                cmd: en.cmd,
+              });
+          });
+          saved[name] = {
+            entries: prep.entries.map((en) => ({
+              name: en.name,
+              qty: en.qty,
+              variant: en.variant,
+              cmd: en.cmd,
+              custom: /^data:/.test(en.custom) ? en.res.key || "" : en.custom,
+            })),
+          };
+          store("cmdtable-decks", saved);
+          const used = S.order
+              .filter((id) => id !== myId)
+              .map((id) => S.players[id].color),
+            color =
+              (me() && me().color) ||
+              COLORS.find((c) => used.indexOf(c) < 0) ||
+              COLORS[S.order.length % COLORS.length];
+          Array.from(new Set(keys)).forEach(sendImg);
+          act({
+            type: "join",
+            player: { id: myId, name: myName, color: color, deck: name },
+            cards: cards,
+            order: shuffled(cards.filter((c) => !c.cmd).map((c) => c.id)),
+          });
+          busy = false;
+          closeModal();
+        };
+        const goBtn = h(
+          "button",
+          { class: "primary", id: "dgo", disabled: true, onclick: go },
+          "Entrer en jeu avec ce deck",
+        );
+        const count = (d) =>
+            (d.cards || d.entries || []).reduce(
+              (n, c) => n + (c.qty | 0 || 1),
+              0,
+            ),
+          nprox = (d) =>
+            (d.cards || d.entries || []).filter((c) => c.proxyImg || c.custom)
+              .length;
+        const pill = (d, name, attr, fn) =>
+          h(
+            "button",
+            { class: "pill", [attr]: name, onclick: fn },
+            name + " ",
+            h("b", {}, count(d) + (nprox(d) ? " · 🖼 " + nprox(d) : "")),
+          );
+        const savedNames = Object.keys(saved);
+        openModal("Charger un deck", [
+          h(
+            "div",
+            { class: "rowf" },
+            h("h4", {}, "Decks de l'éditeur"),
+            eds.length
+              ? eds.map((d) =>
+                  pill(d, d.name, "data-ed", () => load(d.name, entriesOf(d))),
+                )
+              : h(
+                  "small",
+                  { style: "color:var(--mute)" },
+                  "Aucun deck trouvé dans ce navigateur : ouvre l'éditeur de decks ici, ou importe son export JSON ci-dessous.",
+                ),
+          ),
+          savedNames.length
+            ? h(
+                "div",
+                { class: "rowf" },
+                h("h4", {}, "Déjà joués ici"),
+                savedNames.map((k) =>
+                  pill(
+                    saved[k].entries
+                      ? saved[k]
+                      : { entries: parseDeck(saved[k].text).entries },
+                    k,
+                    "data-saved",
+                    () => {
+                      const d = saved[k];
+                      load(
+                        k,
+                        d.entries
+                          ? entriesOf({ cards: d.entries })
+                          : parseDeck(d.text).entries.map((e) =>
+                              Object.assign(e, {
+                                custom: (d.custom || {})[e.name] || "",
+                              }),
+                            ),
+                      );
+                    },
+                  ),
+                ),
+              )
+            : null,
+          h(
+            "div",
+            { class: "rowf" },
+            h("h4", {}, "Importer"),
+            file,
+            h(
+              "button",
+              {
+                id: "dpaste",
+                onclick: () => {
+                  paste.hidden = !paste.hidden;
+                },
+              },
+              "Coller une liste…",
+            ),
+          ),
+          paste,
+          h("div", { class: "rowf" }, dn, goBtn),
+          info,
+          warn,
+          list,
+        ]);
+        const pre = preId && eds.find((d) => d.id === preId);
+        if (pre) load(pre.name, entriesOf(pre));
+      }
+
+      /* ---------- Barre du haut, accueil ---------- */
+      $("#bdeck").onclick = () => openDeck();
+      $("#buntap").onclick = () => me() && act({ type: "untapAll", pid: myId });
+      $("#btoken").onclick = openToken;
+      $("#bdice").onclick = (e) => {
+        const r = e.currentTarget.getBoundingClientRect(),
+          roll = (n, label) => () =>
+            act({
+              type: "note",
+              dice: true,
+              text: myName + " lance " + label + " : " + (1 + rnd(n)) + ".",
+            });
+        showMenu(
+          [
+            ["Dé 6", roll(6, "un dé 6")],
+            ["Dé 20", roll(20, "un dé 20")],
+            [
+              "Dé à X faces…",
+              async () => {
+                const n = await askN("Nombre de faces", 100);
+                if (n) roll(n, "un dé " + n)();
+              },
+            ],
+            [
+              "Pile ou face",
+              () =>
+                act({
+                  type: "note",
+                  dice: true,
+                  text:
+                    myName +
+                    " joue à pile ou face : " +
+                    (rnd(2) ? "pile" : "face") +
+                    ".",
+                }),
+            ],
+            S.order.length ? "-" : null,
+            S.order.length
+              ? [
+                  "Tirer au sort qui commence",
+                  () => {
+                    const pid = S.order[rnd(S.order.length)];
+                    act({
+                      type: "note",
+                      dice: true,
+                      text: "Tirage au sort : " + pname(pid) + " commence.",
+                    });
+                    act({ type: "turn", pid: pid, first: true });
+                  },
+                ]
+              : null,
+          ],
+          r.left,
+          r.bottom + 2,
+        );
+      };
+      $("#bturn").onclick = () => {
+        if (S.order.length) act({ type: "turn" });
+      };
+      $("#bend").onclick = openEnd;
+      $("#bsound").onclick = () => {
+        muted = !muted;
+        store("cmdtable-muted", muted);
+        $("#bsound").textContent = muted ? "🔇" : "🔊";
+        if (!muted) sfx("tick");
+      };
+      $("#bhelp").onclick = openHelp;
+      $("#bleave").onclick = leaveTable;
+      $("#blog").onclick = () => {
+        const l = $("#logp");
+        l.style.display =
+          getComputedStyle(l).display === "none" ? "grid" : "none";
+        render();
+      };
+      $("#bcode").onclick = () => {
+        const txt = /^https?:/.test(location.protocol)
+            ? location.href.split("#")[0] + "#" + code
+            : code,
+          ok = () =>
+            toast(
+              txt === code ? "Code copié : " + code : "Lien d'invitation copié",
+            );
+        if (navigator.clipboard)
+          navigator.clipboard
+            .writeText(txt)
+            .then(ok, () => toast("Code : " + code));
+        else toast("Code : " + code);
+      };
+      $("#chat").onsubmit = (e) => {
+        e.preventDefault();
+        const v = $("#chatin").value.trim();
+        if (v) act({ type: "chat", text: v });
+        $("#chatin").value = "";
+      };
+      $("#modal").addEventListener("pointerdown", (e) => {
+        if (e.target === $("#modal")) closeModal();
+      });
+      $("#reveal").addEventListener("click", () => {
+        $("#reveal").style.display = "none";
+      });
+      window.addEventListener("resize", render);
+      function getName() {
+        myName = $("#lname").value.trim().slice(0, 20) || "Joueur";
+        store("cmdtable-name", myName);
+        return myName;
+      }
+      function showResume() {
+        const sv = store("cmdtable-save"),
+          b = $("#lresume"),
+          ok = !!(sv && sv.code && sv.s && Date.now() - sv.t < 864e5);
+        b.hidden = !ok;
+        if (ok)
+          b.textContent =
+            "Reprendre ma table " +
+            sv.code +
+            " (" +
+            sv.s.order.length +
+            " joueur" +
+            (sv.s.order.length > 1 ? "s" : "") +
+            ")";
+      }
+      $("#lname").value = store("cmdtable-name") || "";
+      try {
+        wantDeck = new URLSearchParams(location.search).get("deck");
+      } catch (e) {}
+      if (location.hash.length > 1)
+        $("#lcode").value = location.hash.slice(1).toUpperCase();
+      showResume();
+      $("#lhost").onclick = () => {
+        getName();
+        startHost(false);
+      };
+      $("#lresume").onclick = () => {
+        getName();
+        startHost(true);
+      };
+      $("#ljoin").onclick = () => {
+        const c = $("#lcode").value.trim().toUpperCase();
+        if (c.length < 4) {
+          toast("Entre le code de la table.");
+          return;
+        }
+        getName();
+        startJoin(c);
+      };
+      $("#lcode").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("#ljoin").click();
+      });
+      window.addEventListener("beforeunload", (e) => {
+        if (isHost && !left && S.order.length) {
+          saveHost();
+          e.preventDefault();
+          e.returnValue = "";
+        }
+      });
+      window.addEventListener("pagehide", () => {
+        if (!isHost && hostConn && hostConn.open)
+          try {
+            hostConn.send({ t: "bye" });
+          } catch (e) {}
+      });
+    </script>
+  </body>
+</html>

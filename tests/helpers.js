@@ -311,5 +311,7 @@ module.exports = {
   answerPrompt,
   pressCtrl,
   waitFor,
+  fakeScryfall,
+  fakeIndexedDB,
   STORE_KEY,
 };
