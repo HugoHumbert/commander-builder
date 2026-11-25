@@ -71,6 +71,55 @@ const openDlg = (app, name = "Judith") => {
 const TREE = { Rakdos: { "Judith.png": "jjj" }, "Sol Ring.png": "sss" };
 
 describe("fenêtre image du proxy", () => {
+  test("carte double face : un proxy pour le recto et un pour le verso", async () => {
+    const V = "Vincent Valentine // Galian Beast";
+    const app = await open({
+      stored: deckState([{ name: JUDITH }, { name: V }]),
+    });
+    // carte simple : pas d'onglets
+    openDlg(app);
+    assert.ok(app.$("#imgSides").hidden);
+    app.$("#imgCancel").click();
+
+    openDlg(app, "Vincent");
+    assert.ok(!app.$("#imgSides").hidden);
+    const tabs = () => app.$$("#imgSides button");
+    assert.deepEqual(
+      tabs().map((b) => b.textContent),
+      ["Recto · Vincent Valentine", "Verso · Galian Beast"],
+    );
+    app.$("#imgInp").value = "https://ex.com/front.png";
+    tabs()[1].click();
+    assert.equal(app.$("#imgInp").value, "", "le verso est vide");
+    app.$("#imgInp").value = "https://ex.com/back.png";
+    tabs()[0].click();
+    assert.equal(
+      app.$("#imgInp").value,
+      "https://ex.com/front.png",
+      "recto gardé",
+    );
+    app.$("#imgOk").click();
+    const it = () => app.run("active()").cards.find((c) => c.name === V);
+    assert.equal(it().proxyImg, "https://ex.com/front.png");
+    assert.equal(it().proxyImg2, "https://ex.com/back.png");
+    assert.ok(
+      app.row("Vincent").querySelector(".pimg").classList.contains("two"),
+    );
+    // l'export JSON garde le verso, l'import aussi
+    const j = JSON.parse(app.run("exportJSON()"));
+    assert.equal(
+      j.cards.find((c) => c.name === V).proxyImg2,
+      "https://ex.com/back.png",
+    );
+
+    // retirer : seulement la face affichée
+    openDlg(app, "Vincent");
+    tabs()[1].click();
+    app.$("#imgRemove").click();
+    assert.equal(it().proxyImg, "https://ex.com/front.png");
+    assert.equal(it().proxyImg2, undefined);
+  });
+
   test("le titre affiche la variante et le nom de la carte de base", async () => {
     const app = await open({
       stored: deckState([{ name: JUDITH, variant: "Dame Papillon" }]),

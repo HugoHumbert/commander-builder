@@ -159,8 +159,28 @@ describe("decks de l'éditeur", () => {
       qty: 2,
       variant: "",
       cmd: false,
+      foil: false,
       custom: "https://ex.test/s.png",
+      custom2: "",
     });
+  });
+
+  test("le foil de l'éditeur et des listes Archidekt (*F*) est repris", async () => {
+    const t = await open();
+    const json = JSON.stringify({ cards: [{ name: "Sol Ring", foil: true }] });
+    assert.equal(
+      t.run(`parseDeck(${JSON.stringify(json)})`).entries[0].foil,
+      true,
+    );
+    const txt = "1x Sol Ring (C21) 263 *F* [Ramp]\n1x Mountain (C21) 300";
+    const e = t.run(`parseDeck(${JSON.stringify(txt)})`).entries;
+    assert.deepEqual(
+      e.map((x) => [x.name, x.foil]),
+      [
+        ["Sol Ring", true],
+        ["Mountain", false],
+      ],
+    );
   });
 
   test("l'éditeur peut ouvrir la table sur un deck précis (?deck=)", async () => {
@@ -192,6 +212,120 @@ describe("decks de l'éditeur", () => {
     app.close();
     assert.equal(link.getAttribute("href"), "index.html");
     assert.ok(link.querySelector("svg.mark"));
+  });
+
+  test("cartes foil : reflet sur le plateau et dans l'aperçu", async () => {
+    const t = await open({
+      editor: editorDeck([
+        { name: JUDITH, cmd: true, foil: true },
+        { name: "Mountain", qty: 20 },
+      ]),
+    });
+    await t.host();
+    await t.pickEditorDeck("Rakdos");
+    await t.play();
+    assert.equal(cardsNamed(t, JUDITH)[0].foil, true);
+    assert.equal(cardsNamed(t, "Mountain")[0].foil, false);
+    const el = t.$(".pile.command .card");
+    assert.ok(el.classList.contains("foil"));
+    assert.equal(t.$$("#handbar .card.foil").length, 0);
+    t.run("showPreview(document.querySelector('.pile.command .card'))");
+    assert.ok(t.$("#preview").classList.contains("foil"));
+    t.run("showPreview(document.querySelector('#handbar .card'))");
+    assert.ok(!t.$("#preview").classList.contains("foil"));
+    // face cachée : pas de reflet qui trahirait la carte
+    const j = cardsNamed(t, JUDITH)[0];
+    await t.act({
+      type: "move",
+      cid: j.id,
+      to: { pid: t.run("myId"), zone: "battlefield" },
+      faceDown: true,
+    });
+    assert.ok(!t.$(`.bf .card[data-cid="${j.id}"]`).classList.contains("foil"));
+  });
+
+  test("un proxy perso d'une carte double face garde le verso Scryfall", async () => {
+    const t = await open({
+      editor: editorDeck([
+        { name: JUDITH, cmd: true },
+        {
+          name: "Vincent Valentine // Galian Beast",
+          proxyImg: "https://ex.test/v.png",
+        },
+        { name: "Mountain", qty: 20 },
+      ]),
+    });
+    await t.host();
+    await t.pickEditorDeck("Rakdos");
+    await t.play();
+    const v = cardsNamed(t, "Vincent Valentine // Galian Beast")[0];
+    assert.equal(v.img, "https://ex.test/v.png");
+    assert.match(v.img2, /galian/);
+    assert.equal(v.pt2, "5/5");
+    assert.equal(v.name2, "Galian Beast");
+  });
+
+  test("un proxy perso peut aussi remplacer le verso", async () => {
+    const t = await open({
+      editor: editorDeck([
+        { name: JUDITH, cmd: true },
+        {
+          name: "Vincent Valentine // Galian Beast",
+          proxyImg: "https://ex.test/v.png",
+          proxyImg2: "https://ex.test/g.png",
+        },
+        { name: "Mountain", qty: 20 },
+      ]),
+    });
+    await t.host();
+    await t.pickEditorDeck("Rakdos");
+    await t.play();
+    const v = cardsNamed(t, "Vincent Valentine // Galian Beast")[0];
+    assert.equal(v.img, "https://ex.test/v.png");
+    assert.equal(v.img2, "https://ex.test/g.png");
+    assert.equal(v.pt2, "5/5");
+    const saved = t.run("store('cmdtable-decks')").Rakdos.entries;
+    assert.equal(
+      saved.find((e) => /Vincent/.test(e.name)).custom2,
+      "https://ex.test/g.png",
+    );
+  });
+
+  test("double face : jouer l'autre face depuis la main, R pour transformer", async () => {
+    const { t } = await seated();
+    const v = cardsNamed(t, "Vincent Valentine // Galian Beast")[0],
+      me = t.run("myId");
+    await t.act({ type: "move", cid: v.id, to: { pid: me, zone: "hand" } });
+    t.rightClick(t.$(`#handbar .card[data-cid="${v.id}"]`));
+    assert.ok(t.menu().includes("Jouer l'autre face (Galian Beast)"));
+    t.clickMenu("Jouer l'autre face");
+    await new Promise((r) => setTimeout(r, 15));
+    await t.painted();
+    const c = () => t.run(`S.cards[${JSON.stringify(v.id)}]`);
+    assert.equal(c().zone, "battlefield");
+    assert.equal(c().side, 1);
+    const el = () => t.$(`.bf .card[data-cid="${v.id}"]`);
+    assert.equal(el().querySelector(".ptb").textContent, "5/5");
+    // l'aperçu nomme l'autre face
+    t.run(
+      `showPreview(document.querySelector('.bf .card[data-cid="${v.id}"]'))`,
+    );
+    assert.match(
+      t.$("#preview .pinfo").textContent,
+      /Face avant : Vincent Valentine/,
+    );
+    // R sur la carte survolée
+    t.run(`hover = document.querySelector('.bf .card[data-cid="${v.id}"]')`);
+    t.run(
+      `document.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }))`,
+    );
+    await new Promise((r) => setTimeout(r, 15));
+    await t.painted();
+    assert.equal(c().side, 0);
+    assert.match(
+      t.run("S.log[S.log.length - 1].m"),
+      /transforme Galian Beast en Vincent Valentine/,
+    );
   });
 
   test("une carte double face garde sa seconde face", async () => {

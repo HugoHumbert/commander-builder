@@ -536,6 +536,58 @@
           0 0 0 1px var(--gold),
           0 2px 6px #000a;
       }
+      /* Foil : reflet irisé par-dessus l'illustration (immobile sur le plateau, animé au survol) */
+      .card.foil::before,
+      #preview.foil::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background:
+          linear-gradient(
+            115deg,
+            transparent 20%,
+            #fff8 38%,
+            transparent 50%,
+            #fff5 62%,
+            transparent 80%
+          ),
+          linear-gradient(
+            125deg,
+            #ff3c7e,
+            #ffd33c,
+            #4cff7a,
+            #3cc8ff,
+            #a64cff,
+            #ff3c7e
+          );
+        background-size:
+          200% 200%,
+          160% 160%;
+        background-position:
+          30% 30%,
+          0% 50%;
+        mix-blend-mode: overlay;
+        opacity: 0.6;
+      }
+      .card.foil:hover::before,
+      #preview.foil::before {
+        animation: foil 3.5s linear infinite;
+      }
+      @keyframes foil {
+        to {
+          background-position:
+            130% 130%,
+            100% 50%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .card.foil:hover::before,
+        #preview.foil::before {
+          animation: none;
+        }
+      }
       .card.ping::after {
         content: "";
         position: absolute;
@@ -1516,6 +1568,8 @@
             img2: d.img2 || "",
             pt: d.pt || "",
             pt2: d.pt2 != null ? String(d.pt2).slice(0, 20) : null,
+            name2: String(d.name2 || "").slice(0, 150),
+            foil: !!d.foil,
             tl: d.tl || "",
             cmd: !!d.cmd,
             token: !!d.token,
@@ -1534,8 +1588,14 @@
           if (!isFinite(v)) v = a;
           return Math.max(a, Math.min(b, v));
         }
+        // Nom de la face visible : « A // B » d'une carte qui se transforme devient A ou B.
+        function faceName(c) {
+          if (!c.img2) return c.name;
+          const n = c.name.split(" // ");
+          return c.side ? c.name2 || n[1] || c.name : n[0];
+        }
         function shown(c) {
-          return c.faceDown ? "une carte face cachée" : c.name;
+          return c.faceDown ? "une carte face cachée" : faceName(c);
         }
         function sgn(n) {
           return (n >= 0 ? "+" : "") + n;
@@ -1628,7 +1688,7 @@
           const c = s.cards[cid];
           if (!c || !to || !ZN[to.zone]) return null;
           const r = {
-            name: c.name,
+            name: faceName(c),
             from: c.zone,
             fromCtrl: c.ctrl,
             wasDown: c.faceDown,
@@ -1642,6 +1702,9 @@
             if (r.from !== "battlefield") {
               c.faceDown = !!(o && o.faceDown);
               c.tapped = !!(o && o.tapped);
+              // jouer directement l'autre face (carte modale double face, ex. un Pathway)
+              c.side = o && o.side && c.img2 ? 1 : 0;
+              if (c.side) r.name = faceName(c);
               if (c.cmd && r.from === "command") c.casts = (c.casts || 0) + 1;
             }
           }
@@ -2183,8 +2246,16 @@
             case "transform": {
               const c = s.cards[a.cid];
               if (!c || !c.img2) break;
+              const was = shown(c);
               c.side = c.side ? 0 : 1;
-              say(s, a, who + " transforme " + c.name + ".");
+              say(
+                s,
+                a,
+                who +
+                  " transforme " +
+                  was +
+                  (c.faceDown ? "." : " en " + faceName(c) + "."),
+              );
               break;
             }
             case "turn": {
@@ -2236,6 +2307,7 @@
           mullBottom: mullBottom,
           lethal: lethal,
           ptOf: ptOf,
+          faceName: faceName,
         };
       })();
       if (typeof module !== "undefined") module.exports = Core;
@@ -3418,7 +3490,7 @@
         return h(
           "div",
           { class: "txt" },
-          h("b", {}, c.name),
+          h("b", {}, Core.faceName(c)),
           c.tl ? h("i", {}, c.tl) : null,
           c.pt && !noPt ? h("span", {}, c.pt) : null,
         );
@@ -3451,6 +3523,7 @@
             (c.faceDown && o.peek && !hidden && !o.face ? " peek" : "") +
             (o.bf && sel.has(c.id) ? " sel" : "") +
             (c.cmd && !hidden ? " cmdr" : "") +
+            (c.foil && !hidden && !c.faceDown ? " foil" : "") +
             ((fxq.ping.get(c.id) || 0) > Date.now() ? " ping" : ""),
           "data-cid": c.id,
         });
@@ -4270,6 +4343,7 @@
           return;
         }
         pv.replaceChildren();
+        pv.classList.toggle("foil", !!c.foil && !c.faceDown);
         pv.style.backgroundImage = "";
         pv.removeAttribute("data-wait");
         if (!paintImg(pv, c.side && c.img2 ? c.img2 : c.img))
@@ -4278,7 +4352,18 @@
         if (pb) pv.append(pb);
         const mods = modsEl(c);
         // avec l'encadré des modificateurs, les marqueurs n'ont pas besoin d'être répétés dessous
-        const info = [c.label]
+        const other = c.img2
+          ? (c.side ? "Face avant : " : "Autre face : ") +
+            (c.side
+              ? c.name.split(" // ")[0]
+              : c.name2 || c.name.split(" // ")[1] || "?") +
+            " (R)"
+          : "";
+        const info = [
+          c.label,
+          c.faceDown ? "" : other,
+          c.foil && !c.faceDown ? "✦ Foil" : "",
+        ]
           .concat(
             mods
               ? []
@@ -4721,7 +4806,7 @@
         return p;
       }
       let justPlayed = {};
-      function playCard(c, faceDown) {
+      function playCard(c, faceDown, side) {
         if (!c || !me()) return;
         justPlayed = { id: c.id, t: Date.now() };
         const p = freeSpot(faceDown ? null : c);
@@ -4732,6 +4817,7 @@
           x: p.x,
           y: p.y,
           faceDown: !!faceDown,
+          side: side ? 1 : 0,
         });
       }
 
@@ -4880,7 +4966,8 @@
       function cloneOf(c, at) {
         return {
           id: uid(),
-          name: c.name,
+          name: Core.faceName(c),
+          foil: c.foil,
           img: c.side && c.img2 ? c.img2 : c.img,
           label: c.label,
           pt: c.side && c.pt2 != null ? c.pt2 : c.pt,
@@ -5163,6 +5250,7 @@
               ? [
                   "Transformer (autre face)",
                   () => act({ type: "transform", cid: c.id }),
+                  "R",
                 ]
               : null,
             [
@@ -5198,6 +5286,14 @@
         } else if (c.zone === "hand") {
           items = [
             ["Jouer sur le champ de bataille", () => playCard(c), "clic"],
+            c.img2
+              ? [
+                  "Jouer l'autre face (" +
+                    (c.name2 || c.name.split(" // ")[1] || "verso") +
+                    ")",
+                  () => playCard(c, false, 1),
+                ]
+              : null,
             ["Jouer face cachée", () => playCard(c, true)],
             [
               "Révéler à la table",
@@ -5725,6 +5821,10 @@
         } else if (k === "t" && onBf.length)
           act({ type: "tap", cids: onBf, v: !S.cards[onBf[0]].tapped });
         else if (k === "f" && onBf.length) act({ type: "face", cid: onBf[0] });
+        else if (k === "r" && onBf.some((id) => S.cards[id].img2))
+          onBf
+            .filter((id) => S.cards[id].img2)
+            .forEach((id) => act({ type: "transform", cid: id }));
         else if ((k === "+" || k === "=") && onBf.length)
           onBf.forEach((id) =>
             act({ type: "counter", cid: id, k: "+1/+1", d: 1 }),
@@ -5771,6 +5871,7 @@
           ["N", "Tour suivant"],
           ["T", "Engager la carte survolée / la sélection"],
           ["F", "Retourner face cachée"],
+          ["R", "Transformer une carte double face"],
           [
             "G · E · H · B",
             "Carte survolée vers cimetière · exil · main · dessous de bibliothèque",
@@ -6375,7 +6476,9 @@
             qty: Math.max(1, c.qty | 0 || 1),
             variant: c.variant || "",
             cmd: !!c.cmd,
+            foil: !!c.foil,
             custom: c.proxyImg || c.custom || c.proxy || c.image || "",
+            custom2: c.proxyImg2 || c.custom2 || "",
           }));
       }
       function parseDeck(text) {
@@ -6398,7 +6501,8 @@
           }
           let rest = m[2],
             variant = "",
-            cmd = cmdSection;
+            cmd = cmdSection,
+            foil = /\*f(oil)?\*/i.test(m[2]);
           const vs = rest.split(/\s{2,}\/\/\s{2,}/);
           if (vs.length > 1) {
             rest = vs[0];
@@ -6417,6 +6521,7 @@
               qty: parseInt(m[1], 10) || 1,
               variant: variant,
               cmd: cmd,
+              foil: foil,
               custom: "",
             });
         });
@@ -6457,6 +6562,7 @@
                 ? f[1].power + "/" + f[1].toughness
                 : ""
               : null,
+            name2: f[1] ? f[1].name || "" : "",
           };
           map[front(d.name)] = v;
           return v;
@@ -6495,6 +6601,7 @@
           e.tl = v ? v.tl : "";
           e.pt = v ? v.pt : "";
           e.pt2 = v ? v.pt2 : null;
+          e.name2 = v ? v.name2 : "";
           e.found = !!v;
         });
       }
@@ -6569,7 +6676,12 @@
           const es = prep.entries,
             total = es.reduce((n, e) => n + e.qty, 0),
             ncmd = es.filter((e) => e.cmd).length,
-            px = es.filter((e) => e.custom),
+            px = []
+              .concat(
+                es.filter((e) => e.custom).map((e) => e.res),
+                es.filter((e) => e.custom2).map((e) => e.res2 || {}),
+              )
+              .map((res) => ({ res: res })),
             bad = px.filter(
               (e) => "perm noroot missing".indexOf(e.res.st) >= 0,
             );
@@ -6726,8 +6838,10 @@
         };
         const refresh = async () => {
           if (!prep) return;
-          for (const en of prep.entries)
+          for (const en of prep.entries) {
             en.res = await resolveCustom(en.custom);
+            en.res2 = await resolveCustom(en.custom2);
+          }
           drawList();
           summary();
           goBtn.disabled = false;
@@ -6750,29 +6864,35 @@
           if (!prep || busy) return;
           busy = true;
           goBtn.disabled = true;
-          const name = dn.value.trim() || "Deck",
-            todo = prep.entries.filter(
-              (en) => en.res.st === "file" || en.res.st === "data",
-            ),
+          const local = (r) => r && (r.st === "file" || r.st === "data"),
+            name = dn.value.trim() || "Deck",
+            todo =
+              prep.entries.filter((en) => local(en.res)).length +
+              prep.entries.filter((en) => local(en.res2)).length,
             keys = [];
           let i = 0;
-          for (const en of prep.entries) {
-            const r = en.res;
-            en.final = "";
-            if (r.st === "url") en.final = r.url;
-            else if (r.st === "file" || r.st === "data") {
-              info.textContent =
-                "Préparation des images proxy : " + ++i + " / " + todo.length;
-              try {
-                if (!r.key) {
-                  const d = r.st === "file" ? await shrink(r.file) : r.url;
-                  r.key = hashKey(d);
-                  putImg(r.key, d, true);
-                } else if (!IMG.has(r.key)) putImg(r.key, r.url, true);
-                en.final = r.key;
-                keys.push(r.key);
-              } catch (e) {}
+          // image finale d'un proxy : URL web, ou clé p:… d'une image locale réduite
+          const finalOf = async (r) => {
+            if (!r) return "";
+            if (r.st === "url") return r.url;
+            if (!local(r)) return "";
+            info.textContent =
+              "Préparation des images proxy : " + ++i + " / " + todo;
+            try {
+              if (!r.key) {
+                const d = r.st === "file" ? await shrink(r.file) : r.url;
+                r.key = hashKey(d);
+                putImg(r.key, d, true);
+              } else if (!IMG.has(r.key)) putImg(r.key, r.url, true);
+              keys.push(r.key);
+              return r.key;
+            } catch (e) {
+              return "";
             }
+          };
+          for (const en of prep.entries) {
+            en.final = await finalOf(en.res);
+            en.final2 = await finalOf(en.res2);
           }
           const cards = [];
           prep.entries.forEach((en) => {
@@ -6781,12 +6901,15 @@
                 id: uid(),
                 name: en.name,
                 img: en.final || en.img,
-                img2: en.final ? "" : en.img2,
+                // verso : proxy perso du verso, sinon l'image Scryfall
+                img2: en.final2 || en.img2,
+                name2: en.name2,
                 label: en.final ? "" : en.variant,
                 tl: en.tl,
                 pt: en.pt,
-                pt2: en.final ? null : en.pt2,
+                pt2: en.pt2,
                 cmd: en.cmd,
+                foil: en.foil,
               });
           });
           saved[name] = {
@@ -6795,7 +6918,11 @@
               qty: en.qty,
               variant: en.variant,
               cmd: en.cmd,
+              foil: en.foil,
               custom: /^data:/.test(en.custom) ? en.res.key || "" : en.custom,
+              custom2: /^data:/.test(en.custom2 || "")
+                ? (en.res2 && en.res2.key) || ""
+                : en.custom2 || "",
             })),
           };
           store("cmdtable-decks", saved);

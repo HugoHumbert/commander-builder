@@ -95,7 +95,7 @@ Le bouton **💾** (ou **Ctrl+S**) réécrit directement le fichier du dernier e
 }
 ```
 
-Champs par carte : `name` (nom anglais canonique), `qty`, `variant` (nom de reskin), `group` (groupe custom), `cmd` (commandant), `status` (`todo` / `wip` / `done`), `foil`, `proxyImg` (image du proxy : `lib:<dossier>/<chemin>` pour un fichier d'un dossier de proxys, sinon une URL `https://…`, ou un ancien lien `file:///…`).
+Champs par carte : `name` (nom anglais canonique), `qty`, `variant` (nom de reskin), `group` (groupe custom), `cmd` (commandant), `status` (`todo` / `wip` / `done`), `foil`, `proxyImg` (image du proxy : `lib:<dossier>/<chemin>` pour un fichier d'un dossier de proxys, sinon une URL `https://…`, ou un ancien lien `file:///…`), et pour une carte double face `proxyImg2` (image du verso, même format).
 
 ---
 
@@ -141,6 +141,8 @@ La connexion est directe entre les joueurs (pair-à-pair, via PeerJS) : il n'y a
 - **Clic droit** partout : carte (marqueurs, face cachée, transformer, copie en jeton, déplacements, donner le contrôle…), bibliothèque (piocher X, mélanger, **chercher une carte / un terrain / un terrain de base**, regarder ou révéler le dessus, meuler, exiler), cimetière et exil, main, joueur, champ de bataille (jetons via Scryfall).
 - **Sélection au lasso** sur le champ de bataille pour déplacer ou engager plusieurs cartes.
 - **Survol** d'une carte : aperçu agrandi juste à côté d'elle. **Maintenir Z** : loupe sur la partie de la carte sous la souris, pour lire les petits textes.
+- **Foil** : les cartes cochées foil dans l'éditeur (ou marquées `*F*` dans une liste Archidekt) ont un reflet irisé sur la table.
+- **Cartes double face** : **R** (ou clic droit → Transformer) fait passer la carte survolée sur son autre face ; le journal, la force / endurance et l'aperçu suivent la face visible. Depuis la main, clic droit → « Jouer l'autre face » pour poser directement le verso (cartes modales comme les Pathway). Dans l'éditeur, la fenêtre 🖼 d'une carte double face a deux onglets **Recto / Verso** pour donner une image de proxy à chaque face ; sans image de verso, la table montre le verso Scryfall. Une carte qui quitte le champ de bataille revient sur sa face avant.
 - **Force / endurance** : pastille en bas à droite de chaque créature, à jour des marqueurs et des bonus (verte si renforcée, rouge si affaiblie, bleue si les deux). Les marqueurs +1/+1 et -1/-1 s'annulent. Clic droit : +1/+1 ou -1/-1, jusqu'à la fin du tour ou permanent, ou bonus personnalisé (une case force, une case endurance), et retrait des bonus. Les bonus « jusqu'à la fin du tour » disparaissent au tour suivant. Au survol, un encadré « Modificateurs » à côté de l'aperçu détaille tout : valeur imprimée, chaque marqueur, bonus permanents et temporaires, contrôle pris, et le total.
 - **Zoom du plateau** (− 100 % + en haut, ou Ctrl + molette) : cartes plus petites pour faire de la place, réglage propre à chaque joueur et mémorisé.
 - **⌂** en haut à gauche (ou « ← Accueil ») : retour à la page d'accueil du site.

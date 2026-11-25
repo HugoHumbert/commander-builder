@@ -709,6 +709,44 @@
         color: transparent;
         box-shadow: 0 0 6px rgba(94, 157, 94, 0.45);
       }
+      /* le verso a aussi son proxy */
+      .pimg.two {
+        box-shadow:
+          0 0 6px rgba(94, 157, 94, 0.45),
+          3px 3px 0 -1px var(--panel2),
+          3px 3px 0 0 var(--green);
+      }
+      /* fenêtre image : onglets recto / verso d'une carte double face */
+      .iside {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .iside[hidden] {
+        display: none;
+      }
+      .iside button {
+        flex: 1;
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel2);
+        color: var(--muted);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .iside button.on {
+        border-color: var(--gold);
+        color: var(--ink);
+      }
+      .iside button.has::before {
+        content: "● ";
+        color: var(--green);
+      }
       .row.imgdrop {
         outline: 2px dashed var(--green);
         outline-offset: -2px;
@@ -1320,6 +1358,10 @@
         <span id="imgTitle"></span> — <span id="imgCard"></span>
       </div>
       <div class="db">
+        <div class="iside" id="imgSides" hidden>
+          <button type="button" data-side="0"></button
+          ><button type="button" data-side="1"></button>
+        </div>
         <div class="idrop" id="imgPrev" tabindex="0"></div>
         <input
           type="file"
@@ -1506,6 +1548,8 @@
           imgErr:
             "⚠ Impossible d'afficher l'image. Un chemin local (C:\\…) ne s'affiche que si la page est ouverte depuis ton disque : utilise plutôt un dossier de proxys 📁.",
           imgRemove: "🗑 Retirer l'image",
+          imgFront: "Recto",
+          imgBack: "Verso",
           imgSave: "Enregistrer",
           imgNotImg: "Ce fichier n'est pas une image",
           imgInLib: (r, p) => `✓ 📁 ${r} › ${p}`,
@@ -1668,6 +1712,8 @@
           imgErr:
             "⚠ Can't display the image. A local path (C:\\…) only works when the page is opened from your disk: use a proxy folder 📁 instead.",
           imgRemove: "🗑 Remove image",
+          imgFront: "Front",
+          imgBack: "Back",
           imgSave: "Save",
           imgNotImg: "This file is not an image",
           imgInLib: (r, p) => `✓ 📁 ${r} › ${p}`,
@@ -2188,7 +2234,7 @@
     <button class="rm">✕</button>
     <button class="stbox ${it.status || "todo"}" title="${esc(statusTip(it.status || "todo"))}"></button>
     <label class="foil" title="Foil"><input type="checkbox" ${it.foil ? "checked" : ""}></label>
-    <button class="pimg" title="${esc(t("imgTip"))}">🖼</button>`;
+    <button class="pimg ${it.proxyImg2 ? "two" : ""}" title="${esc(t("imgTip"))}">🖼</button>`;
         const [minus, plus] = r.querySelectorAll(".qty button");
         minus.onclick = () => {
           it.qty--;
@@ -3096,6 +3142,7 @@
               status: x.status || "todo",
               foil: !!x.foil,
               proxyImg: x.proxyImg || "",
+              ...(x.proxyImg2 ? { proxyImg2: x.proxyImg2 } : {}),
             }));
           } catch (e) {
             toast(t("tBadJson"));
@@ -3598,7 +3645,7 @@
         const id = ++imgPaintId,
           ref = imgRef;
         $("#imgRemove").style.visibility =
-          imgTarget && imgTarget.proxyImg ? "visible" : "hidden";
+          imgTarget && imgRefs[imgSide] ? "visible" : "hidden";
         paintImgLib();
         imgPrevBox.innerHTML = "";
         imgPrevBox.classList.toggle("has", !!ref);
@@ -3642,15 +3689,67 @@
         imgInp.value = isLibRef(ref) ? "" : ref;
         paintImgPrev();
       };
-      function openImgDlg(it) {
+      // Carte double face : un proxy pour le recto (proxyImg) et un pour le verso (proxyImg2).
+      let imgSide = 0,
+        imgRefs = ["", ""];
+      function isDfc(it) {
+        const c = cardOf(it.name);
+        return !!(c && c.card_faces && !c.image_uris) || !!it.proxyImg2;
+      }
+      function faceNames(it) {
+        const c = cardOf(it.name),
+          f = (c && c.card_faces) || [];
+        return [
+          (f[0] && f[0].name) || it.name.split(" // ")[0],
+          (f[1] && f[1].name) || it.name.split(" // ")[1] || "",
+        ];
+      }
+      function paintSides() {
+        const box = $("#imgSides"),
+          on = !!imgTarget && isDfc(imgTarget);
+        box.hidden = !on;
+        if (!on) return;
+        const n = faceNames(imgTarget);
+        box.querySelectorAll("button").forEach((b) => {
+          const k = +b.dataset.side;
+          b.classList.toggle("on", k === imgSide);
+          b.classList.toggle("has", !!imgRefs[k]);
+          b.textContent =
+            (k ? t("imgBack") : t("imgFront")) + (n[k] ? " · " + n[k] : "");
+        });
+      }
+      // le champ lien prime ; vide, on garde l'éventuel fichier d'un dossier
+      function dlgValue() {
+        return imgInp.value.trim()
+          ? toImgUrl(imgInp.value)
+          : isLibRef(imgRef)
+            ? imgRef
+            : "";
+      }
+      function showSide(k) {
+        imgRefs[imgSide] = dlgValue();
+        imgSide = k;
+        imgRef = imgRefs[k];
+        imgInp.value = isLibRef(imgRef) ? "" : imgRef;
+        paintSides();
+        paintImgPrev();
+      }
+      $("#imgSides").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (b) showSide(+b.dataset.side);
+      };
+      function openImgDlg(it, side) {
         imgTarget = it;
+        imgSide = side && isDfc(it) ? 1 : 0;
+        imgRefs = [it.proxyImg || "", it.proxyImg2 || ""];
         const base = displayName(it),
           vari = (it.variant || "").trim();
         $("#imgCard").innerHTML = vari
           ? `<span class="icard">${esc(vari)}</span> <span class="ibase">↔ ${esc(base)}</span>`
           : `<span class="icard">${esc(base)}</span>`;
-        imgRef = it.proxyImg || "";
+        imgRef = imgRefs[imgSide];
         imgInp.value = isLibRef(imgRef) ? "" : imgRef;
+        paintSides();
         paintImgPrev();
         imgDlg.showModal();
         setTimeout(() => imgPrevBox.focus(), 30);
@@ -3658,9 +3757,17 @@
       function commitImg(v) {
         if (!imgTarget) return;
         imgDlg.close();
-        if (v === (imgTarget.proxyImg || "")) return;
+        imgRefs[imgSide] = v;
+        const it = imgTarget;
+        if (
+          imgRefs[0] === (it.proxyImg || "") &&
+          imgRefs[1] === (it.proxyImg2 || "")
+        )
+          return;
         pushUndo();
-        imgTarget.proxyImg = v;
+        it.proxyImg = imgRefs[0];
+        if (imgRefs[1]) it.proxyImg2 = imgRefs[1];
+        else delete it.proxyImg2;
         saveAll();
         render();
       }
@@ -3721,15 +3828,7 @@
       };
       dropZone(imgPrevBox, (d) => linkImage(d, dlgApply));
       $("#imgLibBtn").onclick = openLibDlg;
-      // le champ lien prime ; vide, on garde l'éventuel fichier d'un dossier
-      $("#imgOk").onclick = () =>
-        commitImg(
-          imgInp.value.trim()
-            ? toImgUrl(imgInp.value)
-            : isLibRef(imgRef)
-              ? imgRef
-              : "",
-        );
+      $("#imgOk").onclick = () => commitImg(dlgValue());
       $("#imgRemove").onclick = () => commitImg("");
       $("#imgCancel").onclick = () => imgDlg.close();
 

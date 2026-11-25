@@ -409,3 +409,75 @@ describe("force et endurance", () => {
     assert.equal(Core.ptOf(c).txt, "5/5");
   });
 });
+
+describe("cartes double face", () => {
+  function dfc(s, id) {
+    Object.assign(s.cards[id], {
+      name: "Delver of Secrets // Insectile Aberration",
+      name2: "Insectile Aberration",
+      img2: "https://img.test/back.jpg",
+      pt: "1/1",
+      pt2: "3/2",
+    });
+    return s.cards[id];
+  }
+
+  test("transformer : nom de la face visible dans le journal et la copie", () => {
+    const s = table(1);
+    act(s, "p1", {
+      type: "move",
+      cid: "p1-c6",
+      to: { pid: "p1", zone: "battlefield" },
+    });
+    const c = dfc(s, "p1-c6");
+    assert.equal(Core.faceName(c), "Delver of Secrets");
+    act(s, "p1", { type: "transform", cid: c.id });
+    assert.equal(c.side, 1);
+    assert.equal(Core.faceName(c), "Insectile Aberration");
+    assert.match(
+      lastLog(s),
+      /transforme Delver of Secrets en Insectile Aberration/,
+    );
+    act(s, "p1", { type: "tap", cids: [c.id], v: true });
+    act(s, "p1", {
+      type: "move",
+      cid: c.id,
+      to: { pid: "p1", zone: "graveyard" },
+    });
+    assert.equal(
+      c.side,
+      0,
+      "hors du champ, la carte revient sur sa face avant",
+    );
+    assert.match(lastLog(s), /Insectile Aberration/);
+  });
+
+  test("une carte modale peut être jouée directement sur son autre face", () => {
+    const s = table(1);
+    const c = dfc(s, "p1-c1");
+    act(s, "p1", {
+      type: "move",
+      cid: c.id,
+      to: { pid: "p1", zone: "battlefield" },
+      side: 1,
+    });
+    assert.equal(c.side, 1);
+    assert.match(lastLog(s), /Insectile Aberration/);
+    assert.equal(Core.ptOf(c).txt, "3/2");
+    // une carte simple ignore la demande
+    const k = s.cards["p1-c2"];
+    act(s, "p1", {
+      type: "move",
+      cid: k.id,
+      to: { pid: "p1", zone: "battlefield" },
+      side: 1,
+    });
+    assert.equal(k.side, 0);
+  });
+
+  test("une carte scindée (« Fire // Ice ») garde son nom complet", () => {
+    const s = table(1);
+    s.cards["p1-c1"].name = "Fire // Ice";
+    assert.equal(Core.faceName(s.cards["p1-c1"]), "Fire // Ice");
+  });
+});
