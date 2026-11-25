@@ -281,6 +281,102 @@ describe("plateau", () => {
   });
 });
 
+describe("mulligan de Londres", () => {
+  const hand = (t) => t.run("me().zones.hand");
+  test("la main de départ propose Garder ou Mulligan ; garder sans mulligan ne remet rien dessous", async () => {
+    const { t } = await seated();
+    assert.ok(t.$("#mullbar"), "barre de main de départ");
+    const before = hand(t);
+    t.$("#bkeep").click();
+    await t.painted();
+    assert.deepEqual(hand(t), before);
+    assert.equal(t.run("me().kept"), true);
+    assert.equal(t.$("#mullbar"), null);
+    t.rightClick(t.$(".board.me .pile.library .card"));
+    assert.ok(
+      !t.menu().includes("Mulligan"),
+      "plus de mulligan après avoir gardé",
+    );
+  });
+
+  test("on repioche toujours 7 cartes ; le premier mulligan est gratuit, ensuite on remet une carte dessous par mulligan", async () => {
+    const { t } = await seated();
+    t.$("#bmull").click();
+    await t.painted();
+    assert.equal(hand(t).length, 7);
+    assert.match(t.$("#mullbar").textContent, /1 mulligan \(gratuit\)/);
+    t.$("#bmull").click();
+    await t.painted();
+    assert.equal(hand(t).length, 7, "toujours 7 cartes piochées");
+    assert.match(
+      t.$("#mullbar").textContent,
+      /2 mulligans · 1 carte à remettre dessous/,
+    );
+    t.$("#bkeep").click();
+    assert.match(t.$("#modal h2").textContent, /Garder ma main/);
+    assert.ok(t.$("#keepok").disabled, "il faut choisir la carte");
+    const chosen = t.$("#keepgrid [data-keep]").dataset.keep;
+    t.$("#keepgrid [data-keep]").click();
+    assert.ok(!t.$("#keepok").disabled);
+    t.$("#keepok").click();
+    await t.painted();
+    assert.equal(hand(t).length, 6);
+    assert.ok(!hand(t).includes(chosen));
+    const lib = t.run("me().zones.library");
+    assert.equal(lib[lib.length - 1], chosen, "sous la bibliothèque");
+    const log = t.run("S.log").map((l) => l.m);
+    assert.match(
+      log[log.length - 1],
+      /garde sa main de 6 cartes et met 1 carte sous sa bibliothèque/,
+    );
+    assert.doesNotMatch(
+      log.join(" "),
+      new RegExp(t.run(`S.cards["${chosen}"].name`) + ".*sous"),
+    );
+  });
+});
+
+describe("sons", () => {
+  test("chaque son de la table se construit sans erreur", async () => {
+    const t = await open();
+    const names = t.run("Object.keys(SOUNDS)");
+    for (const n of [
+      "draw",
+      "place",
+      "tap",
+      "flip",
+      "shuffle",
+      "dice",
+      "tick",
+      "up",
+      "down",
+      "turn",
+      "ping",
+      "end",
+    ])
+      assert.ok(names.includes(n), "son " + n);
+    // faux contexte audio : vérifie que chaque son crée et démarre des sources
+    const started = t.run(`(() => {
+      const node = () => ({ connect: (x) => x, frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, Q: {}, gain: { value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} } });
+      let n = 0;
+      const a = { sampleRate: 8000, currentTime: 0, destination: {},
+        createBuffer: (c, len) => ({ getChannelData: () => new Float32Array(len) }),
+        createBufferSource: () => Object.assign(node(), { start: () => n++ }),
+        createOscillator: () => Object.assign(node(), { start: () => n++, stop() {} }),
+        createBiquadFilter: node, createGain: node, createDynamicsCompressor: node };
+      const out = {}, res = {};
+      for (const k in SOUNDS) { n = 0; SOUNDS[k](a, node(), 0); res[k] = n; }
+      return res;
+    })()`);
+    for (const [k, n] of Object.entries(started))
+      assert.ok(n > 0, "son muet : " + k);
+    assert.ok(
+      started.shuffle > 30,
+      "le mélange crépite (une source par carte)",
+    );
+  });
+});
+
 describe("menus du clic droit", () => {
   test("bibliothèque : piocher, mélanger, tuteurs, meule…", async () => {
     const { t } = await seated();
@@ -294,7 +390,7 @@ describe("menus du clic droit", () => {
       "Regarder les X cartes du dessus…",
       "Meuler X cartes…",
       "Mélanger",
-      "Mulligan…",
+      "Mulligan",
     ])
       assert.ok(m.includes(label), "menu : " + label);
   });
@@ -473,9 +569,68 @@ describe("multijoueur", () => {
     guest.$(`[data-cd="${hostCmd.id}:1"]`).click();
     await waitFor(() => guest.run("me().life") === 38);
     await host.painted();
-    assert.match(host.$("#opps .tag.cmdd").textContent, /Judith 2/);
+    const tile = host.$(`#opps [data-ctile$="|${hostCmd.id}"]`);
+    assert.equal(tile.querySelector("b").textContent, "2");
     assert.match(guest.$("#cdbox b:not(.lethal)").textContent, /Bob/);
     assert.match(guest.$("#cdbox .cdrow b").textContent, /2 \/ 21/);
+  });
+
+  test("chaque joueur affiche une pastille par commandant adverse : clic +1, clic droit −1", async () => {
+    const hub = makeHub();
+    const { t: host, code } = await seated({ hub });
+    const guest = await guestOf(hub, code);
+    await waitFor(() => host.run("S.order.length") === 2);
+    await host.painted();
+    await guest.painted();
+    const hostCmd = host.run("me().zones.command[0]"),
+      guestId = guest.run("myId");
+    // chez l'hôte, sur le plateau de Bob : la pastille du commandant d'Alice
+    const tile = () => host.$(`[data-ctile="${guestId}|${hostCmd}"]`);
+    assert.ok(tile(), "pastille affichée sans blessure");
+    assert.ok(tile().classList.contains("zero"));
+    assert.ok(tile().classList.contains("edit"), "Alice possède ce commandant");
+    tile().click();
+    tile().click();
+    await waitFor(() => guest.run("me().life") === 38, { msg: "2 blessures" });
+    await host.painted();
+    assert.equal(tile().querySelector("b").textContent, "2");
+    host.rightClick(tile());
+    await waitFor(() => guest.run("me().life") === 39, { msg: "−1" });
+    // chez Bob, sur son propre plateau, la même pastille est visible et modifiable
+    await guest.painted();
+    const mine = guest.$(`.board.me [data-ctile="${guestId}|${hostCmd}"]`);
+    assert.equal(mine.querySelector("b").textContent, "1");
+    assert.ok(mine.classList.contains("edit"));
+    // pas de pastille pour son propre commandant
+    const own = guest.run("me().zones.command[0]");
+    assert.equal(guest.$(`.board.me [data-ctile="${guestId}|${own}"]`), null);
+  });
+
+  test("21 blessures d'un même commandant : le joueur est signalé mort et peut se déclarer éliminé", async () => {
+    const hub = makeHub();
+    const { t: host, code } = await seated({ hub });
+    const guest = await guestOf(hub, code);
+    await waitFor(() => host.run("S.order.length") === 2);
+    const hostCmd = host.run("me().zones.command[0]"),
+      guestId = guest.run("myId");
+    await host.act({ type: "cmd", pid: guestId, cid: hostCmd, d: 21 });
+    await waitFor(() => guest.run("me().cmd")[hostCmd] === 21);
+    await guest.painted();
+    assert.ok(
+      guest
+        .$(`.board.me [data-ctile="${guestId}|${hostCmd}"]`)
+        .classList.contains("lethal"),
+    );
+    const dead = guest.$(".board.me .tag.dead");
+    assert.match(dead.textContent, /21 blessures de Judith/);
+    assert.match(
+      guest.$("#banner").textContent,
+      /Bob : 21 blessures de Judith/,
+    );
+    dead.querySelector(".concede").click();
+    await waitFor(() => host.run(`S.players["${guestId}"].out`) === true, {
+      msg: "éliminé",
+    });
   });
 
   test("clic droit sur son commandant : infliger des blessures à un adversaire", async () => {

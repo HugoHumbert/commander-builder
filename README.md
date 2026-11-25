@@ -117,6 +117,8 @@ Les images de tes proxys restent **sur ton ordinateur** : la page les lit direct
 
 `table-de-jeu-commander.html` est une table de jeu en ligne pour jouer tes decks **avec leurs images de proxy**, à la manière de playgroup.gg : chacun voit le plateau de tout le monde, et personne n'applique les règles à ta place (comme autour d'une vraie table).
 
+**En ligne** : [hugohumbert.github.io/commander-builder](https://hugohumbert.github.io/commander-builder/) (éditeur et table sur le même site, publiés depuis `main` par GitHub Pages).
+
 **Lancer une partie**
 
 1. Dans l'éditeur, clique sur **▶** : la table s'ouvre sur le deck actif. Tu peux aussi ouvrir `table-de-jeu-commander.html` directement.
@@ -136,13 +138,15 @@ La connexion est directe entre les joueurs (pair-à-pair, via PeerJS) : il n'y a
 - Chaque joueur a son **champ de bataille** et ses piles : **zone de commandement**, **bibliothèque** (face cachée), **cimetière** et **exil**. Ta **main** est en bas.
 - **Glisser-déposer** entre toutes les zones (et vers le champ de bataille d'un adversaire pour lui donner le contrôle). Les terrains joués se rangent en bas, le reste en haut.
 - **Clic** sur un permanent : engager / dégager. **Clic** sur la bibliothèque : piocher. **Double-clic** sur une carte en main : la jouer.
-- **Clic droit** partout : carte (marqueurs, face cachée, transformer, copie en jeton, déplacements, donner le contrôle…), bibliothèque (piocher X, mélanger, **chercher une carte / un terrain / un terrain de base**, regarder ou révéler le dessus, meuler, exiler, mulligan), cimetière et exil, main, joueur, champ de bataille (jetons via Scryfall).
+- **Clic droit** partout : carte (marqueurs, face cachée, transformer, copie en jeton, déplacements, donner le contrôle…), bibliothèque (piocher X, mélanger, **chercher une carte / un terrain / un terrain de base**, regarder ou révéler le dessus, meuler, exiler), cimetière et exil, main, joueur, champ de bataille (jetons via Scryfall).
 - **Sélection au lasso** sur le champ de bataille pour déplacer ou engager plusieurs cartes.
 - **Survol** d'une carte : aperçu agrandi juste à côté d'elle.
-- **Blessures de commandant** : bouton ⚔ de chaque joueur, ou clic droit sur un commandant. Elles sont comptées **par commandant**, retirent autant de points de vie, et 21 d'un même commandant sont signalées comme mortelles. La **taxe de commandant** s'affiche sur la zone de commandement.
+- **Main de départ et mulligan de Londres** (règle 103.5) : au début de la partie, une barre **Garder / Mulligan** apparaît au-dessus de ta main. Chaque mulligan remélange ta main et te fait repiocher **7 cartes**. Quand tu gardes, tu choisis autant de cartes à mettre **sous ta bibliothèque** que de mulligans pris, **le premier étant gratuit** (règle 103.5c du multijoueur, que le comité Commander conseille aussi en duel).
+- **Blessures de commandant** : sur chaque joueur, une pastille par commandant adverse (partenaires compris) affiche les blessures reçues de lui. **Clic** : +1, **clic droit** : −1, **Maj** : ×5 ; le joueur blessé et le propriétaire du commandant peuvent tenir le compte. Chaque blessure retire aussi 1 point de vie. Le détail est dans la fenêtre ⚔, et le clic droit sur ton commandant permet aussi d'infliger des blessures. La **taxe de commandant** s'affiche sur la zone de commandement.
+- **Défaite** : un joueur à 0 point de vie, à 10 marqueurs poison ou à **21 blessures d'un même commandant** est annoncé à toute la table et marqué ☠ ; il peut alors se déclarer éliminé (le tour suivant le saute).
 - Points de vie, poison, compteurs libres (énergie, expérience…), tours, dés, pile ou face, journal et discussion.
 - **Finir la partie** désigne le vainqueur chez tous les joueurs, qui peuvent relancer une partie avec les mêmes decks. **Quitter** retire ton plateau de la table ; un joueur déconnecté est compté « hors ligne ».
-- Animations des cartes et sons discrets (bouton 🔊 pour les couper). Le bouton **?** liste les raccourcis clavier (D piocher, U dégager tout, S mélanger, N tour suivant, T engager, G / E / H / B déplacer la carte survolée…).
+- Animations des cartes et **sons de cartes** (pioche, carte posée, engagée, retournée, mélange à l'américaine, dé) synthétisés dans la page, sans fichier ; bouton 🔊 pour les couper, et « Écouter les sons » dans l'aide **?**. Le bouton **?** liste les raccourcis clavier (D piocher, U dégager tout, S mélanger, N tour suivant, T engager, G / E / H / B déplacer la carte survolée…).
 
 > Les informations cachées (mains, bibliothèques) ne sont pas affichées aux autres joueurs, mais la table repose sur la confiance : c'est un outil pour jouer entre amis.
 
@@ -158,6 +162,7 @@ La connexion est directe entre les joueurs (pair-à-pair, via PeerJS) : il n'y a
 
 ```txt
 editeur-deck-commander.html   # l'éditeur de decks (tout-en-un)
+index.html                    # page d'accueil (GitHub Pages)
 table-de-jeu-commander.html   # la table de jeu multijoueur (tout-en-un, PeerJS chargé depuis un CDN)
 exemple-import.txt            # exemple d'import au format texte
 exemple-import.json           # exemple d'import au format JSON (avec variantes)

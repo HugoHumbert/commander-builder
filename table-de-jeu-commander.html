@@ -443,6 +443,7 @@
         text-align: center;
       }
       #handbar {
+        position: relative;
         display: flex;
         align-items: flex-end;
         justify-content: center;
@@ -1049,6 +1050,88 @@
           display: none !important;
         }
       }
+      .ctile {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 1px 7px 1px 1px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      .ctile i {
+        width: 24px;
+        height: 17px;
+        border-radius: 9px;
+        background: #3a2a2e center 24% / 135% no-repeat;
+      }
+      .ctile b {
+        color: var(--gold);
+        min-width: 12px;
+        text-align: center;
+      }
+      .ctile.zero {
+        opacity: 0.55;
+      }
+      .ctile.edit {
+        cursor: pointer;
+      }
+      .ctile.edit:hover {
+        border-color: var(--gold);
+        opacity: 1;
+      }
+      .ctile.lethal {
+        background: var(--blood);
+        border-color: var(--blood2);
+        opacity: 1;
+      }
+      .ctile.lethal b {
+        color: #fff;
+      }
+      .tag.dead {
+        background: var(--blood);
+        border-color: var(--blood2);
+        color: #fff;
+        font-weight: 600;
+      }
+      .tag.dead .concede {
+        margin-left: 6px;
+        padding: 0 6px;
+        font-size: 11px;
+      }
+      .tag.mull {
+        color: var(--gold);
+        border-color: var(--gold);
+      }
+      #mullbar {
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 8px);
+        translate: -50% 0;
+        z-index: 20;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 5px 6px 5px 14px;
+        border-radius: 22px;
+        background: #000e;
+        border: 1px solid var(--gold);
+        box-shadow: 0 6px 20px #000;
+        white-space: nowrap;
+      }
+      #mullbar small {
+        color: var(--mute);
+      }
+      .grid .cell.pick .card {
+        outline: 3px solid var(--gold);
+        outline-offset: 2px;
+        translate: 0 -6px;
+      }
+      .grid .cell.pickable {
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -1292,7 +1375,25 @@
           p.cmd = {};
           p.ctr = {};
           p.out = false;
+          p.mull = 0;
+          p.kept = false;
           draw(s, p, 7);
+        }
+        // Mulligan de Londres (CR 103.5) : en gardant, on met au-dessous autant de cartes que
+        // de mulligans pris ; le premier est gratuit (CR 103.5c, conseillé aussi en duel Commander).
+        const mullBottom = (p) => Math.max(0, (p.mull || 0) - 1);
+        // raison pour laquelle un joueur a perdu, ou "" (CR 704.5a, 704.5c, 903.10a)
+        function lethal(s, p) {
+          if (p.life <= 0) return p.life + " PV";
+          if (p.poison >= 10) return p.poison + " marqueurs poison";
+          for (const k in p.cmd || {})
+            if (p.cmd[k] >= CMD_LETHAL)
+              return (
+                p.cmd[k] +
+                " blessures de " +
+                (s.cards[k] ? s.cards[k].name.split(",")[0] : "commandant")
+              );
+          return "";
         }
         function toFront(s, c) {
           const p = s.players[c.ctrl];
@@ -1640,16 +1741,50 @@
             }
             case "mulligan": {
               const p = s.players[a.pid];
-              if (!p) break;
+              if (!p || p.kept !== false) break;
               p.zones.hand
                 .slice()
                 .forEach((id) => place(s, s.cards[id], p.id, "library"));
               setLibrary(p, a.order);
-              const k = draw(s, p, a.n == null ? 7 : a.n);
+              draw(s, p, 7);
+              p.mull = (p.mull || 0) + 1;
+              const n = mullBottom(p);
               say(
                 s,
                 a,
-                p.name + " fait un mulligan et pioche " + pl(k, "carte") + ".",
+                p.name +
+                  " fait " +
+                  (p.mull === 1
+                    ? "un mulligan (gratuit)"
+                    : "son " + p.mull + "e mulligan") +
+                  " et repioche 7 cartes" +
+                  (n
+                    ? " : il en remettra " + n + " sous sa bibliothèque."
+                    : "."),
+              );
+              break;
+            }
+            case "keep": {
+              const p = s.players[a.pid];
+              if (!p || p.kept !== false) break;
+              const n = Math.min(mullBottom(p), p.zones.hand.length),
+                ids = Array.from(new Set(a.cids || [])).filter(
+                  (id) => p.zones.hand.indexOf(id) >= 0,
+                );
+              if (ids.length !== n) break;
+              ids.forEach((id) =>
+                place(s, s.cards[id], p.id, "library", "bottom"),
+              );
+              p.kept = true;
+              say(
+                s,
+                a,
+                p.name +
+                  " garde sa main de " +
+                  pl(p.zones.hand.length, "carte") +
+                  (n
+                    ? " et met " + pl(n, "carte") + " sous sa bibliothèque."
+                    : "."),
               );
               break;
             }
@@ -1837,6 +1972,8 @@
           nextTurn: nextTurn,
           CMD_LETHAL: CMD_LETHAL,
           START_LIFE: START_LIFE,
+          mullBottom: mullBottom,
+          lethal: lethal,
         };
       })();
       if (typeof module !== "undefined") module.exports = Core;
@@ -1885,6 +2022,7 @@
         overSeen = 0,
         dropFrom = null,
         askedDeck = false;
+      const lethalSeen = {};
       const sel = new Set(),
         prev = new Map();
       const fxq = {
@@ -2230,88 +2368,245 @@
         return { st: "missing" };
       }
 
-      /* ---------- Sons (synthétisés, discrets) ---------- */
+      /* ---------- Sons ----------
+         Bruits de cartes synthétisés (aucun fichier) : bruit blanc filtré et enveloppé.
+         Chaque son est construit par SOUNDS[nom](a, out, t), sur un contexte temps réel
+         ou hors ligne (OfflineAudioContext), ce qui permet de les écouter ou de les tester. */
       let AC = null,
+        master = null,
         muted = store("cmdtable-muted") === true;
-      function tone(a, f, t, dur, type, vol, f2) {
+      const noiseBufs = new WeakMap();
+      function noiseBuf(a) {
+        let b = noiseBufs.get(a);
+        if (!b) {
+          const n = a.sampleRate * 2;
+          b = a.createBuffer(1, n, a.sampleRate);
+          const d = b.getChannelData(0);
+          let p = 0;
+          // bruit un peu « rosé » : plus doux qu'un bruit blanc pur
+          for (let i = 0; i < n; i++) {
+            const w = Math.random() * 2 - 1;
+            p = 0.8 * p + 0.2 * w;
+            d[i] = 0.6 * w + 0.9 * p;
+          }
+          noiseBufs.set(a, b);
+        }
+        return b;
+      }
+      const jit = (v, r) => v * (1 + (Math.random() * 2 - 1) * r);
+      // o : { f, f2 (fin de balayage), type, q, vol, att (montée), dur }
+      function nz(a, out, t, o) {
+        const s = a.createBufferSource(),
+          f = a.createBiquadFilter(),
+          g = a.createGain(),
+          dur = o.dur,
+          att = Math.min(o.att || 0.002, dur * 0.8);
+        s.buffer = noiseBuf(a);
+        f.type = o.type || "bandpass";
+        f.frequency.setValueAtTime(o.f, t);
+        if (o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, t + dur);
+        f.Q.value = o.q == null ? 0.8 : o.q;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(o.vol, t + att);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        s.connect(f).connect(g).connect(out);
+        s.start(t, Math.random() * 1.5, dur + 0.05);
+      }
+      // choc sourd d'une carte ou d'un objet sur le tapis
+      function thump(a, out, t, vol, f) {
         const o = a.createOscillator(),
           g = a.createGain();
-        o.type = type || "sine";
-        o.frequency.setValueAtTime(f, t);
-        if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+        o.frequency.setValueAtTime(f || 120, t);
+        o.frequency.exponentialRampToValueAtTime((f || 120) * 0.5, t + 0.06);
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+        o.connect(g).connect(out);
+        o.start(t);
+        o.stop(t + 0.09);
+      }
+      function chime(a, out, t, f, dur, vol) {
+        const o = a.createOscillator(),
+          g = a.createGain();
+        o.frequency.value = f;
         g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
         g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        o.connect(g).connect(a.destination);
+        o.connect(g).connect(out);
         o.start(t);
         o.stop(t + dur + 0.02);
       }
-      function hiss(a, t, dur, vol, freq) {
-        const n = Math.max(1, Math.floor(a.sampleRate * dur)),
-          buf = a.createBuffer(1, n, a.sampleRate),
-          d = buf.getChannelData(0);
-        for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
-        const s = a.createBufferSource(),
-          f = a.createBiquadFilter(),
+      const cardTap = (a, out, t, v) => {
+        nz(a, out, t, {
+          type: "lowpass",
+          f: jit(1700, 0.15),
+          q: 0.5,
+          vol: 0.5 * v,
+          dur: 0.04,
+        });
+        nz(a, out, t, { f: jit(3800, 0.1), q: 1.2, vol: 0.12 * v, dur: 0.02 });
+        thump(a, out, t, 0.18 * v, jit(110, 0.1));
+      };
+      const SOUNDS = {
+        // carte tirée du dessus de la pile : frottement qui monte, puis petit claquement
+        draw: (a, out, t) => {
+          nz(a, out, t, {
+            f: jit(1400, 0.1),
+            f2: 3600,
+            q: 0.7,
+            vol: 0.3,
+            att: 0.06,
+            dur: 0.17,
+          });
+          nz(a, out, t + 0.15, {
+            type: "highpass",
+            f: 4500,
+            vol: 0.12,
+            dur: 0.012,
+          });
+        },
+        // carte posée sur le tapis : court glissé puis claquement mat
+        place: (a, out, t) => {
+          nz(a, out, t, {
+            f: 2600,
+            f2: 1800,
+            q: 0.6,
+            vol: 0.08,
+            att: 0.02,
+            dur: 0.06,
+          });
+          cardTap(a, out, t + 0.05, 1);
+        },
+        // carte qu'on tourne sur le tapis
+        tap: (a, out, t) => {
+          nz(a, out, t, {
+            f: jit(3200, 0.1),
+            f2: 2000,
+            q: 0.8,
+            vol: 0.42,
+            att: 0.015,
+            dur: 0.08,
+          });
+        },
+        // carte retournée : souffle puis claquement
+        flip: (a, out, t) => {
+          nz(a, out, t, {
+            f: 800,
+            f2: 2600,
+            q: 0.6,
+            vol: 0.14,
+            att: 0.03,
+            dur: 0.1,
+          });
+          nz(a, out, t + 0.09, {
+            type: "highpass",
+            f: 3500,
+            vol: 0.2,
+            dur: 0.01,
+          });
+          cardTap(a, out, t + 0.1, 0.6);
+        },
+        // mélange à l'américaine : crépitement des cartes, cascade, puis on tasse le paquet
+        shuffle: (a, out, t) => {
+          const n = 38,
+            len = 0.55;
+          nz(a, out, t, {
+            f: 3800,
+            q: 0.5,
+            vol: 0.05,
+            att: 0.2,
+            dur: len + 0.05,
+          });
+          for (let i = 0; i < n; i++) {
+            const x = i / n,
+              at = t + len * (x + 0.35 * x * (1 - x)) + Math.random() * 0.006;
+            nz(a, out, at, {
+              type: "highpass",
+              f: jit(3200, 0.35),
+              vol: jit(0.18, 0.4),
+              dur: jit(0.008, 0.3),
+            });
+          }
+          nz(a, out, t + len + 0.05, {
+            f: 2200,
+            f2: 900,
+            q: 0.6,
+            vol: 0.13,
+            att: 0.06,
+            dur: 0.28,
+          });
+          cardTap(a, out, t + len + 0.4, 0.7);
+          cardTap(a, out, t + len + 0.5, 0.5);
+        },
+        // dé qui rebondit puis roule
+        dice: (a, out, t) => {
+          let at = t,
+            gap = 0.14,
+            v = 0.32;
+          for (let i = 0; i < 9; i++) {
+            nz(a, out, at, { f: jit(3000, 0.3), q: 7, vol: v, dur: 0.035 });
+            thump(a, out, at, v * 0.4, jit(220, 0.2));
+            at += gap;
+            gap *= 0.72;
+            v *= 0.78;
+          }
+          nz(a, out, at, { f: 2500, q: 2, vol: 0.04, att: 0.02, dur: 0.15 });
+        },
+        // compteurs : petit clic de jeton
+        tick: (a, out, t) =>
+          nz(a, out, t, { f: jit(2400, 0.1), q: 5, vol: 0.75, dur: 0.025 }),
+        up: (a, out, t) => {
+          nz(a, out, t, { f: 2200, q: 6, vol: 0.6, dur: 0.03 });
+          nz(a, out, t + 0.06, { f: 2900, q: 6, vol: 0.6, dur: 0.03 });
+        },
+        down: (a, out, t) => {
+          nz(a, out, t, { f: 1500, q: 5, vol: 0.55, dur: 0.04 });
+          thump(a, out, t, 0.12, 160);
+        },
+        turn: (a, out, t) => {
+          chime(a, out, t, 660, 0.25, 0.05);
+          chime(a, out, t + 0.12, 990, 0.35, 0.04);
+        },
+        ping: (a, out, t) => {
+          chime(a, out, t, 1250, 0.12, 0.05);
+          chime(a, out, t + 0.15, 1250, 0.12, 0.04);
+        },
+        end: (a, out, t) =>
+          [392, 494, 587, 784].forEach((f, i) =>
+            chime(a, out, t + i * 0.12, f, 0.6, 0.045),
+          ),
+      };
+      // sortie commune : adoucit les aigus et limite les pics
+      function chain(a) {
+        const lp = a.createBiquadFilter(),
+          comp = a.createDynamicsCompressor(),
           g = a.createGain();
-        s.buffer = buf;
-        f.type = "bandpass";
-        f.frequency.value = freq;
-        f.Q.value = 0.9;
-        g.gain.setValueAtTime(vol, t);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        s.connect(f).connect(g).connect(a.destination);
-        s.start(t);
+        lp.type = "lowpass";
+        lp.frequency.value = 9000;
+        g.gain.value = 0.8;
+        lp.connect(comp).connect(g).connect(a.destination);
+        return lp;
       }
       function sfx(name) {
-        if (muted) return;
+        if (muted || !SOUNDS[name]) return;
         try {
-          AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+          if (!AC) {
+            AC = new (window.AudioContext || window.webkitAudioContext)();
+            master = chain(AC);
+          }
           if (AC.state === "suspended") AC.resume();
           if (AC.state !== "running") return;
-          const a = AC,
-            t = a.currentTime;
-          if (name === "draw") {
-            hiss(a, t, 0.1, 0.07, 2600);
-          } else if (name === "place") {
-            hiss(a, t, 0.06, 0.08, 900);
-            tone(a, 130, t, 0.07, "sine", 0.06, 70);
-          } else if (name === "tap") {
-            tone(a, 480, t, 0.04, "triangle", 0.05, 320);
-          } else if (name === "flip") {
-            hiss(a, t, 0.05, 0.06, 1500);
-            hiss(a, t + 0.07, 0.05, 0.05, 2200);
-          } else if (name === "shuffle") {
-            for (let i = 0; i < 7; i++)
-              hiss(a, t + i * 0.055, 0.045, 0.06, 1600 + Math.random() * 1200);
-          } else if (name === "up") {
-            tone(a, 520, t, 0.09, "sine", 0.05, 700);
-          } else if (name === "down") {
-            tone(a, 420, t, 0.11, "sine", 0.05, 280);
-          } else if (name === "tick") {
-            tone(a, 900, t, 0.03, "sine", 0.035);
-          } else if (name === "turn") {
-            tone(a, 660, t, 0.14, "sine", 0.05);
-            tone(a, 880, t + 0.11, 0.22, "sine", 0.05);
-          } else if (name === "ping") {
-            tone(a, 1250, t, 0.09, "sine", 0.05);
-            tone(a, 1250, t + 0.14, 0.09, "sine", 0.04);
-          } else if (name === "dice") {
-            for (let i = 0; i < 6; i++)
-              tone(
-                a,
-                260 + Math.random() * 500,
-                t + i * 0.045,
-                0.03,
-                "square",
-                0.018,
-              );
-          } else if (name === "end") {
-            [392, 494, 587, 784].forEach((f, i) =>
-              tone(a, f, t + i * 0.12, 0.5, "sine", 0.045),
-            );
-          }
+          SOUNDS[name](AC, master, AC.currentTime + 0.005);
         } catch (e) {}
+      }
+      // rendu hors ligne d'un son (tests, écoute)
+      async function renderSfx(name, secs) {
+        const a = new OfflineAudioContext(
+          1,
+          Math.ceil(44100 * (secs || 1.5)),
+          44100,
+        );
+        SOUNDS[name](a, chain(a), 0.01);
+        return a.startRendering();
       }
 
       /* ---------- Réseau (pair-à-pair, l'hôte fait autorité sur l'ordre des actions) ---------- */
@@ -2670,6 +2965,9 @@
           case "untapAll":
             sfx("tap");
             break;
+          case "keep":
+            sfx("place");
+            break;
           case "shuffle":
           case "mulligan":
           case "reset":
@@ -2878,6 +3176,21 @@
           h("span", { class: "cap" }, CAP[zone]),
         );
       }
+      // tous les commandants de la table qui n'appartiennent pas à pid (partenaires compris)
+      const opposingCommanders = (pid) =>
+        S.order
+          .filter((id) => id !== pid)
+          .reduce(
+            (acc, id) =>
+              acc.concat(
+                Object.keys(S.cards)
+                  .map((k) => S.cards[k])
+                  .filter((c) => c.cmd && c.owner === id),
+              ),
+            [],
+          );
+      // le joueur blessé et le propriétaire du commandant peuvent tenir le compte
+      const canEditCmd = (pid, c) => pid === myId || c.owner === myId;
       function boardEl(p, mine) {
         const z = p.zones;
         const pm = (type, d, t) =>
@@ -2890,21 +3203,70 @@
             },
             t,
           );
-        const cmdTags = Object.keys(p.cmd || {})
-          .filter((k) => p.cmd[k] > 0)
-          .map((k) =>
+        // Une pastille par commandant adverse : blessures reçues de lui (21 = mortel).
+        const cmdTags = opposingCommanders(p.id).map((c) => {
+          const n = (p.cmd || {})[c.id] || 0,
+            edit = canEditCmd(p.id, c),
+            th = h("i", {});
+          if (c.img) paintImg(th, c.img);
+          return h(
+            "span",
+            {
+              class:
+                "ctile" +
+                (n ? "" : " zero") +
+                (n >= Core.CMD_LETHAL ? " lethal" : "") +
+                (edit ? " edit" : ""),
+              "data-ctile": p.id + "|" + c.id,
+              title:
+                "Blessures de commandant infligées à " +
+                p.name +
+                " par " +
+                c.name +
+                " (" +
+                pname(c.owner) +
+                ") : " +
+                n +
+                " / " +
+                Core.CMD_LETHAL +
+                (edit ? "\nClic : +1 · clic droit : −1 · Maj : ×5" : ""),
+            },
+            th,
+            h("b", {}, n),
+          );
+        });
+        if (p.kept === false && !mine)
+          cmdTags.unshift(
             h(
               "span",
               {
-                class:
-                  "tag cmdd" + (p.cmd[k] >= Core.CMD_LETHAL ? " lethal" : ""),
-                "data-cmdd": p.id,
-                title: "Blessures de commandant reçues",
+                class: "tag mull",
+                title: "Ce joueur choisit sa main de départ",
               },
-              "⚔ " +
-                (S.cards[k] ? S.cards[k].name.split(",")[0] : "?") +
-                " " +
-                p.cmd[k],
+              "choisit sa main" + (p.mull ? " · mulligan ×" + p.mull : ""),
+            ),
+          );
+        const dead = !p.out && Core.lethal(S, p);
+        if (dead)
+          cmdTags.push(
+            h(
+              "span",
+              {
+                class: "tag dead",
+                title: "Ce joueur a perdu selon les règles",
+              },
+              "☠ " + dead,
+              mine
+                ? h(
+                    "button",
+                    {
+                      class: "concede",
+                      onclick: () =>
+                        act({ type: "concede", pid: myId, v: true }),
+                    },
+                    "Je suis éliminé",
+                  )
+                : null,
             ),
           );
         const ctrTags = Object.keys(p.ctr || {}).map((k) =>
@@ -3065,6 +3427,43 @@
               ? Math.max(-cw * 0.82, (avail - n * cw) / (n - 1))
               : 4) + "px",
           );
+          if (m.kept === false) {
+            const b = Core.mullBottom(m);
+            hb.append(
+              h(
+                "div",
+                { id: "mullbar" },
+                h(
+                  "span",
+                  {},
+                  "Main de départ",
+                  h(
+                    "small",
+                    {},
+                    m.mull
+                      ? " · " +
+                          m.mull +
+                          " mulligan" +
+                          (m.mull > 1 ? "s" : "") +
+                          (b
+                            ? " · " +
+                              b +
+                              " carte" +
+                              (b > 1 ? "s" : "") +
+                              " à remettre dessous"
+                            : " (gratuit)")
+                      : "",
+                  ),
+                ),
+                h(
+                  "button",
+                  { class: "primary", id: "bkeep", onclick: keepHand },
+                  "Garder",
+                ),
+                h("button", { id: "bmull", onclick: mulligan }, "Mulligan"),
+              ),
+            );
+          }
           if (!n)
             hb.append(
               h(
@@ -3101,6 +3500,15 @@
           );
           lg.scrollTop = lg.scrollHeight;
         }
+        S.order.forEach((id) => {
+          const p = S.players[id],
+            r = p.out ? "" : Core.lethal(S, p);
+          if (r && lethalSeen[id] !== r && logSig) {
+            banner(p.name + " : " + r);
+            sfx("down");
+          }
+          lethalSeen[id] = r;
+        });
         paintOver();
         if (modalFill) modalFill();
         Array.from(sel).forEach((id) => {
@@ -3751,6 +4159,11 @@
             act({ type: "counter", cid: c.id, k: ctr.dataset.ctr, d: 1 });
           return;
         }
+        const ct = t.closest("[data-ctile]");
+        if (ct) {
+          cmdTile(ct, e.shiftKey ? 5 : 1);
+          return;
+        }
         const pc = t.closest("[data-pctr]");
         if (pc) {
           if (pc.dataset.pid === myId)
@@ -4339,23 +4752,84 @@
               () => act({ type: "shuffle", pid: myId, order: libOrder() }),
               "S",
             ],
-            ["Mulligan…", mulligan],
+            deciding() ? ["Mulligan", mulligan] : null,
           ],
           x,
           y,
         );
       }
-      async function mulligan() {
+      // main de départ : tant que le joueur n'a pas gardé, il peut faire un mulligan
+      const deciding = () => !!me() && me().kept === false;
+      function mulligan() {
         const m = me();
-        if (!m) return;
-        const n = await askN("Mulligan : nombre de cartes à piocher", 7);
-        if (n)
-          act({
-            type: "mulligan",
-            pid: myId,
-            n: n,
-            order: shuffled(m.zones.library.concat(m.zones.hand)),
-          });
+        if (!deciding()) return;
+        act({
+          type: "mulligan",
+          pid: myId,
+          order: shuffled(m.zones.library.concat(m.zones.hand)),
+        });
+      }
+      // garder : choisir les cartes à mettre sous la bibliothèque (une par mulligan payant)
+      function keepHand() {
+        const m = me();
+        if (!deciding()) return;
+        const n = Math.min(Core.mullBottom(m), m.zones.hand.length);
+        if (!n) return act({ type: "keep", pid: myId, cids: [] });
+        const picked = [],
+          grid = h("div", { class: "grid", id: "keepgrid" }),
+          info = h("div", {}),
+          ok = h(
+            "button",
+            { class: "primary", id: "keepok", disabled: true },
+            "Garder",
+          );
+        const fill = () => {
+          const hand = me() ? me().zones.hand : [];
+          for (let i = picked.length - 1; i >= 0; i--)
+            if (hand.indexOf(picked[i]) < 0) picked.splice(i, 1);
+          grid.replaceChildren(
+            ...hand.map((id) => {
+              const c = S.cards[id];
+              return h(
+                "div",
+                {
+                  class:
+                    "cell pickable" + (picked.indexOf(id) >= 0 ? " pick" : ""),
+                  "data-keep": id,
+                  onclick: () => {
+                    const i = picked.indexOf(id);
+                    if (i >= 0) picked.splice(i, 1);
+                    else if (picked.length < n) picked.push(id);
+                    else picked.splice(0, 1, id);
+                    fill();
+                  },
+                },
+                cardEl(c, { peek: true, face: true }),
+                h("small", {}, c.name),
+              );
+            }),
+          );
+          info.textContent =
+            "Mulligan de Londres : choisis " +
+            n +
+            " carte" +
+            (n > 1 ? "s" : "") +
+            " à mettre sous ta bibliothèque (" +
+            picked.length +
+            " / " +
+            n +
+            ").";
+          ok.disabled = picked.length !== n;
+        };
+        ok.onclick = () => {
+          act({ type: "keep", pid: myId, cids: picked.slice() });
+          closeModal();
+        };
+        openModal(
+          "Garder ma main",
+          [info, grid, h("div", { class: "rowf" }, ok)],
+          { fill: fill },
+        );
       }
       function openHandMenu(x, y) {
         const m = me();
@@ -4388,7 +4862,7 @@
                   to: "graveyard",
                 }),
             ],
-            ["Mulligan…", mulligan],
+            deciding() ? ["Mulligan", mulligan] : null,
           ],
           x,
           y,
@@ -4496,7 +4970,8 @@
                     }),
                 ]
               : null,
-            mine ? ["Mulligan…", mulligan] : null,
+            mine && deciding() ? ["Garder ma main", keepHand] : null,
+            mine && deciding() ? ["Mulligan", mulligan] : null,
             mine
               ? [
                   "Recommencer avec mon deck",
@@ -4551,6 +5026,20 @@
           y,
         );
       }
+      function cmdTile(el, d) {
+        const a = el.dataset.ctile.split("|"),
+          c = S.cards[a[1]];
+        if (!c || !S.players[a[0]]) return;
+        if (!canEditCmd(a[0], c))
+          return toast(
+            "Seuls " +
+              pname(a[0]) +
+              " et " +
+              pname(c.owner) +
+              " tiennent ce compte.",
+          );
+        act({ type: "cmd", pid: a[0], cid: c.id, d: d });
+      }
       function ctx(t, x, y) {
         if (!t.closest || t.closest("input,textarea,#log,#lobby")) return false;
         const ctr = t.closest("[data-ctr]"),
@@ -4560,7 +5049,9 @@
           bf = t.closest(".bf"),
           pc = t.closest("[data-pctr]");
         const pz = pile ? pile.dataset.pile.split(":") : null;
-        if (ctr && cardE) {
+        const ctile = t.closest("[data-ctile]");
+        if (ctile) cmdTile(ctile, -1);
+        else if (ctr && cardE) {
           const c = S.cards[cardE.dataset.cid];
           if (c && c.ctrl === myId)
             act({ type: "counter", cid: c.id, k: ctr.dataset.ctr, d: -1 });
@@ -4710,16 +5201,46 @@
           ["Maj + clic sur ± des PV", "±5"],
           ["Échap", "Fermer / désélectionner"],
         ];
+        const sounds = [
+          ["draw", "Pioche"],
+          ["place", "Poser"],
+          ["tap", "Engager"],
+          ["flip", "Retourner"],
+          ["shuffle", "Mélange"],
+          ["dice", "Dé"],
+          ["tick", "Compteur"],
+          ["turn", "Tour"],
+        ];
         openModal(
           "Aide et raccourcis",
-          h(
-            "div",
-            { class: "score", style: "grid-template-columns:auto 1fr" },
-            rows.map((r) => [
-              h("span", {}, r[0].length < 14 ? h("kbd", {}, r[0]) : r[0]),
-              h("span", { style: "color:var(--mute)" }, r[1]),
-            ]),
-          ),
+          [
+            h(
+              "div",
+              { class: "score", style: "grid-template-columns:auto 1fr" },
+              rows.map((r) => [
+                h("span", {}, r[0].length < 14 ? h("kbd", {}, r[0]) : r[0]),
+                h("span", { style: "color:var(--mute)" }, r[1]),
+              ]),
+            ),
+            h(
+              "div",
+              { class: "rowf" },
+              h("h4", {}, "Écouter les sons"),
+              sounds.map((x) =>
+                h(
+                  "button",
+                  {
+                    class: "pill",
+                    onclick: () => {
+                      if (muted) toast("Les sons sont coupés (bouton 🔇).");
+                      else sfx(x[0]);
+                    },
+                  },
+                  x[1],
+                ),
+              ),
+            ),
+          ],
           { small: true },
         );
       }

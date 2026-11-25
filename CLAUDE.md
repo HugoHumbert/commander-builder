@@ -11,6 +11,7 @@
 - `table-de-jeu-commander.html` : table de jeu multijoueur (voir « Table de jeu » plus bas), elle aussi en un seul fichier. Seule dépendance : PeerJS, chargé depuis un CDN.
   - `tests/table-helpers.js` : `openTable({ hub, editor, idb, local, setup, query })` ouvre la table ; `makeHub()` renvoie un faux `Peer` en mémoire (le même hub passé à plusieurs `openTable` = même table) ; `loadCore()` charge le moteur de règles seul.
   - `tests/table-core.test.js` (règles, sans DOM) et `tests/table-ui.test.js` (plateau, menus, decks de l'éditeur, multijoueur).
+- `index.html` : page d'accueil du site GitHub Pages (https://hugohumbert.github.io/commander-builder/), publié automatiquement depuis `main` ; `.nojekyll` désactive le traitement Jekyll. Pousser sur `main` met donc le site en ligne à jour.
 - `README.md` : doc utilisateur, en français. À mettre à jour quand une fonctionnalité ou le format JSON change.
 
 ## Commandes
@@ -53,6 +54,9 @@ Pour vérifier la syntaxe du script inline sans lancer les tests, `npm test` suf
 - État `S` : `players{}` (`zones` = listes d'ids par zone, `life`, `poison`, `cmd{ idDuCommandant: blessures }`, `ctr{}`, `out`, `online`), `order[]`, `cards{}`, `turn`, `turnNo`, `over`, `log[]`. Le dessus de la bibliothèque est l'indice 0 ; le dessus du cimetière et de l'exil est le dernier élément.
 - Images : `card.img` est une URL, ou une clé `p:<empreinte>` pour une image locale. Les données (`IMG`, JPEG en data URL) voyagent à part de l'état, par messages `img` / `need`. Toujours afficher via `paintImg(el, ref)`.
 - Lien avec l'éditeur : la table lit `localStorage["mtg-cmdr-decks"]` et la base IndexedDB `mtg-cmdr` / `handles` (clés `roots`, `root:<nom>`) via `plib`. Si ces formats changent dans l'éditeur, adapter `editorDecks()`, `entriesOf()` et `plib`.
+- Mulligan de Londres : `p.kept === false` tant que le joueur choisit sa main (barre `#mullbar`), `p.mull` compte les mulligans, `Core.mullBottom(p)` = cartes à remettre dessous (premier mulligan gratuit). L'action `keep` est refusée si le nombre de cartes n'est pas exact. `resetPlayer` remet `mull` et `kept` à zéro.
+- Blessures de commandant : `p.cmd[idDuCommandant]`, une pastille `[data-ctile="joueur|commandant"]` par commandant adverse (`opposingCommanders`), modifiable par le joueur blessé ou le propriétaire du commandant (`canEditCmd`). `Core.lethal(S, p)` donne la raison d'une défaite (0 PV, 10 poison, 21 blessures) ; la table l'annonce mais n'élimine personne d'office (action `concede`).
+- Sons : `SOUNDS[nom](contexte, sortie, instant)`, bruit filtré sans fichier audio. `renderSfx(nom)` les rend hors ligne (OfflineAudioContext) pour les écouter ou les mesurer dans un vrai Chromium.
 - Rendu : `render()` (différé) reconstruit tout dans `paint()`. Les animations comparent les positions avant / après (`snapshot()` → `animate()`), les effets ponctuels (sons, bannière, secousse de la bibliothèque) partent de `fx(action)`.
 - Vérification visuelle : jsdom ne calcule pas la mise en page. Pour un changement de CSS ou de glisser-déposer, piloter un vrai Chromium (puppeteer-core hors dépôt) ; PeerJS et Scryfall réels y fonctionnent.
 

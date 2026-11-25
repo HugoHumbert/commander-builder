@@ -140,6 +140,72 @@ describe("déplacements", () => {
   });
 });
 
+describe("mulligan de Londres (CR 103.5)", () => {
+  const mull = (s) =>
+    act(s, "p1", {
+      type: "mulligan",
+      pid: "p1",
+      order: [...s.players.p1.zones.library, ...s.players.p1.zones.hand],
+    });
+  test("chaque mulligan repioche 7 cartes ; le premier est gratuit", () => {
+    const s = table(1),
+      p = s.players.p1;
+    mull(s);
+    assert.equal(p.zones.hand.length, 7);
+    assert.equal(p.zones.library.length, 13);
+    assert.equal(Core.mullBottom(p), 0);
+    mull(s);
+    mull(s);
+    assert.equal(p.zones.hand.length, 7);
+    assert.equal(Core.mullBottom(p), 2);
+  });
+
+  test("garder exige exactement le bon nombre de cartes, qui vont sous la bibliothèque", () => {
+    const s = table(1),
+      p = s.players.p1;
+    mull(s);
+    mull(s);
+    const [a, b] = p.zones.hand;
+    act(s, "p1", { type: "keep", pid: "p1", cids: [a, b] });
+    assert.equal(p.kept, false, "2 cartes au lieu d'1 : refusé");
+    act(s, "p1", { type: "keep", pid: "p1", cids: ["p2-c0"] });
+    assert.equal(p.kept, false, "carte hors de la main : refusé");
+    act(s, "p1", { type: "keep", pid: "p1", cids: [b] });
+    assert.equal(p.kept, true);
+    assert.equal(p.zones.hand.length, 6);
+    assert.equal(p.zones.library[p.zones.library.length - 1], b);
+  });
+
+  test("plus de mulligan une fois la main gardée ; une nouvelle partie le permet à nouveau", () => {
+    const s = table(1),
+      p = s.players.p1;
+    act(s, "p1", { type: "keep", pid: "p1", cids: [] });
+    const hand = [...p.zones.hand];
+    mull(s);
+    assert.deepEqual([...p.zones.hand], hand);
+    act(s, "p1", { type: "newGame", orders: {}, first: "p1" });
+    assert.equal(p.kept, false);
+    assert.equal(p.mull, 0);
+  });
+});
+
+describe("défaite", () => {
+  test("0 PV, 10 poison ou 21 blessures d'un même commandant", () => {
+    const s = table(2),
+      p = s.players.p2;
+    assert.equal(Core.lethal(s, p), "");
+    act(s, "p1", { type: "cmd", pid: "p2", cid: "p1-cmd", d: 20 });
+    assert.equal(Core.lethal(s, p), "", "20 blessures : pas encore");
+    act(s, "p1", { type: "cmd", pid: "p2", cid: "p1-cmd", d: 1 });
+    assert.equal(Core.lethal(s, p), "21 blessures de Commandant 1");
+    const s2 = table(2);
+    act(s2, "p2", { type: "poison", pid: "p2", d: 10 });
+    assert.equal(Core.lethal(s2, s2.players.p2), "10 marqueurs poison");
+    act(s2, "p2", { type: "life", pid: "p2", set: 0 });
+    assert.equal(Core.lethal(s2, s2.players.p2), "0 PV");
+  });
+});
+
 describe("règles Commander", () => {
   test("les blessures de commandant sont comptées par commandant et retirent autant de PV", () => {
     const s = table(3);
