@@ -82,6 +82,13 @@
         flex: 0 0 auto;
         filter: drop-shadow(0 0 10px rgba(210, 31, 48, 0.35));
       }
+      a.home {
+        display: flex;
+        border-radius: 6px;
+      }
+      a.home:hover .mark {
+        filter: drop-shadow(0 0 12px rgba(210, 31, 48, 0.7));
+      }
       .deckpick {
         display: flex;
         align-items: center;
@@ -1146,31 +1153,32 @@
   <body>
     <header>
       <div class="bar">
-        <svg class="mark" viewBox="0 0 28 28" aria-hidden="true">
-          <rect
-            x="4.5"
-            y="7"
-            width="12.5"
-            height="17"
-            rx="2.4"
-            fill="#1b1517"
-            stroke="var(--red-deep)"
-            stroke-width="1.5"
-            transform="rotate(-11 10.5 15.5)"
-          />
-          <rect
-            x="9"
-            y="4"
-            width="12.5"
-            height="17"
-            rx="2.4"
-            fill="#221619"
-            stroke="var(--red)"
-            stroke-width="1.5"
-            transform="rotate(9 15 12.5)"
-          />
-          <circle cx="15.2" cy="12.3" r="2.3" fill="var(--red)" />
-        </svg>
+        <a class="home" id="homeLink" href="index.html"
+          ><svg class="mark" viewBox="0 0 28 28" aria-hidden="true">
+            <rect
+              x="4.5"
+              y="7"
+              width="12.5"
+              height="17"
+              rx="2.4"
+              fill="#1b1517"
+              stroke="var(--red-deep)"
+              stroke-width="1.5"
+              transform="rotate(-11 10.5 15.5)"
+            />
+            <rect
+              x="9"
+              y="4"
+              width="12.5"
+              height="17"
+              rx="2.4"
+              fill="#221619"
+              stroke="var(--red)"
+              stroke-width="1.5"
+              transform="rotate(9 15 12.5)"
+            />
+            <circle cx="15.2" cy="12.3" r="2.3" fill="var(--red)" /></svg
+        ></a>
         <div class="deckpick">
           <select id="deckSel"></select>
           <button class="icob" id="newDeck">＋</button>
@@ -1512,6 +1520,7 @@
           imgLibManage: "Gérer…",
           ttLib: "Dossiers des proxys (images sur ton ordinateur)",
           ttPlay: "Jouer ce deck sur la table de jeu multijoueur",
+          ttHome: "Retour à l'accueil",
           ttLibWarn: (n) =>
             `Dossiers des proxys — ${n} à ré-autoriser pour afficher les images`,
           libTitle: "📁 Dossiers des proxys",
@@ -1672,6 +1681,7 @@
           imgLibManage: "Manage…",
           ttLib: "Proxy folders (images on your computer)",
           ttPlay: "Play this deck on the multiplayer game table",
+          ttHome: "Back to home page",
           ttLibWarn: (n) =>
             `Proxy folders — ${n} to re-authorize to show the images`,
           libTitle: "📁 Proxy folders",
@@ -3780,6 +3790,7 @@
         set("chlbl", t("colheadLbl"));
         tip("undoBtn", t("undoTip"));
         tip("playBtn", t("ttPlay"));
+        tip("homeLink", t("ttHome"));
         set("groupsBtnLbl", t("ttGroups"));
         set("customHint", t("dragHint"));
         set("lblGroup", t("grp"));

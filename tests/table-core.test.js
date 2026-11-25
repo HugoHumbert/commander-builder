@@ -336,3 +336,76 @@ describe("fin de partie", () => {
     assert.equal(s.cards.tk, undefined, "les jetons disparaissent");
   });
 });
+
+describe("force et endurance", () => {
+  /** une créature 2/2 de p1 sur le champ de bataille */
+  function onField() {
+    const s = table(1);
+    act(s, "p1", {
+      type: "move",
+      cid: "p1-c6",
+      to: { pid: "p1", zone: "battlefield" },
+      x: 10,
+      y: 10,
+    });
+    s.cards["p1-c6"].pt = "2/2";
+    return { s, c: s.cards["p1-c6"] };
+  }
+
+  test("les marqueurs +1/+1 et -1/-1 s'annulent (CR 704.5q)", () => {
+    const { s, c } = onField();
+    act(s, "p1", { type: "counter", cid: c.id, k: "+1/+1", d: 3 });
+    act(s, "p1", { type: "counter", cid: c.id, k: "-1/-1", d: 2 });
+    assert.deepEqual(c.counters, { "+1/+1": 1 });
+    act(s, "p1", { type: "counter", cid: c.id, k: "-1/-1", d: 4 });
+    assert.deepEqual(c.counters, { "-1/-1": 3 });
+    assert.equal(Core.ptOf(c).txt, "-1/-1");
+  });
+
+  test("la force et l'endurance affichées cumulent marqueurs et bonus", () => {
+    const { s, c } = onField();
+    assert.deepEqual(Core.ptOf(c), { txt: "2/2", dp: 0, dt: 0 });
+    act(s, "p1", { type: "counter", cid: c.id, k: "+1/+1", d: 2 });
+    act(s, "p1", { type: "pt", cid: c.id, p: 3, t: -1, eot: true });
+    act(s, "p1", { type: "pt", cid: c.id, p: -1, t: -1 });
+    assert.deepEqual(Core.ptOf(c), { txt: "6/2", dp: 4, dt: 0 });
+    assert.match(lastLog(s), /-1\/-1/);
+  });
+
+  test("un bonus jusqu'à la fin du tour disparaît au tour suivant, pas un bonus permanent", () => {
+    const { s, c } = onField();
+    act(s, "p1", { type: "pt", cid: c.id, p: 1, t: 1, eot: true });
+    act(s, "p1", { type: "pt", cid: c.id, p: 2, t: 0 });
+    assert.equal(Core.ptOf(c).txt, "5/3");
+    act(s, "p1", { type: "turn" });
+    assert.equal(Core.ptOf(c).txt, "4/2");
+  });
+
+  test("retirer les bonus, ou quitter le champ de bataille, remet la force et l'endurance de base", () => {
+    const { s, c } = onField();
+    act(s, "p1", { type: "pt", cid: c.id, p: 2, t: 2 });
+    act(s, "p1", { type: "pt", cid: c.id, p: 1, t: 1, eot: true });
+    act(s, "p1", { type: "pt", cid: c.id, reset: true });
+    assert.equal(Core.ptOf(c).txt, "2/2");
+    act(s, "p1", { type: "pt", cid: c.id, p: 2, t: 2 });
+    act(s, "p1", { type: "move", cid: c.id, to: { pid: "p1", zone: "hand" } });
+    assert.equal(Core.ptOf(c).txt, "2/2");
+  });
+
+  test("valeurs non numériques, cartes sans force et autre face", () => {
+    const { s, c } = onField();
+    c.pt = "*/1+*";
+    act(s, "p1", { type: "counter", cid: c.id, k: "+1/+1", d: 1 });
+    assert.equal(Core.ptOf(c).txt, "*+1/1+*+1");
+    c.pt = "";
+    c.counters = {};
+    assert.equal(Core.ptOf(c), null, "pas de force sur un non-créature");
+    act(s, "p1", { type: "pt", cid: c.id, p: 2, t: 2, eot: true });
+    assert.equal(Core.ptOf(c).txt, "+2/+2");
+    c.mod = c.eot = null;
+    c.pt = "2/2";
+    c.pt2 = "5/5";
+    c.side = 1;
+    assert.equal(Core.ptOf(c).txt, "5/5");
+  });
+});

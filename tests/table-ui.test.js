@@ -185,6 +185,15 @@ describe("decks de l'éditeur", () => {
     assert.equal(url, "table-de-jeu-commander.html?deck=d1");
   });
 
+  test("le logo de l'éditeur ramène à l'accueil du site", async () => {
+    const { openApp } = require("./helpers");
+    const app = await openApp({ stored: DECK });
+    const link = app.$("#homeLink");
+    app.close();
+    assert.equal(link.getAttribute("href"), "index.html");
+    assert.ok(link.querySelector("svg.mark"));
+  });
+
   test("une carte double face garde sa seconde face", async () => {
     const { t } = await seated();
     const v = cardsNamed(t, "Vincent Valentine // Galian Beast")[0];
@@ -250,6 +259,20 @@ describe("plateau", () => {
     assert.equal(t.$$("#vgrid .cell").length, 1);
   });
 
+  test("un simple clic sur une carte de la main la met en jeu", async () => {
+    const { t } = await seated();
+    const id = myZone(t, "hand")[0];
+    press(t, t.$(`#handbar .card[data-cid="${id}"]`));
+    await t.painted();
+    assert.equal(t.run(`S.cards["${id}"].zone`), "battlefield");
+    assert.ok(t.$(`.board.me .bf .card[data-cid="${id}"]`));
+    assert.equal(t.$(`#handbar .card[data-cid="${id}"]`), null);
+    // un double-clic par habitude : le second clic ne doit pas engager la carte qui vient d'arriver
+    press(t, t.$(`.board.me .bf .card[data-cid="${id}"]`));
+    await t.painted();
+    assert.equal(t.run(`S.cards["${id}"].tapped`), false);
+  });
+
   test("l'aperçu agrandi se place contre la carte survolée", async () => {
     const { t } = await seated();
     const rect = () => ({
@@ -272,6 +295,76 @@ describe("plateau", () => {
     t.run("0, showPreview(document.querySelector('#handbar .card'))");
     assert.equal(pv.style.left, "340px");
     assert.equal(pv.style.top, "190px");
+  });
+
+  test("loupe : maintenir Z grossit la partie de la carte sous la souris", async () => {
+    const { t } = await seated();
+    const pv = t.$("#preview"),
+      el = t.$(".pile.command .card");
+    el.getBoundingClientRect = () => ({
+      left: 300,
+      right: 380,
+      top: 200,
+      bottom: 300,
+      width: 80,
+      height: 100,
+    });
+    t.run(
+      "hover = document.querySelector('.pile.command .card'), showPreview(hover)",
+    );
+    const ev = (type, init) =>
+      t.run(
+        `document.dispatchEvent(new ${type === "mousemove" ? "MouseEvent" : "KeyboardEvent"}("${type}", ${JSON.stringify(init)}))`,
+      );
+    ev("mousemove", { clientX: 320, clientY: 220 });
+    ev("keydown", { key: "z", bubbles: true });
+    assert.ok(pv.classList.contains("loupe"), "loupe active");
+    assert.equal(pv.style.getPropertyValue("--lx"), "25.0%");
+    assert.equal(pv.style.getPropertyValue("--ly"), "20.0%");
+    ev("mousemove", { clientX: 370, clientY: 290 });
+    assert.equal(pv.style.getPropertyValue("--lx"), "87.5%");
+    assert.equal(pv.style.getPropertyValue("--ly"), "90.0%");
+    ev("keyup", { key: "z" });
+    assert.ok(!pv.classList.contains("loupe"), "loupe relâchée");
+  });
+
+  test("zoom du plateau : boutons − / +, mémorisé, et cartes posées plus serrées", async () => {
+    const { t } = await seated();
+    const spots = () =>
+      t.run(
+        "(() => { const u = []; for (let i = 0; i < 15; i++) freeSpot(null, u); return u; })()",
+      );
+    assert.equal(t.$("#bzval").textContent, "100 %");
+    assert.equal(
+      spots().filter((p) => p.y === 5).length,
+      11,
+      "11 cartes par rangée à 100 %",
+    );
+    for (let i = 0; i < 5; i++) t.$("#bzout").click();
+    assert.equal(t.$("#bzval").textContent, "50 %");
+    assert.equal(
+      t.run("document.documentElement.style.getPropertyValue('--bz')"),
+      "0.5",
+    );
+    assert.equal(
+      spots().filter((p) => p.y === 5).length,
+      15,
+      "une seule rangée à 50 %",
+    );
+    for (let i = 0; i < 3; i++) t.$("#bzout").click();
+    assert.equal(t.$("#bzval").textContent, "40 %", "minimum");
+    assert.ok(t.$("#bzout").disabled);
+    assert.equal(t.run("localStorage.getItem('cmdtable-zoom')"), "0.4");
+    t.$("#bzval").click();
+    assert.equal(t.$("#bzval").textContent, "100 %");
+    assert.equal(t.run("localStorage.getItem('cmdtable-zoom')"), null);
+
+    const t2 = await open({ local: { "cmdtable-zoom": 0.7 } });
+    assert.equal(
+      t2.$("#bzval").textContent,
+      "70 %",
+      "zoom retrouvé au rechargement",
+    );
   });
 
   test("la carte du dessus de la bibliothèque n'est jamais montrée dans l'aperçu", async () => {
@@ -353,6 +446,7 @@ describe("sons", () => {
       "turn",
       "ping",
       "end",
+      "pipe",
     ])
       assert.ok(names.includes(n), "son " + n);
     // faux contexte audio : vérifie que chaque son crée et démarre des sources
@@ -363,7 +457,7 @@ describe("sons", () => {
         createBuffer: (c, len) => ({ getChannelData: () => new Float32Array(len) }),
         createBufferSource: () => Object.assign(node(), { start: () => n++ }),
         createOscillator: () => Object.assign(node(), { start: () => n++, stop() {} }),
-        createBiquadFilter: node, createGain: node, createDynamicsCompressor: node };
+        createBiquadFilter: node, createGain: node, createDynamicsCompressor: node, createWaveShaper: node };
       const out = {}, res = {};
       for (const k in SOUNDS) { n = 0; SOUNDS[k](a, node(), 0); res[k] = n; }
       return res;
@@ -374,6 +468,88 @@ describe("sons", () => {
       started.shuffle > 30,
       "le mélange crépite (une source par carte)",
     );
+  });
+
+  test("easter egg : le tuyau métallique résonne à chaque action une fois activé dans l'aide", async () => {
+    const { t } = await seated();
+    t.run("window.played = []; sfx = (n) => played.push(n)");
+    await t.act({ type: "draw", pid: t.run("myId"), n: 1 });
+    assert.ok(!t.run("played").includes("pipe"), "désactivé par défaut");
+
+    t.$("#bhelp").click();
+    const box = t.$("#pipe");
+    assert.ok(box, "case à cocher dans l'aide");
+    assert.equal(box.checked, false);
+    box.click();
+    assert.equal(t.run("localStorage.getItem('cmdtable-pipe')"), "true");
+    assert.deepEqual(
+      t.run("played"),
+      ["draw", "pipe"],
+      "un clang pour l'essayer",
+    );
+
+    t.run("played.length = 0; pipeAt = 0");
+    await t.act({ type: "draw", pid: t.run("myId"), n: 1 });
+    assert.deepEqual(t.run("played"), ["pipe", "draw"]);
+    // une rafale d'actions ne fait qu'un seul clang
+    t.run("played.length = 0");
+    await t.act({ type: "draw", pid: t.run("myId"), n: 1 });
+    assert.deepEqual(t.run("played"), ["draw"]);
+
+    // case cochée : les boutons « Écouter les sons » jouent aussi le tuyau
+    t.$("#bhelp").click();
+    t.run("played.length = 0");
+    const pill = t.$$("#modal .pill").find((b) => b.textContent === "Pioche");
+    pill.click();
+    assert.deepEqual(t.run("played"), ["pipe"]);
+
+    t.$("#pipe").click();
+    assert.equal(t.run("localStorage.getItem('cmdtable-pipe')"), null);
+    t.run("played.length = 0");
+    pill.click();
+    assert.deepEqual(t.run("played"), ["draw"]);
+  });
+
+  test("le tuyau est saturé : il passe par un waveshaper, hors du compresseur commun", async () => {
+    const t = await open();
+    const r = t.run(`(() => {
+      let shapers = 0, toDest = 0;
+      const dest = {};
+      const node = () => ({ connect: (x) => { if (x === dest) toDest++; return x; }, frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, Q: {}, gain: { value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} } });
+      const a = { sampleRate: 8000, currentTime: 0, destination: dest,
+        createBuffer: (c, len) => ({ getChannelData: () => new Float32Array(len) }),
+        createBufferSource: () => Object.assign(node(), { start() {} }),
+        createOscillator: () => Object.assign(node(), { start() {}, stop() {} }),
+        createBiquadFilter: node, createGain: node, createDynamicsCompressor: node,
+        createWaveShaper: () => { shapers++; return node(); } };
+      SOUNDS.pipe(a, node(), 0);
+      return { shapers, toDest };
+    })()`);
+    assert.ok(r.shapers >= 1, "saturation");
+    assert.ok(
+      r.toDest >= 1,
+      "sortie directe, sans le compresseur qui l'étoufferait",
+    );
+  });
+
+  test("le tuyau métallique varie d'un clang à l'autre", async () => {
+    const t = await open();
+    const freqs = t.run(`(() => {
+      const out = [];
+      for (let i = 0; i < 4; i++) {
+        let first = null;
+        const node = () => ({ connect: (x) => x, frequency: { value: 0, setValueAtTime(v) { if (first == null) first = v; }, exponentialRampToValueAtTime() {} }, Q: {}, gain: { value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} } });
+        const a = { sampleRate: 8000, currentTime: 0, destination: {},
+          createBuffer: (c, len) => ({ getChannelData: () => new Float32Array(len) }),
+          createBufferSource: () => Object.assign(node(), { start() {} }),
+          createOscillator: () => { const o = Object.assign(node(), { start() {}, stop() {} }); const f = o.frequency; Object.defineProperty(f, "value", { set(v) { if (first == null) first = v; }, get() { return 0; } }); return o; },
+          createBiquadFilter: () => Object.assign(node(), { frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} } }), createGain: node, createDynamicsCompressor: node, createWaveShaper: node };
+        SOUNDS.pipe(a, node(), 0);
+        out.push(first);
+      }
+      return out;
+    })()`);
+    assert.ok(new Set(freqs).size > 1, "hauteur différente : " + freqs);
   });
 });
 
@@ -449,8 +625,161 @@ describe("menus du clic droit", () => {
     await t.painted();
     assert.equal(
       t.$(`.bf .card[data-cid="${id}"] .ctrs span`).textContent,
-      "+1/+1 1",
+      "+1/+1 ×1",
     );
+  });
+
+  test("force et endurance : pastille sur la carte, bonus et marqueurs répercutés", async () => {
+    const { t } = await seated();
+    const id = cardsNamed(t, "Judith, the Scourge Diva")[0].id;
+    assert.equal(t.run(`S.cards["${id}"].pt`), "2/2");
+    await t.act({
+      type: "move",
+      cid: id,
+      to: { pid: t.run("myId"), zone: "battlefield" },
+      x: 10,
+      y: 10,
+    });
+    await t.painted();
+    const card = () => t.$(`.bf .card[data-cid="${id}"]`);
+    const badge = () => card().querySelector(".ptb");
+    assert.equal(badge().textContent, "2/2");
+    assert.equal(badge().className, "ptb");
+
+    t.rightClick(card());
+    for (const label of [
+      "+1/+1 jusqu'à la fin du tour",
+      "-1/-1 jusqu'à la fin du tour",
+      "Autre bonus jusqu'à la fin du tour…",
+      "+1/+1 permanent",
+      "-1/-1 permanent",
+      "Autre bonus permanent…",
+    ])
+      assert.ok(t.menu().includes(label), "menu : " + label);
+    t.clickMenu("+1/+1 jusqu'à la fin du tour");
+    await t.painted();
+    assert.equal(badge().textContent, "3/3");
+    assert.equal(badge().className, "ptb up");
+
+    t.rightClick(card());
+    t.clickMenu("+1/+1 permanent");
+    await t.painted();
+    assert.equal(badge().textContent, "4/4");
+
+    // bonus personnalisé : une case force, une case endurance
+    t.rightClick(card());
+    t.clickMenu("Autre bonus permanent…");
+    assert.match(t.$("#ask").textContent, /\//);
+    assert.equal(t.$("#askp").value, "+1");
+    assert.equal(t.$("#askt").value, "+1");
+    t.$("#askp").value = "-4";
+    t.$("#askt").value = "0";
+    t.$("#askok").click();
+    await t.painted();
+    assert.equal(badge().textContent, "0/4");
+    assert.equal(badge().className, "ptb mix");
+
+    t.rightClick(card());
+    t.clickMenu("-1/-1 : ajouter");
+    await t.painted();
+    t.rightClick(card());
+    assert.ok(
+      !t.menu().some((l) => /: retirer/.test(l)),
+      "pas d'entrée « retirer » : +1/+1 et -1/-1 s'annulent",
+    );
+    t.clickMenu("+1/+1 : ajouter");
+    await t.painted();
+    assert.equal(card().querySelectorAll(".ctrs span").length, 0);
+    assert.equal(badge().textContent, "0/4");
+
+    t.rightClick(card());
+    const reset = t.menu().find((l) => /^Retirer les bonus/.test(l));
+    assert.equal(reset, "Retirer les bonus (-2/+2)");
+    t.clickMenu(reset);
+    await t.painted();
+    assert.equal(badge().textContent, "2/2");
+    assert.equal(badge().className, "ptb");
+  });
+
+  test("régression : une carte sans force ni endurance n'affiche ni pastille ni texte « null »", async () => {
+    const { t } = await seated();
+    const id = cardsNamed(t, "Sol Ring")[0].id;
+    await t.act({
+      type: "move",
+      cid: id,
+      to: { pid: t.run("myId"), zone: "battlefield" },
+      x: 10,
+      y: 10,
+    });
+    await t.painted();
+    const el = t.$(`.bf .card[data-cid="${id}"]`);
+    assert.equal(el.querySelector(".ptb"), null);
+    assert.doesNotMatch(el.textContent, /null/);
+    t.run(
+      `0, showPreview(document.querySelector('.bf .card[data-cid="${id}"]'))`,
+    );
+    assert.doesNotMatch(t.$("#preview").textContent, /null/);
+  });
+
+  test("l'aperçu agrandi liste tous les modificateurs de la créature", async () => {
+    const { t } = await seated();
+    const id = cardsNamed(t, "Judith, the Scourge Diva")[0].id;
+    await t.act({
+      type: "move",
+      cid: id,
+      to: { pid: t.run("myId"), zone: "battlefield" },
+      x: 10,
+      y: 10,
+    });
+    await t.painted();
+    const show = () =>
+      t.run(
+        `0, showPreview(document.querySelector('.bf .card[data-cid="${id}"]'))`,
+      );
+    show();
+    assert.equal(
+      t.$("#preview .pmods"),
+      null,
+      "rien à lister sans modificateur",
+    );
+
+    await t.act({ type: "counter", cid: id, k: "+1/+1", d: 2 });
+    await t.act({ type: "counter", cid: id, k: "charge", d: 3 });
+    await t.act({ type: "pt", cid: id, p: 3, t: -1 });
+    await t.act({ type: "pt", cid: id, p: -1, t: -1, eot: true });
+    await t.painted();
+    show();
+    const rows = t
+      .$$("#preview .pmods li")
+      .map((li) => li.textContent.replace(/\s+/g, " ").trim());
+    assert.deepEqual(rows, [
+      "Imprimée 2/2",
+      "Marqueurs +1/+1 ×2 +2/+2",
+      "Marqueurs charge ×3",
+      "Bonus permanent +3/-1",
+      "Jusqu'à la fin du tour -1/-1",
+      "Total 6/2",
+    ]);
+    // les marqueurs ne sont plus répétés sous l'aperçu
+    assert.equal(t.$("#preview .pinfo"), null);
+  });
+
+  test("la pastille suit la face visible d'une carte double face", async () => {
+    const { t } = await seated();
+    const v = cardsNamed(t, "Vincent Valentine // Galian Beast")[0];
+    await t.act({
+      type: "move",
+      cid: v.id,
+      to: { pid: t.run("myId"), zone: "battlefield" },
+      x: 10,
+      y: 10,
+    });
+    await t.painted();
+    const badge = () => t.$(`.bf .card[data-cid="${v.id}"] .ptb`).textContent;
+    assert.equal(badge(), "2/2");
+    await t.act({ type: "transform", cid: v.id });
+    await t.painted();
+    assert.equal(badge(), "5/5");
   });
 
   test("régression : aucune fenêtre n'affiche d'élément brut « [object … ] »", async () => {
@@ -506,6 +835,23 @@ describe("multijoueur", () => {
     assert.equal(host.$("#pcount").textContent, "1 joueur à table");
     assert.equal(host.$$("#opps [data-board]").length, 0);
     assert.ok(!guest.$("#lobby").hidden, "l'invité revient à l'accueil");
+  });
+
+  test("le lien ⌂ ramène à l'accueil du site après confirmation, et quitte la table", async () => {
+    const hub = makeHub();
+    const { t: host, code } = await seated({ hub });
+    const guest = await guestOf(hub, code);
+    await waitFor(() => host.run("S.order.length") === 2);
+    assert.equal(guest.$("#bhome").getAttribute("href"), "index.html");
+    assert.equal(guest.$("#lobby a.home").getAttribute("href"), "index.html");
+    guest.run("nav = (u) => (window.went = u)");
+    guest.$("#bhome").click();
+    assert.match(guest.$("#ask").textContent, /Quitter la table/);
+    guest.$("#askok").click();
+    await waitFor(() => host.run("S.order.length") === 1, { msg: "départ" });
+    await waitFor(() => guest.run("window.went") === "index.html", {
+      msg: "navigation",
+    });
   });
 
   test("un joueur dont la connexion tombe est compté hors ligne", async () => {

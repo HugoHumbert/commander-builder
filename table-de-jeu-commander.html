@@ -137,6 +137,19 @@
       #lobby .row > * {
         flex: 1;
       }
+      a.home {
+        color: var(--mute);
+        text-decoration: none;
+        font-size: 13px;
+      }
+      a.home:hover {
+        color: var(--gold);
+      }
+      #top a.home {
+        font-size: 19px;
+        line-height: 1;
+        padding: 0 2px;
+      }
       #lobby small {
         color: var(--mute);
       }
@@ -318,7 +331,7 @@
         min-height: 0;
         overflow: hidden;
         container-type: size;
-        --cw: min(8cqw, 30cqh);
+        --cw: calc(min(8cqw, 30cqh) * var(--bz, 1));
         background:
           radial-gradient(
             ellipse at 50% 130%,
@@ -569,6 +582,40 @@
         text-overflow: ellipsis;
         border-radius: 0 0 4px 4px;
       }
+      .card .ptb,
+      #preview .ptb {
+        position: absolute;
+        right: 3%;
+        bottom: 2.5%;
+        padding: 0 0.35em;
+        font:
+          700 max(10px, calc(var(--cw) / 7.5)) / 1.3 Inter,
+          system-ui,
+          sans-serif;
+        font-variant-numeric: tabular-nums;
+        background: #000d;
+        color: var(--gold);
+        border: 1px solid #c9a45c88;
+        border-radius: 5px;
+        box-shadow: 0 1px 4px #000a;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .card .lbl ~ .ptb {
+        bottom: calc(max(8px, var(--cw) / 10) * 1.25 + 5px);
+      }
+      .ptb.up {
+        color: #8be39a;
+        border-color: #8be39a88;
+      }
+      .ptb.down {
+        color: #ff7b89;
+        border-color: #ff7b8988;
+      }
+      .ptb.mix {
+        color: #9fd0ff;
+        border-color: #9fd0ff88;
+      }
       .card .ctrs {
         position: absolute;
         left: 2px;
@@ -790,6 +837,112 @@
         color: var(--mute);
         font-size: 14px;
       }
+      #preview.loupe {
+        overflow: hidden;
+        background-size: 280%;
+        background-position: var(--lx, 50%) var(--ly, 50%);
+        box-shadow:
+          0 10px 40px #000,
+          0 0 0 2px var(--gold);
+      }
+      #preview.loupe .txt {
+        transform: scale(2.8);
+        transform-origin: var(--lx, 50%) var(--ly, 50%);
+      }
+      #preview.loupe .ptb,
+      #preview.loupe .pinfo {
+        display: none;
+      }
+      .zoomctl {
+        display: inline-flex;
+      }
+      .zoomctl button {
+        border-radius: 0;
+        min-width: 30px;
+        padding-inline: 6px;
+      }
+      .zoomctl button:first-child {
+        border-radius: 6px 0 0 6px;
+      }
+      .zoomctl button:last-child {
+        border-radius: 0 6px 6px 0;
+      }
+      #bzval {
+        font-variant-numeric: tabular-nums;
+        min-width: 52px;
+      }
+      label.pipe {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--mute);
+        cursor: pointer;
+      }
+      #preview .pmods {
+        position: absolute;
+        top: 0;
+        left: calc(100% + 8px);
+        width: 200px;
+        padding: 8px 10px;
+        background: #120e0fee;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 6px 24px #000c;
+        font-size: 12px;
+      }
+      #preview .pmods.left {
+        left: auto;
+        right: calc(100% + 8px);
+      }
+      #preview .pmods h4 {
+        margin: 0 0 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--mute);
+      }
+      #preview .pmods ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 3px;
+      }
+      #preview .pmods li {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      #preview .pmods li b {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        color: var(--ink);
+      }
+      #preview .pmods li.tot {
+        margin-top: 3px;
+        padding-top: 5px;
+        border-top: 1px solid var(--line);
+        font-weight: 600;
+      }
+      #preview .pmods li.tot b {
+        font-size: 15px;
+        color: var(--gold);
+      }
+      #preview .pmods li.tot.up b {
+        color: #8be39a;
+      }
+      #preview .pmods li.tot.down b {
+        color: #ff7b89;
+      }
+      #preview .pmods li.tot.mix b {
+        color: #9fd0ff;
+      }
+      #preview.loupe .pmods {
+        display: none;
+      }
       #preview .pinfo {
         position: absolute;
         left: 0;
@@ -851,6 +1004,30 @@
         display: none;
         place-items: center;
         padding: 12px;
+      }
+      .ptin {
+        display: flex;
+        align-items: end;
+        justify-content: center;
+        gap: 10px;
+      }
+      .ptin label {
+        display: grid;
+        gap: 4px;
+        color: var(--mute);
+        font-size: 12px;
+        text-align: center;
+      }
+      .ptin input {
+        width: 5em;
+        text-align: center;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .ptin > span {
+        font-size: 26px;
+        color: var(--gold);
+        padding-bottom: 4px;
       }
       #ask {
         z-index: 210;
@@ -1137,6 +1314,7 @@
   <body>
     <div id="lobby">
       <div class="box">
+        <a class="home" href="index.html">← Accueil</a>
         <h1>Table de jeu <span>Commander</span></h1>
         <label
           >Ton pseudo<input id="lname" maxlength="20" placeholder="Pseudo"
@@ -1163,6 +1341,9 @@
 
     <div id="app" hidden>
       <header id="top">
+        <a class="home" id="bhome" href="index.html" title="Retour à l'accueil"
+          >⌂</a
+        >
         <h1>Table <span>Commander</span></h1>
         <button class="code" id="bcode" title="Copier l'invitation"></button>
         <span id="pcount"></span>
@@ -1177,6 +1358,14 @@
         <button id="bdice">Dés</button>
         <button id="bturn" title="Passer le tour (N)">Tour suivant</button>
         <button id="bend">Finir la partie</button>
+        <span class="zoomctl"
+          ><button id="bzout" title="Dézoomer le plateau (Ctrl + molette)">
+            −</button
+          ><button id="bzval" title="Taille normale des cartes">100 %</button
+          ><button id="bzin" title="Zoomer le plateau (Ctrl + molette)">
+            +
+          </button></span
+        >
         <button id="bsound" title="Sons"></button>
         <button id="bhelp" title="Raccourcis">?</button>
         <button id="blog">Journal</button>
@@ -1263,6 +1452,8 @@
         function clean(c) {
           c.tapped = false;
           c.counters = {};
+          c.mod = null;
+          c.eot = null;
           c.faceDown = false;
           c.side = 0;
         }
@@ -1324,6 +1515,7 @@
             img: d.img || "",
             img2: d.img2 || "",
             pt: d.pt || "",
+            pt2: d.pt2 != null ? String(d.pt2).slice(0, 20) : null,
             tl: d.tl || "",
             cmd: !!d.cmd,
             token: !!d.token,
@@ -1344,6 +1536,28 @@
         }
         function shown(c) {
           return c.faceDown ? "une carte face cachée" : c.name;
+        }
+        function sgn(n) {
+          return (n >= 0 ? "+" : "") + n;
+        }
+        // Force / endurance affichées : valeur imprimée (face visible) + marqueurs + bonus.
+        function ptOf(c) {
+          const base = String((c.side && c.pt2 != null ? c.pt2 : c.pt) || ""),
+            k = c.counters || {},
+            m = c.mod || {},
+            e = c.eot || {},
+            n = (k["+1/+1"] || 0) - (k["-1/-1"] || 0),
+            dp = n + (m.p || 0) + (e.p || 0),
+            dt = n + (m.t || 0) + (e.t || 0);
+          if (!base && !dp && !dt) return null;
+          const one = (b, d) => {
+            b = (b || "").trim();
+            if (!b) return sgn(d);
+            if (/^-?\d+$/.test(b)) return String(+b + d);
+            return d ? b + sgn(d) : b;
+          };
+          const v = base.split("/");
+          return { txt: one(v[0], dp) + "/" + one(v[1], dt), dp: dp, dt: dt };
         }
         function nextTurn(s, from) {
           const o = s.order,
@@ -1796,6 +2010,16 @@
               if (!d) break;
               c.counters[k] = (c.counters[k] || 0) + d;
               if (c.counters[k] <= 0) delete c.counters[k];
+              // Les marqueurs +1/+1 et -1/-1 s'annulent deux à deux (CR 704.5q).
+              const pc = c.counters["+1/+1"] || 0,
+                mc = c.counters["-1/-1"] || 0,
+                gone = Math.min(pc, mc);
+              if (gone) {
+                if (pc === gone) delete c.counters["+1/+1"];
+                else c.counters["+1/+1"] = pc - gone;
+                if (mc === gone) delete c.counters["-1/-1"];
+                else c.counters["-1/-1"] = mc - gone;
+              }
               say(
                 s,
                 a,
@@ -1806,7 +2030,41 @@
                   k +
                   " sur " +
                   shown(c) +
+                  (gone
+                    ? " (" + pl(gone, "paire") + " +1/+1 et -1/-1 s'annulent)"
+                    : "") +
                   ".",
+              );
+              break;
+            }
+            case "pt": {
+              const c = s.cards[a.cid];
+              if (!c || c.zone !== "battlefield") break;
+              if (a.reset) {
+                if (!c.mod && !c.eot) break;
+                c.mod = c.eot = null;
+                say(s, a, who + " retire les bonus de " + shown(c) + ".");
+                break;
+              }
+              const dp = Math.trunc(clamp(a.p || 0, -99, 99)),
+                dt = Math.trunc(clamp(a.t || 0, -99, 99));
+              if (!dp && !dt) break;
+              const f = a.eot ? "eot" : "mod",
+                m = c[f] || { p: 0, t: 0 };
+              m.p += dp;
+              m.t += dt;
+              c[f] = m.p || m.t ? m : null;
+              say(
+                s,
+                a,
+                who +
+                  " donne " +
+                  sgn(dp) +
+                  "/" +
+                  sgn(dt) +
+                  " à " +
+                  shown(c) +
+                  (a.eot ? " jusqu'à la fin du tour." : "."),
               );
               break;
             }
@@ -1934,6 +2192,9 @@
               if (!pid) break;
               s.turn = pid;
               s.turnNo = a.first ? 1 : (s.turnNo || 0) + 1;
+              // fin du tour : les bonus « jusqu'à la fin du tour » disparaissent
+              for (const id in s.cards)
+                if (s.cards[id].eot) s.cards[id].eot = null;
               say(s, a, "Tour " + s.turnNo + " : " + s.players[pid].name + ".");
               break;
             }
@@ -1974,6 +2235,7 @@
           START_LIFE: START_LIFE,
           mullBottom: mullBottom,
           lethal: lethal,
+          ptOf: ptOf,
         };
       })();
       if (typeof module !== "undefined") module.exports = Core;
@@ -2195,9 +2457,9 @@
           const im = new Image();
           im.onload = () => {
             const c = document.createElement("canvas");
-            c.width = 488;
-            c.height = 680;
-            c.getContext("2d").drawImage(im, 0, 0, 488, 680);
+            c.width = 672;
+            c.height = 936;
+            c.getContext("2d").drawImage(im, 0, 0, 672, 936);
             URL.revokeObjectURL(im.src);
             res(c.toDataURL("image/jpeg", 0.85));
           };
@@ -2574,7 +2836,58 @@
           [392, 494, 587, 784].forEach((f, i) =>
             chime(a, out, t + i * 0.12, f, 0.6, 0.045),
           ),
+        // easter egg : tuyau métallique qui tombe par terre, jamais tout à fait le même
+        // Sortie propre : saturation (waveshaper) puis haut-parleurs, sans le compresseur commun qui l'étoufferait.
+        pipe: (a, out, t) => {
+          // comme le mème « metal pipe falling » : un énorme CLANG brillant qui résonne,
+          // puis quelques petits rebonds rapides du tuyau qui retombe
+          const f0 = 380 + Math.random() * 320,
+            hits = 3 + Math.floor(Math.random() * 3),
+            pre = a.createGain(),
+            ws = a.createWaveShaper(),
+            post = a.createGain();
+          pre.gain.value = jit(5, 0.25);
+          ws.curve = pipeCurve(jit(6, 0.3));
+          ws.oversample = "4x";
+          post.gain.value = 0.66;
+          pre.connect(ws).connect(post).connect(a.destination);
+          let at = t,
+            vol = 1;
+          for (let i = 0; i < hits; i++) {
+            pipeHit(a, pre, at, f0 * jit(1, i ? 0.05 : 0), vol, i === 0);
+            at += jit(i ? 0.085 : 0.17, 0.3);
+            vol = i ? vol * jit(0.6, 0.2) : jit(0.3, 0.2);
+          }
+        },
       };
+      // courbe de saturation douce (tanh) : plus k est grand, plus le son « crache »
+      function pipeCurve(k) {
+        const n = 2048,
+          c = new Float32Array(n),
+          m = Math.tanh(k);
+        for (let i = 0; i < n; i++)
+          c[i] = Math.tanh(k * ((i / (n - 1)) * 2 - 1)) / m;
+        return c;
+      }
+      // un choc : attaque bruitée + partiels inharmoniques d'une barre libre (1 ; 2,76 ; 5,40 ; 8,93)
+      function pipeHit(a, out, t, f0, vol, first) {
+        nz(a, out, t, {
+          type: "highpass",
+          f: jit(2500, 0.2),
+          q: 0.7,
+          vol: 0.9 * vol,
+          dur: first ? 0.06 : 0.025,
+        });
+        thump(a, out, t, 0.7 * vol, jit(90, 0.15));
+        [1, 2.76, 5.4, 8.93, 13.34].forEach((r, k) => {
+          const dur = (first ? 3 : 0.5) / (1 + k * 0.45),
+            amp = ((0.5 * vol) / (1 + k * 0.35)) * jit(1, 0.35);
+          // deux oscillateurs légèrement désaccordés : le battement qui fait « vibrer » le métal
+          [1, 1.004 + Math.random() * 0.004].forEach((d) =>
+            chime(a, out, t, f0 * r * jit(1, 0.012) * d, dur, amp / 2),
+          );
+        });
+      }
       // sortie commune : adoucit les aigus et limite les pics
       function chain(a) {
         const lp = a.createBiquadFilter(),
@@ -2932,7 +3245,7 @@
             "Quitter",
           ))
         )
-          return;
+          return false;
         if (isHost) {
           bcast({ t: "end" });
           store("cmdtable-save", null);
@@ -2943,10 +3256,31 @@
           } catch (e) {}
         }
         backToLobby();
+        return true;
+      }
+      // Retour à l'accueil du site : on quitte proprement la table avant de partir.
+      async function goHome(e) {
+        e.preventDefault();
+        if (!$("#app").hidden && !(await leaveTable())) return;
+        setTimeout(() => nav("index.html"), 300);
+      }
+      function nav(url) {
+        location.assign(url);
       }
 
       /* ---------- Effets : sons et animations déclenchés par une action ---------- */
+      // Easter egg « tuyau métallique » (case dans l'aide) : un clang par action, une seule fois par rafale.
+      let pipeOn = store("cmdtable-pipe") === true,
+        pipeAt = 0;
+      function setPipe(on) {
+        pipeOn = !!on;
+        store("cmdtable-pipe", pipeOn || null);
+      }
       function fx(a) {
+        if (pipeOn && a.type !== "online" && Date.now() - pipeAt > 250) {
+          pipeAt = Date.now();
+          sfx("pipe");
+        }
         switch (a.type) {
           case "draw":
             sfx("draw");
@@ -2995,6 +3329,7 @@
           case "poison":
           case "pctr":
           case "counter":
+          case "pt":
           case "tax":
             sfx("tick");
             break;
@@ -3079,13 +3414,29 @@
           paint();
         });
       }
-      function txtEl(c) {
+      function txtEl(c, noPt) {
         return h(
           "div",
           { class: "txt" },
           h("b", {}, c.name),
           c.tl ? h("i", {}, c.tl) : null,
-          c.pt ? h("span", {}, c.pt) : null,
+          c.pt && !noPt ? h("span", {}, c.pt) : null,
+        );
+      }
+      // Pastille force / endurance d'une carte du champ de bataille (vert : bonus, rouge : malus).
+      function ptBadge(c) {
+        if (c.zone !== "battlefield" || c.faceDown) return null;
+        const v = Core.ptOf(c);
+        if (!v) return null;
+        const up = v.dp > 0 || v.dt > 0,
+          down = v.dp < 0 || v.dt < 0;
+        return h(
+          "div",
+          {
+            class:
+              "ptb" + (up && down ? " mix" : up ? " up" : down ? " down" : ""),
+          },
+          v.txt,
         );
       }
       function cardEl(c, o) {
@@ -3105,8 +3456,10 @@
         });
         if (!hidden) {
           if (!paintImg(e, c.side && c.img2 ? c.img2 : c.img))
-            e.append(txtEl(c));
+            e.append(txtEl(c, o.bf));
           if (c.label) e.append(h("div", { class: "lbl" }, c.label));
+          const pb = o.bf && ptBadge(c);
+          if (pb) e.append(pb);
         }
         const ks = Object.keys(c.counters || {});
         if (ks.length && o.bf)
@@ -3118,7 +3471,7 @@
                 h(
                   "span",
                   { "data-ctr": k, title: "Clic : +1 · clic droit : −1" },
-                  k + " " + c.counters[k],
+                  k + " ×" + c.counters[k],
                 ),
               ),
             ),
@@ -3795,6 +4148,119 @@
         hover = null;
         clearTimeout(pvT);
         $("#preview").style.display = "none";
+        loupe(false);
+      }
+
+      /* ---------- Zoom du plateau (propre à chaque joueur) et loupe de l'aperçu ---------- */
+      const ZMIN = 0.4,
+        ZMAX = 1.5;
+      let bz = 1;
+      function setZoom(z) {
+        bz = Math.round(clampN(+z || 1, ZMIN, ZMAX) * 10) / 10;
+        document.documentElement.style.setProperty("--bz", bz);
+        $("#bzval").textContent = Math.round(bz * 100) + " %";
+        $("#bzout").disabled = bz <= ZMIN;
+        $("#bzin").disabled = bz >= ZMAX;
+        store("cmdtable-zoom", bz === 1 ? null : bz);
+      }
+      // Maintenir Z au-dessus d'une carte : l'aperçu grossit la zone sous la souris.
+      let loupeOn = false,
+        mouseX = 0,
+        mouseY = 0;
+      function loupe(on) {
+        const pv = $("#preview");
+        loupeOn = !!on && !!hover && pv.style.display === "block";
+        pv.classList.toggle("loupe", loupeOn);
+        if (!loupeOn) return;
+        // image Scryfall : version grande pour un texte lisible
+        const bg = pv.style.backgroundImage;
+        if (bg.indexOf("cards.scryfall.io/normal/") >= 0)
+          pv.style.backgroundImage = bg.replace("/normal/", "/large/");
+        loupeMove();
+      }
+      function loupeMove() {
+        if (!loupeOn || !hover) return;
+        const r = hover.getBoundingClientRect();
+        let fx = clampN((mouseX - r.left) / (r.width || 1), 0, 1),
+          fy = clampN((mouseY - r.top) / (r.height || 1), 0, 1);
+        // carte engagée : tournée d'un quart de tour vers la droite
+        if (hover.classList.contains("tapped")) [fx, fy] = [fy, 1 - fx];
+        const pv = $("#preview");
+        pv.style.setProperty("--lx", (fx * 100).toFixed(1) + "%");
+        pv.style.setProperty("--ly", (fy * 100).toFixed(1) + "%");
+      }
+      document.addEventListener("mousemove", (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        if (loupeOn) loupeMove();
+      });
+      document.addEventListener("keyup", (e) => {
+        if (e.key === "z" || e.key === "Z") loupe(false);
+      });
+      window.addEventListener("blur", () => loupe(false));
+      document.addEventListener(
+        "wheel",
+        (e) => {
+          if (!e.ctrlKey || $("#app").hidden) return;
+          if (!(e.target.closest && e.target.closest("#table"))) return;
+          e.preventDefault();
+          setZoom(bz + (e.deltaY < 0 ? 0.1 : -0.1));
+        },
+        { passive: false },
+      );
+      // Liste des modificateurs d'une carte du champ de bataille, affichée à côté de l'aperçu.
+      function modsEl(c) {
+        if (c.zone !== "battlefield" || c.faceDown) return null;
+        const k = c.counters || {},
+          m = c.mod,
+          e = c.eot,
+          stolen = c.ctrl !== c.owner && S.players[c.owner];
+        if (!Object.keys(k).length && !m && !e && !stolen) return null;
+        const sg = (n) => (n >= 0 ? "+" : "") + n,
+          row = (label, v, cls) =>
+            h(
+              "li",
+              cls ? { class: cls } : {},
+              h("span", {}, label),
+              " ",
+              v ? h("b", {}, v) : null,
+            ),
+          base = (c.side && c.pt2 != null ? c.pt2 : c.pt) || "",
+          rows = [];
+        if (base) rows.push(row("Imprimée", base));
+        Object.keys(k).forEach((n) => {
+          const d = n === "+1/+1" ? k[n] : n === "-1/-1" ? -k[n] : null;
+          rows.push(
+            row(
+              "Marqueurs " + n + " ×" + k[n],
+              d == null ? "" : sg(d) + "/" + sg(d),
+            ),
+          );
+        });
+        if (m) rows.push(row("Bonus permanent", sg(m.p) + "/" + sg(m.t)));
+        if (e)
+          rows.push(row("Jusqu'à la fin du tour", sg(e.p) + "/" + sg(e.t)));
+        if (stolen)
+          rows.push(
+            row("Contrôlée par " + pname(c.ctrl), "à " + pname(c.owner)),
+          );
+        const v = Core.ptOf(c);
+        if (v && (v.dp || v.dt || m || e)) {
+          const pb = ptBadge(c);
+          rows.push(
+            row(
+              "Total",
+              v.txt,
+              "tot " + (pb ? pb.className.replace("ptb", "").trim() : ""),
+            ),
+          );
+        }
+        return h(
+          "div",
+          { class: "pmods" },
+          h("h4", {}, "Modificateurs"),
+          h("ul", {}, rows),
+        );
       }
       function showPreview(el) {
         const pv = $("#preview"),
@@ -3807,30 +4273,49 @@
         pv.style.backgroundImage = "";
         pv.removeAttribute("data-wait");
         if (!paintImg(pv, c.side && c.img2 ? c.img2 : c.img))
-          pv.append(txtEl(c));
+          pv.append(txtEl(c, true));
+        const pb = ptBadge(c);
+        if (pb) pv.append(pb);
+        const mods = modsEl(c);
+        // avec l'encadré des modificateurs, les marqueurs n'ont pas besoin d'être répétés dessous
         const info = [c.label]
           .concat(
-            Object.keys(c.counters || {}).map((k) => k + " ×" + c.counters[k]),
+            mods
+              ? []
+              : Object.keys(c.counters || {}).map(
+                  (k) => k + " ×" + c.counters[k],
+                ),
           )
           .filter(Boolean)
           .join(" · ");
         if (info) pv.append(h("div", { class: "pinfo" }, info));
+        if (mods) pv.append(mods);
         pv.style.display = "block";
         const r = el.getBoundingClientRect(),
           w = pv.offsetWidth,
+          side = mods ? (mods.offsetWidth || 200) + 8 : 0,
           hh = pv.offsetHeight + (info ? 22 : 0),
           gap = 10;
-        let x, y;
+        let x,
+          y,
+          right = true;
         if (el.closest("#handbar") && r.top - hh - gap > 4) {
           x = r.left + r.width / 2 - w / 2;
           y = r.top - hh - gap;
+          right = x + w + side <= innerWidth - 4;
         } else {
+          // l'encadré se place du côté opposé à la carte survolée
           x = r.right + gap;
-          if (x + w > innerWidth - 4 && r.left - gap - w >= 4)
+          if (x + w + side > innerWidth - 4 && r.left - gap - w - side >= 4) {
             x = r.left - gap - w;
+            right = false;
+          }
           y = r.top + r.height / 2 - hh / 2;
         }
-        pv.style.left = clampN(x, 4, Math.max(4, innerWidth - w - 4)) + "px";
+        if (mods) mods.classList.toggle("left", !right);
+        const lo = right ? 4 : 4 + side,
+          hi = innerWidth - w - 4 - (right ? side : 0);
+        pv.style.left = clampN(x, lo, Math.max(lo, hi)) + "px";
         pv.style.top = clampN(y, 4, Math.max(4, innerHeight - hh - 4)) + "px";
       }
       document.addEventListener("mouseover", (e) => {
@@ -4126,7 +4611,16 @@
           pileClick(a[0], a[1]);
           return;
         }
-        if (!d.mine || c.zone !== "battlefield") return;
+        if (!d.mine) return;
+        // un clic sur une carte de la main la met en jeu
+        if (c.zone === "hand" && !d.mod) {
+          hidePreview();
+          playCard(c);
+          return;
+        }
+        if (c.zone !== "battlefield") return;
+        // second clic d'un double-clic par habitude : on n'engage pas la carte qui vient d'arriver
+        if (justPlayed.id === c.id && Date.now() - justPlayed.t < 500) return;
         if (d.mod) {
           if (sel.has(c.id)) sel.delete(c.id);
           else sel.add(c.id);
@@ -4145,10 +4639,6 @@
           toast("La main des autres joueurs est cachée.");
         else openViewer({ pid: pid, zone: zone });
       }
-      document.addEventListener("dblclick", (e) => {
-        const el = e.target.closest("#handbar .card[data-cid]");
-        if (el) playCard(S.cards[el.dataset.cid]);
-      });
       document.addEventListener("click", (e) => {
         const t = e.target;
         if (!t.closest) return;
@@ -4195,24 +4685,34 @@
         /^(snow-covered )?(plains|island|swamp|mountain|forest|wastes)$/i;
       const isLand = (c) => /\bland\b/i.test(c.tl || "") || BASICS.test(c.name);
       // Emplacement libre : les terrains se rangent en bas, le reste en haut.
+      // Place libre sur mon champ de bataille ; plus le plateau est dézoomé, plus la grille est serrée.
       function freeSpot(c, used) {
         const m = me(),
+          z = bz,
           taken = (
             m
               ? m.zones.battlefield.map((id) => S.cards[id]).filter(Boolean)
               : []
           ).concat(used || []),
-          rows = c && isLand(c) ? [56, 42] : [5, 24];
+          rows = [];
+        if (c && isLand(c)) {
+          for (let y = 56; y <= Math.max(56, 100 - 42 * z); y += 14 * z)
+            rows.push(y);
+          rows.push(42);
+        } else
+          for (let y = 5; y <= Math.max(24, 56 - 42 * z); y += 19 * z)
+            rows.push(y);
+        const cols = Math.floor(97 / (8.9 * z)) + 1;
         let p = null;
         for (const y of rows) {
-          for (let i = 0; i < 11 && !p; i++) {
-            const x = 1.5 + i * 8.9;
+          for (let i = 0; i < cols && !p; i++) {
+            const x = 1.5 + i * 8.9 * z;
             if (
               !taken.some(
-                (t) => Math.abs(t.x - x) < 5 && Math.abs(t.y - y) < 12,
+                (t) => Math.abs(t.x - x) < 5 * z && Math.abs(t.y - y) < 12 * z,
               )
             )
-              p = { x: x, y: y };
+              p = { x: +x.toFixed(2), y: +y.toFixed(2) };
           }
           if (p) break;
         }
@@ -4220,8 +4720,10 @@
         if (used) used.push(p);
         return p;
       }
+      let justPlayed = {};
       function playCard(c, faceDown) {
         if (!c || !me()) return;
+        justPlayed = { id: c.id, t: Date.now() };
         const p = freeSpot(faceDown ? null : c);
         act({
           type: "move",
@@ -4273,19 +4775,52 @@
         return new Promise((res) => {
           const box = $("#ask");
           if (box._done) box._done(o.confirm ? false : null);
+          const num = (id, v, title) =>
+            h("input", {
+              id: id,
+              value: v,
+              title: title,
+              inputmode: "numeric",
+              autocomplete: "off",
+            });
           const inp = o.confirm
             ? null
-            : h("input", {
-                value: def == null ? "" : def,
-                style: "width:100%",
-              });
+            : o.pt
+              ? h(
+                  "div",
+                  { class: "ptin" },
+                  h(
+                    "label",
+                    {},
+                    "Force",
+                    num("askp", o.pt[0], "Force (ex. +2, -1)"),
+                  ),
+                  h("span", {}, "/"),
+                  h(
+                    "label",
+                    {},
+                    "Endurance",
+                    num("askt", o.pt[1], "Endurance (ex. +2, -1)"),
+                  ),
+                )
+              : h("input", {
+                  value: def == null ? "" : def,
+                  style: "width:100%",
+                });
           const done = (v) => {
             box._done = null;
             box.style.display = "none";
             box.replaceChildren();
             res(v);
           };
-          const ok = () => done(o.confirm ? true : inp.value.trim());
+          const ok = () =>
+            done(
+              o.confirm
+                ? true
+                : o.pt
+                  ? [$("#askp").value.trim(), $("#askt").value.trim()]
+                  : inp.value.trim(),
+            );
           box._done = done;
           box.replaceChildren(
             h(
@@ -4321,8 +4856,9 @@
             inp.addEventListener("keydown", (e) => {
               if (e.key === "Enter") ok();
             });
-            inp.focus();
-            inp.select();
+            const f = o.pt ? $("#askp") : inp;
+            f.focus();
+            f.select();
           } else $("#askok").focus();
         });
       }
@@ -4347,11 +4883,33 @@
           name: c.name,
           img: c.side && c.img2 ? c.img2 : c.img,
           label: c.label,
-          pt: c.pt,
+          pt: c.side && c.pt2 != null ? c.pt2 : c.pt,
           tl: c.tl,
           x: at.x,
           y: at.y,
         };
+      }
+      function bonusTxt(c) {
+        const m = c.mod || {},
+          e = c.eot || {},
+          sg = (n) => (n >= 0 ? "+" : "") + n;
+        return sg((m.p || 0) + (e.p || 0)) + "/" + sg((m.t || 0) + (e.t || 0));
+      }
+      async function askPt(c, eot) {
+        const v = await askBox(
+          "Bonus de force / endurance" +
+            (eot ? " jusqu'à la fin du tour" : " permanent") +
+            " (négatif pour un malus)",
+          null,
+          { pt: ["+1", "+1"] },
+        );
+        if (!v) return;
+        const n = (x) => (x === "" ? 0 : parseInt(x, 10));
+        const p = n(v[0]),
+          t = n(v[1]);
+        if (isNaN(p) || isNaN(t))
+          return toast("Entre des nombres, ex. +2 et -1");
+        act({ type: "pt", cid: c.id, p: p, t: t, eot: eot });
       }
       function openCardMenu(c, x, y) {
         const m = me(),
@@ -4537,7 +5095,6 @@
             );
         let items;
         if (c.zone === "battlefield") {
-          const has = (k) => (c.counters || {})[k] > 0;
           items = [
             [
               c.tapped ? "Dégager" : "Engager",
@@ -4552,9 +5109,7 @@
             "-",
             { h: "Marqueurs" },
             ["+1/+1 : ajouter", ct("+1/+1", 1), "+"],
-            has("+1/+1") ? ["+1/+1 : retirer", ct("+1/+1", -1), "−"] : null,
-            ["-1/-1 : ajouter", ct("-1/-1", 1)],
-            has("-1/-1") ? ["-1/-1 : retirer", ct("-1/-1", -1)] : null,
+            ["-1/-1 : ajouter", ct("-1/-1", 1), "−"],
             [
               "Autre marqueur…",
               async () => {
@@ -4573,6 +5128,31 @@
                 if (n) act({ type: "counter", cid: c.id, k: k, d: n });
               },
             ],
+            { h: "Force / endurance" },
+            [
+              "+1/+1 jusqu'à la fin du tour",
+              () => act({ type: "pt", cid: c.id, p: 1, t: 1, eot: true }),
+            ],
+            [
+              "-1/-1 jusqu'à la fin du tour",
+              () => act({ type: "pt", cid: c.id, p: -1, t: -1, eot: true }),
+            ],
+            ["Autre bonus jusqu'à la fin du tour…", () => askPt(c, true)],
+            [
+              "+1/+1 permanent",
+              () => act({ type: "pt", cid: c.id, p: 1, t: 1 }),
+            ],
+            [
+              "-1/-1 permanent",
+              () => act({ type: "pt", cid: c.id, p: -1, t: -1 }),
+            ],
+            ["Autre bonus permanent…", () => askPt(c, false)],
+            c.mod || c.eot
+              ? [
+                  "Retirer les bonus (" + bonusTxt(c) + ")",
+                  () => act({ type: "pt", cid: c.id, reset: true }),
+                ]
+              : null,
             "-",
             [
               c.faceDown ? "Retourner face visible" : "Retourner face cachée",
@@ -4617,11 +5197,7 @@
           );
         } else if (c.zone === "hand") {
           items = [
-            [
-              "Jouer sur le champ de bataille",
-              () => playCard(c),
-              "double-clic",
-            ],
+            ["Jouer sur le champ de bataille", () => playCard(c), "clic"],
             ["Jouer face cachée", () => playCard(c, true)],
             [
               "Révéler à la table",
@@ -5133,6 +5709,10 @@
         if (!m) return;
         const ids = targets(),
           onBf = ids.filter((id) => S.cards[id].zone === "battlefield");
+        if (k === "z") {
+          if (!e.repeat) loupe(true);
+          return;
+        }
         if (k === "d") act({ type: "draw", pid: myId, n: 1 });
         else if (k === "u") act({ type: "untapAll", pid: myId });
         else if (k === "s")
@@ -5150,10 +5730,9 @@
             act({ type: "counter", cid: id, k: "+1/+1", d: 1 }),
           );
         else if (k === "-" && onBf.length)
-          onBf.forEach((id) => {
-            if (S.cards[id].counters["+1/+1"])
-              act({ type: "counter", cid: id, k: "+1/+1", d: -1 });
-          });
+          onBf.forEach((id) =>
+            act({ type: "counter", cid: id, k: "-1/-1", d: 1 }),
+          );
         else if (ids.length && "gehb".indexOf(k) >= 0 && k.length === 1) {
           const zone = { g: "graveyard", e: "exile", h: "hand", b: "library" }[
               k
@@ -5172,7 +5751,7 @@
       function openHelp() {
         const rows = [
           ["Clic sur une carte du champ de bataille", "Engager / dégager"],
-          ["Double-clic sur une carte en main", "La jouer"],
+          ["Clic sur une carte en main", "La jouer"],
           [
             "Glisser-déposer",
             "Déplacer entre les zones, vers un adversaire pour donner le contrôle",
@@ -5196,11 +5775,33 @@
             "G · E · H · B",
             "Carte survolée vers cimetière · exil · main · dessous de bibliothèque",
           ],
-          ["+ · −", "Marqueur +1/+1"],
+          ["+ · −", "Marqueur +1/+1 · -1/-1 (ils s'annulent)"],
           ["P", "Pointer la carte survolée pour toute la table"],
+          [
+            "Z (maintenu)",
+            "Loupe : grossit la partie de la carte sous la souris",
+          ],
+          ["Ctrl + molette · − 100 % +", "Dézoomer / zoomer le plateau"],
           ["Maj + clic sur ± des PV", "±5"],
           ["Échap", "Fermer / désélectionner"],
         ];
+        const pipeBox = h(
+          "label",
+          { class: "pipe" },
+          h("input", {
+            type: "checkbox",
+            id: "pipe",
+            onchange: (e) => {
+              setPipe(e.target.checked);
+              if (pipeOn) {
+                pipeAt = Date.now();
+                if (muted) toast("Les sons sont coupés (bouton 🔇).");
+                else sfx("pipe");
+              }
+            },
+          }),
+          "🔩 Mode tuyau métallique : un grand « clang » à chaque action, pour toi seulement. Ça ne sert à rien.",
+        );
         const sounds = [
           ["draw", "Pioche"],
           ["place", "Poser"],
@@ -5233,16 +5834,18 @@
                     class: "pill",
                     onclick: () => {
                       if (muted) toast("Les sons sont coupés (bouton 🔇).");
-                      else sfx(x[0]);
+                      else sfx(pipeOn ? "pipe" : x[0]);
                     },
                   },
                   x[1],
                 ),
               ),
             ),
+            pipeBox,
           ],
           { small: true },
         );
+        pipeBox.firstChild.checked = pipeOn;
       }
 
       /* ---------- Fenêtres ---------- */
@@ -5849,6 +6452,11 @@
                 : f0.power != null
                   ? f0.power + "/" + f0.toughness
                   : "",
+            pt2: f[1]
+              ? f[1].power != null
+                ? f[1].power + "/" + f[1].toughness
+                : ""
+              : null,
           };
           map[front(d.name)] = v;
           return v;
@@ -5886,6 +6494,7 @@
           e.img2 = v ? v.img2 : "";
           e.tl = v ? v.tl : "";
           e.pt = v ? v.pt : "";
+          e.pt2 = v ? v.pt2 : null;
           e.found = !!v;
         });
       }
@@ -6176,6 +6785,7 @@
                 label: en.final ? "" : en.variant,
                 tl: en.tl,
                 pt: en.pt,
+                pt2: en.final ? null : en.pt2,
                 cmd: en.cmd,
               });
           });
@@ -6365,6 +6975,11 @@
       };
       $("#bhelp").onclick = openHelp;
       $("#bleave").onclick = leaveTable;
+      $("#bzout").onclick = () => setZoom(bz - 0.1);
+      $("#bzin").onclick = () => setZoom(bz + 0.1);
+      $("#bzval").onclick = () => setZoom(1);
+      setZoom(store("cmdtable-zoom") || 1);
+      $("#bhome").onclick = goHome;
       $("#blog").onclick = () => {
         const l = $("#logp");
         l.style.display =
