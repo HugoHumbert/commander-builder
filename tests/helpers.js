@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { JSDOM } = require("jsdom");
-const { CARDS } = require("./fixtures/cards");
+const { CARDS, TOKENS } = require("./fixtures/cards");
 
 const HTML = fs.readFileSync(
   path.join(__dirname, "..", "editeur-deck-commander.html"),
@@ -32,7 +32,9 @@ function fakeScryfall(log) {
       const data = [],
         not_found = [];
       for (const id of JSON.parse(opts.body).identifiers) {
-        const c = CARDS.find((c) => lc(front(c.name)) === lc(id.name));
+        const c = id.id
+          ? CARDS.concat(TOKENS).find((c) => c.id === id.id)
+          : CARDS.find((c) => lc(front(c.name)) === lc(id.name));
         c ? data.push(c) : not_found.push(id);
       }
       return res({ object: "list", data, not_found });
@@ -45,7 +47,13 @@ function fakeScryfall(log) {
       return c ? res(c) : res({ object: "error" }, 404);
     }
     if (u.pathname === "/cards/search") {
-      const q = lc(u.searchParams.get("q") || "");
+      let q = lc(u.searchParams.get("q") || "");
+      // filtre des jetons de la table : « (t:token or …) nom »
+      if (q[0] === "(") {
+        const name = q.slice(q.indexOf(")") + 1).trim();
+        const data = TOKENS.filter((c) => lc(c.name).includes(name));
+        return data.length ? res({ data }) : res({ object: "error" }, 404);
+      }
       const data = CARDS.filter((c) => lc(c.name).includes(q));
       return data.length ? res({ data }) : res({ object: "error" }, 404);
     }

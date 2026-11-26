@@ -336,6 +336,323 @@ describe("decks de l'éditeur", () => {
   });
 });
 
+describe("équipements, vaisseaux, * et actions groupées", () => {
+  const RULES = editorDeck([
+    { name: JUDITH, cmd: true },
+    { name: "Bonesplitter" },
+    { name: "Atmospheric Greenhouse" },
+    { name: "Smuggler's Copter" },
+    { name: "Lord of Extinction" },
+    { name: "Mountain", qty: 20 },
+  ]);
+  async function rules() {
+    const t = await open({ editor: RULES });
+    await t.host();
+    await t.pickEditorDeck("Rakdos");
+    await t.play();
+    const me = t.run("myId");
+    const put = async (name, x) => {
+      const c = cardsNamed(t, name)[0];
+      await t.act({
+        type: "move",
+        cid: c.id,
+        to: { pid: me, zone: "battlefield" },
+        x: x,
+        y: 40,
+      });
+      return c.id;
+    };
+    const el = (id) => t.$(`.bf .card[data-cid="${id}"]`);
+    return { t, me, put, el };
+  }
+
+  test("« Finir la partie » est loin de « Tour suivant », à côté de « Quitter »", async () => {
+    const t = await open();
+    assert.notEqual(t.$("#bturn").nextElementSibling.id, "bend");
+    assert.equal(t.$("#bend").nextElementSibling.id, "bleave");
+  });
+
+  test("les données Scryfall utiles sont reprises : bonus d'équipement, station, *, valeur de mana", async () => {
+    const { t } = await rules();
+    const f = (n) => cardsNamed(t, n)[0];
+    assert.equal(f("Bonesplitter").eqb, "+2/+0");
+    assert.equal(f("Atmospheric Greenhouse").st, 8);
+    assert.equal(f("Atmospheric Greenhouse").mv, 5);
+    assert.match(
+      f("Lord of Extinction").stx,
+      /equal to the number of cards in all graveyards/,
+    );
+    assert.equal(f("Smuggler's Copter").st, 0);
+  });
+
+  test("équiper depuis le menu : clic sur la créature, bonus affiché et détaillé", async () => {
+    const { t, put, el } = await rules();
+    const j = await put(JUDITH, 20),
+      b = await put("Bonesplitter", 60);
+    t.rightClick(el(b));
+    t.clickMenu("Équiper une créature…");
+    assert.ok(t.$("body").classList.contains("picking"));
+    press(t, el(j));
+    await new Promise((r) => setTimeout(r, 15));
+    await t.painted();
+    assert.ok(!t.$("body").classList.contains("picking"));
+    assert.equal(t.run(`S.cards["${b}"].att`), j);
+    assert.equal(el(j).querySelector(".ptb").textContent, "4/2");
+    t.run(`showPreview(document.querySelector('.bf .card[data-cid="${j}"]'))`);
+    assert.match(
+      t.$("#preview .pmods").textContent,
+      /Équipement Bonesplitter\s*\+2\/\+0/,
+    );
+    t.rightClick(el(b));
+    t.clickMenu("Détacher de");
+    await t.painted();
+    assert.equal(el(j).querySelector(".ptb").textContent, "2/2");
+  });
+
+  test("glisser un équipement sur une créature l'équipe", async () => {
+    const { t, put, el } = await rules();
+    const j = await put(JUDITH, 20),
+      b = await put("Bonesplitter", 60);
+    t.run(
+      `document.elementsFromPoint = () => [document.querySelector('.bf .card[data-cid="${j}"]')]`,
+    );
+    const w = t.window,
+      Ev = w.PointerEvent || w.MouseEvent;
+    t.run(
+      `document.elementFromPoint = () => document.querySelector('.bf[data-bf="${t.run("myId")}"]')`,
+    );
+    el(b).dispatchEvent(
+      new Ev("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 5,
+        clientY: 5,
+      }),
+    );
+    w.document.dispatchEvent(
+      new Ev("pointermove", { bubbles: true, clientX: 60, clientY: 60 }),
+    );
+    w.document.dispatchEvent(
+      new Ev("pointerup", { bubbles: true, clientX: 60, clientY: 60 }),
+    );
+    await new Promise((r) => setTimeout(r, 15));
+    await t.painted();
+    assert.equal(t.run(`S.cards["${b}"].att`), j);
+  });
+
+  test("un vaisseau n'est pas une créature avant son seuil : pastille grisée, puis normale", async () => {
+    const { t, put, el } = await rules();
+    const g = await put("Atmospheric Greenhouse", 30);
+    const badge = () => el(g).querySelector(".ptb");
+    assert.ok(badge().classList.contains("off"));
+    t.rightClick(el(g));
+    assert.ok(t.menu().includes("Stationner avec une créature…"));
+    t.clickMenu("Ajouter des marqueurs charge…");
+    t.$("#ask input").value = "8";
+    t.$("#askok").click();
+    await new Promise((r) => setTimeout(r, 15));
+    await t.painted();
+    assert.ok(!badge().classList.contains("off"));
+    assert.match(el(g).querySelector(".ctrs").textContent, /charge ×8\/8/);
+  });
+
+  test("véhicule : piloter le rend créature jusqu'à la fin du tour", async () => {
+    const { t, put, el } = await rules();
+    const c = await put("Smuggler's Copter", 30);
+    assert.ok(el(c).querySelector(".ptb").classList.contains("off"));
+    t.rightClick(el(c));
+    t.clickMenu("Piloter");
+    await t.painted();
+    assert.ok(!el(c).querySelector(".ptb").classList.contains("off"));
+  });
+
+  test("créature */* : on fixe la valeur, la phrase de la carte est rappelée", async () => {
+    const { t, put, el } = await rules();
+    const l = await put("Lord of Extinction", 30);
+    assert.equal(el(l).querySelector(".ptb").textContent, "*/*");
+    assert.ok(el(l).querySelector(".ptb").classList.contains("star"));
+    t.rightClick(el(l));
+    t.clickMenu("Valeur de *");
+    assert.match(t.$("#ask").textContent, /all graveyards/);
+    t.$("#askp").value = "6";
+    t.$("#askt").value = "6";
+    t.$("#askok").click();
+    await new Promise((r) => setTimeout(r, 15));
+    await t.painted();
+    assert.equal(el(l).querySelector(".ptb").textContent, "6/6");
+    assert.ok(!el(l).querySelector(".ptb").classList.contains("star"));
+  });
+
+  test("clic droit sur le champ de bataille : +1/+1 à toutes mes créatures d'un coup", async () => {
+    const { t, me, put, el } = await rules();
+    const j = await put(JUDITH, 10),
+      l = await put("Lord of Extinction", 30);
+    await put("Bonesplitter", 50);
+    await put("Smuggler's Copter", 70);
+    t.rightClick(t.$(`.bf[data-bf="${me}"]`));
+    t.clickMenu("Modifier toutes mes créatures…");
+    assert.ok(t.$("#menu").textContent.includes("mes créatures (2)"));
+    t.clickMenu("+1/+1 : ajouter");
+    await t.painted();
+    assert.equal(t.run(`S.cards["${j}"].counters["+1/+1"]`), 1);
+    assert.equal(t.run(`S.cards["${l}"].counters["+1/+1"]`), 1);
+    assert.match(t.run("S.log[S.log.length - 1].m"), /à chacune de/);
+    // la sélection donne le même menu
+    t.run(`sel.add("${j}"); sel.add("${l}")`);
+    t.rightClick(el(j));
+    t.clickMenu("-1/-1 jusqu'à la fin du tour");
+    await t.painted();
+    assert.equal(el(j).querySelector(".ptb").textContent, "2/2");
+  });
+
+  test("découvrir : les cartes exilées sont montrées, la carte trouvée va en main", async () => {
+    const { t } = await rules();
+    const lib = () => t.run("me().zones.library");
+    const before = lib();
+    t.run("discover(6)");
+    assert.match(t.$("#modal h2").textContent, /Découvrir 6/);
+    const shown = t.$$("#modal .disc .cell").length;
+    assert.ok(shown >= 1);
+    const hitBtn = t.$("#dischand");
+    if (hitBtn) hitBtn.click();
+    else t.$("#discok").click();
+    await new Promise((r) => setTimeout(r, 15));
+    await t.painted();
+    assert.match(t.run("S.log[S.log.length - 1].m"), /découvre 6/);
+    assert.equal(lib().length, before.length - (hitBtn ? 1 : 0));
+    if (hitBtn) assert.ok(t.run("me().zones.hand").includes(before[shown - 1]));
+  });
+
+  test("le cumul des PV remplace les petits nombres flottants, le journal n'a qu'une ligne", async () => {
+    const { t, me } = await rules();
+    const n = t.run("S.log.length");
+    for (let i = 0; i < 4; i++) await t.act({ type: "life", pid: me, d: -1 });
+    assert.equal(t.$$(".float").length, 0, "plus de « -1 » flottants");
+    const b = t.$(`[data-lbuf="${me}"]`);
+    assert.equal(b.textContent, "-4");
+    // un éclat flottant au-dessus des PV, pas une case dans l'en-tête du joueur
+    assert.ok(b.classList.contains("lfloat"));
+    assert.equal(b.parentNode, t.$("body"));
+    assert.equal(t.$(".bhead [data-lbuf]"), null);
+    assert.equal(t.$$("[data-lbuf]").length, 1, "un seul éclat, mis à jour");
+    assert.equal(t.run("S.log.length"), n + 1);
+    assert.match(t.$("#log").lastChild.textContent, /: -4 PV \(36\)/);
+    // il s'efface en fondu, puis disparaît
+    t.run("lifeBuf[myId].t -= 3200; render()");
+    await t.painted();
+    assert.ok(t.$(`[data-lbuf="${me}"]`).classList.contains("fade"));
+    t.run("lifeBuf[myId].t -= 1000; render()");
+    await t.painted();
+    assert.equal(t.$(`[data-lbuf="${me}"]`), null);
+  });
+
+  test("main : la carte soulevée suit la souris sans va-et-vient", async () => {
+    const { t } = await rules();
+    const hb = t.$("#handbar"),
+      cards = t.$$("#handbar .card[data-cid]");
+    assert.ok(cards.length >= 3);
+    hb.getBoundingClientRect = () => ({
+      left: 0,
+      right: 1000,
+      top: 500,
+      bottom: 640,
+      width: 1000,
+      height: 140,
+    });
+    // cartes au repos de 100 px, qui se chevauchent de 40 px
+    cards.forEach((el, i) => {
+      Object.defineProperty(el, "offsetLeft", { value: 100 + i * 60 });
+      Object.defineProperty(el, "offsetWidth", { value: 100 });
+    });
+    const lifted = () => t.$$("#handbar .card.lift").map((e) => e.dataset.cid);
+    t.run("handHover(130, 600)");
+    assert.deepEqual(lifted(), [cards[0].dataset.cid]);
+    // zone de chevauchement : la carte de dessus (la suivante) l'emporte
+    t.run("handHover(175, 600)");
+    assert.deepEqual(lifted(), [cards[1].dataset.cid]);
+    // au-dessus de la main (carte soulevée) : toujours la même carte
+    t.run("handHover(180, 450)");
+    assert.deepEqual(lifted(), [cards[1].dataset.cid]);
+    // hors de la main : plus rien
+    t.run("handHover(1200, 600)");
+    assert.deepEqual(lifted(), []);
+  });
+
+  test("les PV perdus d'affilée sont cumulés à côté du total", async () => {
+    const { t, me } = await rules();
+    await t.act({ type: "life", pid: me, d: -3 });
+    await t.act({ type: "life", pid: me, d: -4 });
+    assert.equal(t.$(`[data-lbuf="${me}"]`).textContent, "-7");
+    assert.ok(t.$(`[data-lbuf="${me}"]`).classList.contains("neg"));
+    await t.act({ type: "life", pid: me, d: 2 });
+    assert.equal(t.$(`[data-lbuf="${me}"]`).textContent, "-5");
+    // plus tard, le cumul repart de zéro
+    t.run("lifeBuf[myId].t -= 10000");
+    await t.act({ type: "life", pid: me, d: 1 });
+    assert.equal(t.$(`[data-lbuf="${me}"]`).textContent, "+1");
+  });
+});
+
+describe("jetons", () => {
+  test("les jetons et emblèmes du deck sont proposés, dont The Ring à deux faces", async () => {
+    const t = await open({
+      editor: editorDeck([
+        { name: JUDITH, cmd: true },
+        { name: "Call of the Ring" },
+        { name: "Young Pyromancer" },
+        { name: "Mountain", qty: 20 },
+      ]),
+    });
+    await t.host();
+    await t.pickEditorDeck("Rakdos");
+    await t.play();
+    assert.deepEqual(
+      t.run("myTokens").map((x) => x.name),
+      ["The Ring // The Ring Tempts You", "Elemental"],
+    );
+    t.$("#btoken").click();
+    await waitFor(() => t.$$("#tkdeck .cell").length === 2, {
+      msg: "jetons du deck",
+    });
+    assert.match(t.$("#modal").textContent, /Jetons et emblèmes de ton deck/);
+    t.$$("#tkdeck .cell")[0].click();
+    await new Promise((r) => setTimeout(r, 15));
+    await t.painted();
+    const ring = cardsNamed(t, "The Ring // The Ring Tempts You")[0];
+    assert.ok(ring.token);
+    assert.match(ring.img, /ring\.jpg/);
+    assert.match(ring.img2, /ring-tempts/);
+    assert.equal(ring.name2, "The Ring Tempts You");
+    assert.match(
+      t.run("S.log[S.log.length - 1].m"),
+      /crée un jeton The Ring\./,
+    );
+    // un jeton double face se transforme comme une carte
+    await t.act({ type: "transform", cid: ring.id });
+    assert.match(
+      t.run("S.log[S.log.length - 1].m"),
+      /transforme The Ring en The Ring Tempts You/,
+    );
+  });
+
+  test("la recherche couvre emblèmes, jetons double face et cartes d'aide (Monarque…)", async () => {
+    const { t } = await seated();
+    t.$("#btoken").click();
+    assert.equal(t.$("#tkdeck"), null, "pas de section sans jeton connu");
+    const pill = t
+      .$$("#modal .pill")
+      .find((b) => b.textContent === "The Monarch");
+    pill.click();
+    await waitFor(() => t.$$("#modal .grid .cell").length === 1, {
+      msg: "résultat",
+    });
+    const url = t.fetchLog.filter((l) => l.path === "/cards/search").pop().url;
+    assert.match(decodeURIComponent(url), /layout:double_faced_token/);
+    assert.match(decodeURIComponent(url), /layout:emblem/);
+    assert.match(t.$("#modal .grid .cell").textContent, /The Monarch/);
+  });
+});
+
 describe("plateau", () => {
   test("chaque zone est sur le plateau : bibliothèque face cachée, cimetière, exil, zone de commandement, main", async () => {
     const { t } = await seated();
@@ -1049,6 +1366,7 @@ describe("multijoueur", () => {
     guest.$(`[data-cd="${hostCmd.id}:1"]`).click();
     await waitFor(() => guest.run("me().life") === 38);
     await host.painted();
+    await guest.painted();
     const tile = host.$(`#opps [data-ctile$="|${hostCmd.id}"]`);
     assert.equal(tile.querySelector("b").textContent, "2");
     assert.match(guest.$("#cdbox b:not(.lethal)").textContent, /Bob/);

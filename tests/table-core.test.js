@@ -32,6 +32,7 @@ function table(n = 2) {
 }
 const act = (s, by, a) => Core.apply(s, { by, ts: ++ts, ...a });
 const lastLog = (s) => s.log[s.log.length - 1].m;
+const core3 = (v) => v && { txt: v.txt, dp: v.dp, dt: v.dt };
 
 describe("installation", () => {
   test("un joueur qui s'installe a 40 PV, 7 cartes en main et son commandant en zone de commandement", () => {
@@ -364,11 +365,11 @@ describe("force et endurance", () => {
 
   test("la force et l'endurance affichées cumulent marqueurs et bonus", () => {
     const { s, c } = onField();
-    assert.deepEqual(Core.ptOf(c), { txt: "2/2", dp: 0, dt: 0 });
+    assert.deepEqual(core3(Core.ptOf(c)), { txt: "2/2", dp: 0, dt: 0 });
     act(s, "p1", { type: "counter", cid: c.id, k: "+1/+1", d: 2 });
     act(s, "p1", { type: "pt", cid: c.id, p: 3, t: -1, eot: true });
     act(s, "p1", { type: "pt", cid: c.id, p: -1, t: -1 });
-    assert.deepEqual(Core.ptOf(c), { txt: "6/2", dp: 4, dt: 0 });
+    assert.deepEqual(core3(Core.ptOf(c)), { txt: "6/2", dp: 4, dt: 0 });
     assert.match(lastLog(s), /-1\/-1/);
   });
 
@@ -407,6 +408,209 @@ describe("force et endurance", () => {
     c.pt2 = "5/5";
     c.side = 1;
     assert.equal(Core.ptOf(c).txt, "5/5");
+  });
+});
+
+/** Table d'un joueur avec des cartes posées sur le champ de bataille (champs de mkCard en plus). */
+function field(defs) {
+  const s = table(1),
+    out = {};
+  Object.entries(defs).forEach(([key, extra], i) => {
+    const id = "p1-c" + (6 + i);
+    act(s, "p1", {
+      type: "move",
+      cid: id,
+      to: { pid: "p1", zone: "battlefield" },
+      x: 10 + i * 10,
+      y: 30,
+    });
+    out[key] = Object.assign(s.cards[id], extra);
+  });
+  return { s, ...out };
+}
+
+describe("journal des points de vie", () => {
+  test("les variations d'affilée d'un même joueur tiennent en une ligne", () => {
+    const s = table(2),
+      n = s.log.length,
+      at = (t, a) => Core.apply(s, { by: "p1", ts: t, ...a });
+    at(100000, { type: "life", pid: "p1", d: -1 });
+    at(100500, { type: "life", pid: "p1", d: -1 });
+    at(101000, { type: "life", pid: "p1", d: -3 });
+    assert.equal(s.log.length, n + 1);
+    assert.equal(lastLog(s), "Joueur 1 : -5 PV (35).");
+    at(101200, { type: "life", pid: "p1", d: 2 });
+    assert.equal(lastLog(s), "Joueur 1 : -3 PV (37).");
+    // un autre joueur, ou bien plus tard : nouvelle ligne
+    at(101300, { type: "life", pid: "p2", d: -2 });
+    assert.equal(s.log.length, n + 2);
+    at(120000, { type: "life", pid: "p2", d: -1 });
+    assert.equal(s.log.length, n + 3);
+    assert.equal(lastLog(s), "Joueur 2 : -1 PV (37).");
+    // fixer les PV n'est pas cumulé
+    at(120100, { type: "life", pid: "p2", set: 20 });
+    assert.equal(s.log.length, n + 4);
+  });
+});
+
+describe("équipements", () => {
+  test("équiper ajoute le bonus, la carte suit sa créature, puis tombe quand elle part", () => {
+    const { s, bear, axe } = field({
+      bear: { pt: "2/2" },
+      axe: { tl: "Artifact — Equipment", eqb: "+2/+0" },
+    });
+    act(s, "p1", { type: "attach", cid: axe.id, to: bear.id });
+    assert.equal(axe.att, bear.id);
+    assert.match(lastLog(s), /équipe .* sur /);
+    assert.equal(Core.ptOf(bear, s).txt, "4/2");
+    assert.equal(Core.ptOf(bear).txt, "2/2", "sans l'état, pas d'équipement");
+    // rangé juste derrière la créature, décalé au-dessus
+    const bf = s.players.p1.zones.battlefield;
+    assert.equal(bf.indexOf(axe.id), bf.indexOf(bear.id) - 1);
+    assert.ok(axe.y < bear.y);
+    // la créature bouge : l'équipement suit
+    act(s, "p1", { type: "pos", cid: bear.id, x: 50, y: 50 });
+    assert.ok(Math.abs(axe.x - 51.2) < 0.01 && axe.y === 45);
+    // la créature meurt : l'équipement reste, détaché
+    act(s, "p1", {
+      type: "move",
+      cid: bear.id,
+      to: { pid: "p1", zone: "graveyard" },
+    });
+    assert.equal(axe.att, null);
+    assert.equal(axe.zone, "battlefield");
+  });
+
+  test("éloigner l'équipement de sa créature le détache", () => {
+    const { s, bear, axe } = field({
+      bear: { pt: "2/2" },
+      axe: { tl: "Artifact — Equipment", eqb: "+2/+0" },
+    });
+    act(s, "p1", { type: "attach", cid: axe.id, to: bear.id });
+    act(s, "p1", { type: "pos", cid: axe.id, x: 80, y: 60 });
+    assert.equal(axe.att, null);
+    assert.match(lastLog(s), /détache/);
+    assert.equal(Core.ptOf(bear, s).txt, "2/2");
+  });
+});
+
+describe("vaisseaux, véhicules et force *", () => {
+  test("un vaisseau devient une créature à son seuil de marqueurs charge", () => {
+    const { s, ship, rat } = field({
+      ship: { tl: "Artifact — Spacecraft", pt: "5/4", st: 8 },
+      rat: { pt: "5/5" },
+    });
+    assert.equal(Core.isCreature(ship), false);
+    assert.equal(Core.ptOf(ship, s).off, true);
+    act(s, "p1", { type: "station", cid: ship.id, with: rat.id });
+    assert.equal(rat.tapped, true, "la créature qui stationne s'engage");
+    assert.equal(ship.counters.charge, 5);
+    assert.equal(Core.isCreature(ship), false);
+    act(s, "p1", { type: "station", cid: ship.id, n: 3 });
+    assert.equal(ship.counters.charge, 8);
+    assert.equal(Core.isCreature(ship), true);
+    assert.match(lastLog(s), /C'est maintenant une créature/);
+    assert.equal(Core.ptOf(ship, s).off, false);
+    // une créature engagée ne peut pas stationner
+    act(s, "p1", { type: "station", cid: ship.id, with: rat.id });
+    assert.equal(ship.counters.charge, 8);
+  });
+
+  test("un véhicule piloté est une créature jusqu'à la fin du tour", () => {
+    const { s, cop } = field({
+      cop: { tl: "Artifact — Vehicle", pt: "3/3" },
+    });
+    assert.equal(Core.isCreature(cop), false);
+    act(s, "p1", { type: "crew", cid: cop.id });
+    assert.equal(Core.isCreature(cop), true);
+    assert.match(lastLog(s), /pilote/);
+    act(s, "p1", { type: "turn" });
+    assert.equal(Core.isCreature(cop), false);
+  });
+
+  test("force et endurance * : valeur fixée à la main, marqueurs en plus", () => {
+    const { s, lord } = field({ lord: { pt: "*/*" } });
+    assert.equal(Core.ptOf(lord, s).txt, "*/*");
+    assert.equal(Core.ptOf(lord, s).star, true);
+    act(s, "p1", { type: "base", cid: lord.id, p: 7, t: 7 });
+    act(s, "p1", { type: "counter", cid: lord.id, k: "+1/+1", d: 1 });
+    assert.equal(Core.ptOf(lord, s).txt, "8/8");
+    assert.equal(Core.ptOf(lord, s).star, false);
+    act(s, "p1", { type: "base", cid: lord.id, reset: true });
+    assert.equal(Core.ptOf(lord, s).txt, "*+1/*+1");
+    act(s, "p1", { type: "base", cid: lord.id, p: 3, t: 3 });
+    act(s, "p1", {
+      type: "move",
+      cid: lord.id,
+      to: { pid: "p1", zone: "hand" },
+    });
+    assert.equal(lord.base, null, "valeur oubliée hors du champ de bataille");
+  });
+});
+
+describe("plusieurs cartes à la fois", () => {
+  test("marqueurs et bonus donnés à toutes les créatures d'un coup", () => {
+    const { s, a, b, c } = field({
+      a: { pt: "1/1" },
+      b: { pt: "2/2" },
+      c: { pt: "3/3" },
+    });
+    const ids = [a.id, b.id, c.id];
+    act(s, "p1", { type: "counter", cids: ids, k: "+1/+1", d: 1 });
+    assert.deepEqual(
+      [a, b, c].map((x) => Core.ptOf(x).txt),
+      ["2/2", "3/3", "4/4"],
+    );
+    assert.match(lastLog(s), /à chacune de/);
+    act(s, "p1", { type: "pt", cids: ids, p: -2, t: -2, eot: true });
+    assert.deepEqual(
+      [a, b, c].map((x) => Core.ptOf(x).txt),
+      ["0/0", "1/1", "2/2"],
+    );
+    act(s, "p1", { type: "pt", cids: ids, reset: true });
+    assert.equal(Core.ptOf(c).txt, "4/4");
+  });
+});
+
+describe("découvrir", () => {
+  test("exile jusqu'à un non-terrain de valeur ≤ N, le reste va dessous", () => {
+    const s = table(1),
+      lib = s.players.p1.zones.library;
+    const [l1, l2, big, ok] = lib.slice(0, 4);
+    s.cards[l1].tl = s.cards[l2].tl = "Basic Land — Swamp";
+    Object.assign(s.cards[big], { tl: "Creature — Rat", mv: 6 });
+    Object.assign(s.cards[ok], { tl: "Creature — Rat", mv: 2 });
+    const ids = [l1, l2, big, ok];
+    act(s, "p1", {
+      type: "discover",
+      pid: "p1",
+      n: 3,
+      ids,
+      hit: ok,
+      to: "hand",
+      rest: [big, l1, l2],
+    });
+    assert.ok(s.players.p1.zones.hand.includes(ok));
+    assert.deepEqual(lib.slice(-3), [big, l1, l2]);
+    assert.equal(lib.indexOf(ok), -1);
+    assert.match(
+      lastLog(s),
+      /découvre 3 : exile .* Met .* dans sa main ; 3 cartes sous la bibliothèque/,
+    );
+  });
+
+  test("refusé si les cartes ne sont pas le dessus de la bibliothèque", () => {
+    const s = table(1),
+      lib = s.players.p1.zones.library,
+      before = lib.slice();
+    act(s, "p1", {
+      type: "discover",
+      pid: "p1",
+      n: 3,
+      ids: [lib[2]],
+      hit: lib[2],
+    });
+    assert.deepEqual(lib, before);
   });
 });
 

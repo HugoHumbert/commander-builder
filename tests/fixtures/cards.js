@@ -140,6 +140,152 @@ const CARDS = [
       },
     ],
   },
+  {
+    name: "Bonesplitter",
+    mana_cost: "{1}",
+    cmc: 1,
+    type_line: "Artifact — Equipment",
+    oracle_text: "Equipped creature gets +2/+0.\nEquip {1}",
+    colors: [],
+    color_identity: [],
+    set: "mrd",
+    collector_number: "146",
+    image_uris: img("bonesplitter"),
+  },
+  {
+    name: "Atmospheric Greenhouse",
+    mana_cost: "{4}{G}",
+    cmc: 5,
+    type_line: "Artifact — Spacecraft",
+    oracle_text:
+      "When this Spacecraft enters, put a +1/+1 counter on each creature you control.\nStation (Tap another creature you control: Put charge counters equal to its power on this Spacecraft. Station only as a sorcery. It's an artifact creature at 8+.)\n8+ | Flying, trample",
+    power: "5",
+    toughness: "4",
+    colors: ["G"],
+    color_identity: ["G"],
+    set: "eoe",
+    collector_number: "171",
+    image_uris: img("greenhouse"),
+  },
+  {
+    name: "Smuggler's Copter",
+    mana_cost: "{2}",
+    cmc: 2,
+    type_line: "Artifact — Vehicle",
+    oracle_text: "Flying\nCrew 1",
+    power: "3",
+    toughness: "3",
+    colors: [],
+    color_identity: [],
+    set: "kld",
+    collector_number: "235",
+    image_uris: img("copter"),
+  },
+  {
+    name: "Lord of Extinction",
+    mana_cost: "{3}{B}{G}",
+    cmc: 5,
+    type_line: "Creature — Elemental",
+    oracle_text:
+      "Lord of Extinction's power and toughness are each equal to the number of cards in all graveyards.",
+    power: "*",
+    toughness: "*",
+    colors: ["B", "G"],
+    color_identity: ["B", "G"],
+    set: "arb",
+    collector_number: "91",
+    image_uris: img("lord"),
+  },
+  {
+    name: "Call of the Ring",
+    mana_cost: "{1}{B}",
+    cmc: 2,
+    type_line: "Enchantment",
+    oracle_text:
+      "At the beginning of your upkeep, the Ring tempts you.\nWhenever you choose a creature as your Ring-bearer, you may pay 2 life. If you do, draw a card.",
+    colors: ["B"],
+    color_identity: ["B"],
+    set: "ltr",
+    collector_number: "79",
+    image_uris: img("call-ring"),
+    all_parts: [
+      {
+        component: "combo_piece",
+        id: "tok-ring",
+        name: "The Ring // The Ring Tempts You",
+        type_line: "Emblem // Card",
+      },
+      {
+        component: "combo_piece",
+        id: "call-ring",
+        name: "Call of the Ring",
+        type_line: "Enchantment",
+      },
+      {
+        component: "combo_piece",
+        id: "frodo",
+        name: "Frodo Baggins",
+        type_line: "Legendary Creature — Halfling Citizen",
+      },
+    ],
+  },
+  {
+    name: "Young Pyromancer",
+    mana_cost: "{1}{R}",
+    cmc: 2,
+    type_line: "Creature — Human Shaman",
+    oracle_text:
+      "Whenever you cast an instant or sorcery spell, create a 1/1 red Elemental creature token.",
+    power: "2",
+    toughness: "1",
+    colors: ["R"],
+    color_identity: ["R"],
+    set: "m14",
+    collector_number: "163",
+    image_uris: img("pyromancer"),
+    all_parts: [
+      {
+        component: "token",
+        id: "tok-elemental",
+        name: "Elemental",
+        type_line: "Token Creature — Elemental",
+      },
+    ],
+  },
 ];
 
-module.exports = { CARDS };
+// Jetons (servis par /cards/search filtré et /cards/collection par id)
+const TOKENS = [
+  {
+    id: "tok-ring",
+    name: "The Ring // The Ring Tempts You",
+    layout: "double_faced_token",
+    type_line: "Emblem // Card",
+    card_faces: [
+      { name: "The Ring", type_line: "Emblem", image_uris: img("ring") },
+      {
+        name: "The Ring Tempts You",
+        type_line: "Card",
+        image_uris: img("ring-tempts"),
+      },
+    ],
+  },
+  {
+    id: "tok-elemental",
+    name: "Elemental",
+    layout: "token",
+    type_line: "Token Creature — Elemental",
+    power: "1",
+    toughness: "1",
+    image_uris: img("elemental"),
+  },
+  {
+    id: "tok-monarch",
+    name: "The Monarch",
+    layout: "token",
+    type_line: "Card",
+    image_uris: img("monarch"),
+  },
+];
+
+module.exports = { CARDS, TOKENS };
