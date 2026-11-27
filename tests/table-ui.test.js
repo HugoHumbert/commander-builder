@@ -291,6 +291,53 @@ describe("decks de l'éditeur", () => {
     );
   });
 
+  test("réglage proxys découpés : les images avec fonds perdus sont repérées à leurs proportions", async () => {
+    const t = await open({
+      editor: editorDeck([
+        { name: JUDITH, cmd: true },
+        {
+          name: "Vincent Valentine // Galian Beast",
+          proxyImg: "https://ex.test/v.png",
+        },
+        { name: "Mountain", qty: 20 },
+      ]),
+    });
+    await t.host();
+    await t.pickEditorDeck("Rakdos");
+    await t.play();
+    // proxy MPC 822 × 1122 (fonds perdus) ; scans Scryfall 488 × 680 ; proxy déjà découpé 744 × 1039
+    assert.equal(t.run("isBleed(822, 1122)"), true);
+    assert.equal(t.run("isBleed(488, 680)"), false);
+    assert.equal(t.run("isBleed(744, 1039)"), false);
+    // jsdom ne charge pas les images : on fournit leur verdict
+    t.run("BLEED.set('https://ex.test/v.png', true)");
+    const v = cardsNamed(t, "Vincent Valentine // Galian Beast")[0],
+      m = cardsNamed(t, "Mountain")[0],
+      me = t.run("myId");
+    t.run(`BLEED.set(${JSON.stringify(m.img)}, false)`);
+    t.run(`BLEED.set(${JSON.stringify(v.img2)}, false)`);
+    for (const c of [v, m])
+      await t.act({
+        type: "move",
+        cid: c.id,
+        to: { pid: me, zone: "battlefield" },
+      });
+    const el = (c) => t.$(`.bf .card[data-cid="${c.id}"]`);
+    assert.ok(el(v).classList.contains("px"));
+    assert.ok(!el(m).classList.contains("px"));
+    // verso Scryfall : pas de fonds perdus à rogner
+    await t.act({ type: "transform", cid: v.id });
+    assert.ok(!el(v).classList.contains("px"));
+    assert.ok(!t.document.body.classList.contains("trim"));
+    t.$("#btrim").click();
+    assert.ok(t.document.body.classList.contains("trim"));
+    assert.equal(t.$("#btrim").getAttribute("aria-pressed"), "true");
+    assert.equal(t.run("store('cmdtable-trim')"), true);
+    t.$("#btrim").click();
+    assert.ok(!t.document.body.classList.contains("trim"));
+    assert.equal(t.run("store('cmdtable-trim')"), null);
+  });
+
   test("double face : jouer l'autre face depuis la main, R pour transformer", async () => {
     const { t } = await seated();
     const v = cardsNamed(t, "Vincent Valentine // Galian Beast")[0],
@@ -742,8 +789,14 @@ describe("plateau", () => {
     assert.equal(pv.style.left, "390px");
     assert.notEqual(pv.style.backgroundImage, "");
     // en main : au-dessus de la carte
-    t.$("#handbar .card").getBoundingClientRect = rect;
-    t.run("0, showPreview(document.querySelector('#handbar .card'))");
+    // une carte simple : une double face ajouterait la ligne « Autre face » sous l'aperçu
+    const plain = t.run(
+      "[...document.querySelectorAll('#handbar .card')].findIndex((e) => !S.cards[e.dataset.cid].img2 && !S.cards[e.dataset.cid].label)",
+    );
+    t.$$("#handbar .card")[plain].getBoundingClientRect = rect;
+    t.run(
+      `0, showPreview(document.querySelectorAll('#handbar .card')[${plain}])`,
+    );
     assert.equal(pv.style.left, "340px");
     assert.equal(pv.style.top, "190px");
   });

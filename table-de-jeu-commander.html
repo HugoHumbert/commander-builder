@@ -1010,9 +1010,21 @@
         color: var(--mute);
         font-size: 14px;
       }
+      /* Proxys imprimés avec fonds perdus (63 × 88 mm + 3 mm par côté) : on agrandit l'image
+         pour n'en montrer que la partie découpée. */
+      body.trim .card.px,
+      body.trim .th.px,
+      body.trim #preview.px {
+        background-size: 109.5% 106.8%;
+        background-position: center;
+      }
       #preview.loupe {
         overflow: hidden;
         background-size: 280%;
+        background-position: var(--lx, 50%) var(--ly, 50%);
+      }
+      body.trim #preview.px.loupe {
+        background-size: 306.6% 299%;
         background-position: var(--lx, 50%) var(--ly, 50%);
         box-shadow:
           0 10px 40px #000,
@@ -1622,7 +1634,12 @@
         width: 20px;
         height: 20px;
       }
+      #btrim.on {
+        color: var(--gold);
+        box-shadow: inset 0 0 0 1px var(--gold);
+      }
       #bhelp,
+      #btrim,
       #bsound {
         width: 34px;
         justify-content: center;
@@ -1763,6 +1780,33 @@
         gap: 3px;
         margin: 0 4px;
         font-weight: 600;
+      }
+      /* en-tête du joueur : un groupe par information (PV, commandant, poison), bien séparés */
+      .bhead {
+        column-gap: 14px;
+        row-gap: 4px;
+      }
+      .bhead .grp {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 4px;
+        border-radius: 16px;
+        background: #0000003d;
+        border: 1px solid #7a5a2640;
+      }
+      .bhead .grp.life {
+        padding: 2px 3px;
+      }
+      .bhead .grp.poison {
+        padding: 2px 3px;
+        border-color: color-mix(in srgb, var(--ok) 30%, transparent);
+      }
+      .bhead .grp.cmdg button {
+        color: var(--gold);
+      }
+      .bhead .more {
+        margin-left: -6px;
       }
       .tag {
         background: linear-gradient(#2c211a, #1b1410);
@@ -2179,6 +2223,19 @@
         <path d="M15.8 9a4.2 4.2 0 0 1 0 6M18.4 6.4a8 8 0 0 1 0 11.2" />
       </symbol>
       <symbol
+        id="i-trim"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="6" y="4" width="12" height="16" rx="1.6" />
+        <path d="M2 7.5h2.2M19.8 7.5H22M2 16.5h2.2M19.8 16.5H22" />
+        <path d="M9.5 1.5v1.4M14.5 1.5v1.4M9.5 21.1v1.4M14.5 21.1v1.4" />
+      </symbol>
+      <symbol
         id="i-mute"
         viewBox="0 0 24 24"
         fill="none"
@@ -2390,11 +2447,11 @@
         <span id="turninfo"></span>
         <span class="sp"></span>
         <button id="bdeck" class="primary">Charger un deck</button>
+        <button id="btoken">Jeton</button>
+        <button id="bdice">Dés</button>
         <button id="buntap" title="Dégager tous mes permanents (U)">
           Dégager tout
         </button>
-        <button id="btoken">Jeton</button>
-        <button id="bdice">Dés</button>
         <button id="bturn" title="Passer le tour (N)">Tour suivant</button>
         <span class="zoomctl"
           ><button id="bzout" title="Dézoomer le plateau (Ctrl + molette)">
@@ -2404,6 +2461,10 @@
             +
           </button></span
         >
+        <button
+          id="btrim"
+          title="Images proxy : rogner les fonds perdus (format découpé)"
+        ></button>
         <button id="bsound" title="Sons"></button>
         <button id="bhelp" title="Raccourcis">?</button>
         <button id="blog">Journal</button>
@@ -3806,6 +3867,30 @@
       function setBg(e, url) {
         e.style.backgroundImage =
           'url("' + String(url).replace(/["\s()]/g, encodeURIComponent) + '")';
+        markBleed(e, url);
+      }
+      /* Image avec fonds perdus (proxy prêt à imprimer, ~69 × 94 mm) : plus large que le
+         format carte (63 × 88, comme les scans Scryfall 488 × 680). On la repère à ses
+         proportions, une fois chargée, et on lui met la classe .px (rognée si réglage actif). */
+      const isBleed = (w, h) => w > 0 && h > 0 && w / h > 0.726;
+      const BLEED = new Map();
+      function markBleed(e, url) {
+        e._bg = url;
+        const known = BLEED.get(url);
+        if (known !== undefined) return e.classList.toggle("px", known);
+        e.classList.remove("px");
+        if (typeof Image === "undefined") return;
+        const im = new Image();
+        im.onload = () => {
+          const b = isBleed(im.naturalWidth, im.naturalHeight);
+          BLEED.set(url, b);
+          if (e._bg === url) e.classList.toggle("px", b);
+          if (b)
+            $$(".card, #preview, .th").forEach((x) => {
+              if (x._bg === url) x.classList.add("px");
+            });
+        };
+        im.src = url;
       }
       const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
       const me = () => S.players[myId];
@@ -3891,6 +3976,21 @@
         if (ks.length && !isHost && hostConn && hostConn.open)
           hostConn.send({ t: "need", ks: ks });
       }
+      let trim = store("cmdtable-trim") === true;
+      function setTrim(on) {
+        trim = !!on;
+        store("cmdtable-trim", trim || null);
+        document.body.classList.toggle("trim", trim);
+        const b = $("#btrim");
+        if (!b) return;
+        b.replaceChildren(ico("trim"));
+        b.classList.toggle("on", trim);
+        b.setAttribute("aria-pressed", String(trim));
+        b.setAttribute(
+          "aria-label",
+          trim ? "Proxys découpés (fonds perdus masqués)" : "Proxys entiers",
+        );
+      }
       function paintImg(e, ref) {
         if (!ref) return false;
         if (ref.slice(0, 2) !== "p:") {
@@ -3917,10 +4017,14 @@
         return new Promise((res, rej) => {
           const im = new Image();
           im.onload = () => {
-            const c = document.createElement("canvas");
+            // largeur 672, proportions d'origine : une image avec fonds perdus reste
+            // reconnaissable (et n'est pas écrasée)
+            const c = document.createElement("canvas"),
+              w = im.naturalWidth || 672,
+              hh = im.naturalHeight || 936;
             c.width = 672;
-            c.height = 936;
-            c.getContext("2d").drawImage(im, 0, 0, 672, 936);
+            c.height = Math.round((672 * hh) / w);
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
             URL.revokeObjectURL(im.src);
             res(c.toDataURL("image/jpeg", 0.85));
           };
@@ -5073,8 +5177,9 @@
             h("b", {}, n),
           );
         });
+        const stTags = [];
         if (p.kept === false && !mine)
-          cmdTags.unshift(
+          stTags.push(
             h(
               "span",
               {
@@ -5086,7 +5191,7 @@
           );
         const dead = !p.out && Core.lethal(S, p);
         if (dead)
-          cmdTags.push(
+          stTags.push(
             h(
               "span",
               {
@@ -5133,7 +5238,7 @@
           ),
           h(
             "span",
-            { class: "life", "data-life": p.id },
+            { class: "grp life", "data-life": p.id },
             mine ? pm("life", -1, "−") : null,
             h(
               "b",
@@ -5151,23 +5256,42 @@
             ),
             mine ? pm("life", 1, "+") : null,
           ),
+          // blessures de commandant : le bouton du détail et une pastille par commandant adverse
+          h(
+            "span",
+            { class: "grp cmdg" },
+            h(
+              "button",
+              { "data-cmdd": p.id, title: "Blessures de commandant" },
+              ico("swords"),
+            ),
+            cmdTags,
+          ),
           mine || p.poison
             ? h(
                 "span",
-                { class: "poison" },
+                {
+                  class: "grp poison",
+                  title: "Marqueurs poison (10 = mortel)",
+                },
                 mine ? pm("poison", -1, "−") : null,
                 h("span", { class: "pz" }, ico("skull"), String(p.poison)),
                 mine ? pm("poison", 1, "+") : null,
               )
             : null,
           ctrTags,
-          cmdTags,
           h(
-            "span",
-            { class: "r" },
-            mine
-              ? null
-              : h(
+            "button",
+            { class: "more", "data-more": p.id, title: "Options du joueur" },
+            ico("more"),
+          ),
+          stTags,
+          mine
+            ? null
+            : h(
+                "span",
+                { class: "r" },
+                h(
                   "span",
                   {
                     class: "tag handchip",
@@ -5177,17 +5301,7 @@
                   "Main ",
                   h("b", {}, z.hand.length),
                 ),
-            h(
-              "button",
-              { "data-cmdd": p.id, title: "Blessures de commandant" },
-              ico("swords"),
-            ),
-            h(
-              "button",
-              { "data-more": p.id, title: "Options du joueur" },
-              ico("more"),
-            ),
-          ),
+              ),
         );
         const bf = h("div", {
           class: "bf",
@@ -5325,9 +5439,9 @@
             if (c) hb.append(cardEl(c, { peek: true }));
           });
           const n = hb.children.length,
-            cw = n ? hb.firstChild.offsetWidth : 0,
-            avail = hb.clientWidth - 24,
             step = Math.min(2.6, 22 / Math.max(n, 1));
+          // éventail et carte levée posés AVANT toute mesure : sinon le navigateur calcule
+          // d'abord les cartes droites, puis anime leur inclinaison à chaque rendu (la main tremble)
           if (handLift) {
             const lifted = hb.querySelector(
               '.card[data-cid="' + handLift + '"]',
@@ -5344,6 +5458,8 @@
               Math.min(12, f * f * step * 0.22).toFixed(1) + "px",
             );
           });
+          const cw = n ? hb.firstChild.offsetWidth : 0,
+            avail = hb.clientWidth - 24;
           hb.style.setProperty(
             "--ov",
             (n > 1 && cw && n * (cw + 4) > avail
@@ -5943,6 +6059,8 @@
         pv.classList.toggle("foil", !!c.foil && !c.faceDown);
         pv.style.backgroundImage = "";
         pv.removeAttribute("data-wait");
+        pv.classList.remove("px");
+        pv._bg = null;
         if (!paintImg(pv, c.side && c.img2 ? c.img2 : c.img))
           pv.append(txtEl(c, true));
         const pb = ptBadge(c);
@@ -9131,6 +9249,8 @@
         if (S.order.length) act({ type: "turn" });
       };
       $("#bend").onclick = openEnd;
+      setTrim(trim);
+      $("#btrim").onclick = () => setTrim(!trim);
       $("#bsound").onclick = () => {
         muted = !muted;
         store("cmdtable-muted", muted);
